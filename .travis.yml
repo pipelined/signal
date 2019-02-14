@@ -1,0 +1,22 @@
+language: go
+go: 
+ - "1.11.x"
+
+os: osx
+
+install: true
+
+env:
+  global:
+    - GO111MODULE=on
+    - CODECOV_TOKEN="5b0b1830-b8b6-4dc6-9f5f-0dde9889f14f"
+
+addons:
+  ssh_known_hosts:
+  - github.com
+  - ssh.github.com
+
+script: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
