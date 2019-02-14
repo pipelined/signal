@@ -9,7 +9,7 @@ install: true
 env:
   global:
     - GO111MODULE=on
-    - CODECOV_TOKEN="5b0b1830-b8b6-4dc6-9f5f-0dde9889f14f"
+    - CODECOV_TOKEN="4831691a-c57e-465a-9590-5298c70d066b"
 
 addons:
   ssh_known_hosts:
