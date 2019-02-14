@@ -33,6 +33,15 @@ func TestInterIntsAsFloat64(t *testing.T) {
 			},
 		},
 		{
+			ints:        []int{math.MaxInt8, math.MaxInt8 * 2},
+			numChannels: 2,
+			expected: [][]float64{
+				[]float64{1},
+				[]float64{2},
+			},
+			bitDepth: signal.BitDepth8,
+		},
+		{
 			ints:        []int{math.MaxInt16, math.MaxInt16 * 2},
 			numChannels: 2,
 			expected: [][]float64{
@@ -40,6 +49,15 @@ func TestInterIntsAsFloat64(t *testing.T) {
 				[]float64{2},
 			},
 			bitDepth: signal.BitDepth16,
+		},
+		{
+			ints:        []int{math.MaxInt32, math.MaxInt32 * 2},
+			numChannels: 2,
+			expected: [][]float64{
+				[]float64{1},
+				[]float64{2},
+			},
+			bitDepth: signal.BitDepth32,
 		},
 		{
 			ints:     nil,
@@ -103,8 +121,24 @@ func TestFloat64AsInterInt(t *testing.T) {
 				[]float64{1},
 				[]float64{2},
 			},
+			bitDepth: signal.BitDepth8,
+			expected: []int{1 * (math.MaxInt8 - 1), 2 * (math.MaxInt8 - 1)},
+		},
+		{
+			floats: [][]float64{
+				[]float64{1},
+				[]float64{2},
+			},
 			bitDepth: signal.BitDepth16,
 			expected: []int{1 * (math.MaxInt16 - 1), 2 * (math.MaxInt16 - 1)},
+		},
+		{
+			floats: [][]float64{
+				[]float64{1},
+				[]float64{2},
+			},
+			bitDepth: signal.BitDepth32,
+			expected: []int{1 * (math.MaxInt32 - 1), 2 * (math.MaxInt32 - 1)},
 		},
 		{
 			floats:   nil,
@@ -198,18 +232,15 @@ func TestFloat64(t *testing.T) {
 	var s signal.Float64
 	assert.Equal(t, 0, s.NumChannels())
 	assert.Equal(t, 0, s.Size())
-	s = [][]float64{[]float64{}}
-	assert.Equal(t, 1, s.NumChannels())
-	assert.Equal(t, 0, s.Size())
-	s[0] = make([]float64, 512)
-	assert.Equal(t, 512, s.Size())
 
-	s2 := [][]float64{make([]float64, 512)}
+	s2 := [][]float64{make([]float64, 1024)}
 	s = s.Append(s2)
 	assert.Equal(t, 1024, s.Size())
 	s2[0] = make([]float64, 1024)
 	s = s.Append(s2)
 	assert.Equal(t, 2048, s.Size())
+	s = s.Append(signal.EmptyFloat64(1, 2048))
+	assert.Equal(t, 4096, s.Size())
 }
 
 func TestDuration(t *testing.T) {
