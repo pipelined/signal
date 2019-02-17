@@ -1,7 +1,7 @@
 // Package signal provides an API to manipulate digital signals. It allows to:
 // 	- convert interleaved data to non-interleaved
 //	- convert bit depth for int signals
-//  - convert int signal to float
+//	- convert int signal to float
 package signal
 
 import (
