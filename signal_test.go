@@ -20,24 +20,24 @@ func TestInterIntsAsFloat64(t *testing.T) {
 			ints:        []int{1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2},
 			numChannels: 2,
 			expected: [][]float64{
-				[]float64{1, 1, 1, 1, 1, 1, 1, 1},
-				[]float64{2, 2, 2, 2, 2, 2, 2, 2},
+				{1, 1, 1, 1, 1, 1, 1, 1},
+				{2, 2, 2, 2, 2, 2, 2, 2},
 			},
 		},
 		{
 			ints:        []int{1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1},
 			numChannels: 2,
 			expected: [][]float64{
-				[]float64{1, 1, 1, 1, 1, 1, 1, 1},
-				[]float64{2, 2, 2, 2, 2, 2, 2, 0},
+				{1, 1, 1, 1, 1, 1, 1, 1},
+				{2, 2, 2, 2, 2, 2, 2, 0},
 			},
 		},
 		{
 			ints:        []int{math.MaxInt8, math.MaxInt8 * 2},
 			numChannels: 2,
 			expected: [][]float64{
-				[]float64{1},
-				[]float64{2},
+				{1},
+				{2},
 			},
 			bitDepth: signal.BitDepth8,
 		},
@@ -45,8 +45,8 @@ func TestInterIntsAsFloat64(t *testing.T) {
 			ints:        []int{math.MaxInt16, math.MaxInt16 * 2},
 			numChannels: 2,
 			expected: [][]float64{
-				[]float64{1},
-				[]float64{2},
+				{1},
+				{2},
 			},
 			bitDepth: signal.BitDepth16,
 		},
@@ -54,8 +54,8 @@ func TestInterIntsAsFloat64(t *testing.T) {
 			ints:        []int{math.MaxInt32, math.MaxInt32 * 2},
 			numChannels: 2,
 			expected: [][]float64{
-				[]float64{1},
-				[]float64{2},
+				{1},
+				{2},
 			},
 			bitDepth: signal.BitDepth32,
 		},
@@ -71,11 +71,11 @@ func TestInterIntsAsFloat64(t *testing.T) {
 			ints:        []int{1, 2, 3, 4},
 			numChannels: 5,
 			expected: [][]float64{
-				[]float64{1},
-				[]float64{2},
-				[]float64{3},
-				[]float64{4},
-				[]float64{0},
+				{1},
+				{2},
+				{3},
+				{4},
+				{0},
 			},
 		},
 	}
@@ -104,38 +104,38 @@ func TestFloat64AsInterInt(t *testing.T) {
 	}{
 		{
 			floats: [][]float64{
-				[]float64{1, 1, 1, 1, 1, 1, 1, 1},
-				[]float64{2, 2, 2, 2, 2, 2, 2, 2},
+				{1, 1, 1, 1, 1, 1, 1, 1},
+				{2, 2, 2, 2, 2, 2, 2, 2},
 			},
 			expected: []int{1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2},
 		},
 		{
 			floats: [][]float64{
-				[]float64{1, 1, 1, 1, 1, 1, 1, 1},
-				[]float64{2, 2, 2, 2, 2, 2},
+				{1, 1, 1, 1, 1, 1, 1, 1},
+				{2, 2, 2, 2, 2, 2},
 			},
 			expected: []int{1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 0, 1, 0},
 		},
 		{
 			floats: [][]float64{
-				[]float64{1},
-				[]float64{2},
+				{1},
+				{2},
 			},
 			bitDepth: signal.BitDepth8,
 			expected: []int{1 * (math.MaxInt8 - 1), 2 * (math.MaxInt8 - 1)},
 		},
 		{
 			floats: [][]float64{
-				[]float64{1},
-				[]float64{2},
+				{1},
+				{2},
 			},
 			bitDepth: signal.BitDepth16,
 			expected: []int{1 * (math.MaxInt16 - 1), 2 * (math.MaxInt16 - 1)},
 		},
 		{
 			floats: [][]float64{
-				[]float64{1},
-				[]float64{2},
+				{1},
+				{2},
 			},
 			bitDepth: signal.BitDepth32,
 			expected: []int{1 * (math.MaxInt32 - 1), 2 * (math.MaxInt32 - 1)},
@@ -150,18 +150,18 @@ func TestFloat64AsInterInt(t *testing.T) {
 		},
 		{
 			floats: [][]float64{
-				[]float64{},
-				[]float64{},
+				{},
+				{},
 			},
 			expected: []int{},
 		},
 		{
 			floats: [][]float64{
-				[]float64{1},
-				[]float64{2},
-				[]float64{3},
-				[]float64{4},
-				[]float64{5},
+				{1},
+				{2},
+				{3},
+				{4},
+				{5},
 			},
 			expected: []int{1, 2, 3, 4, 5},
 		},
@@ -185,31 +185,31 @@ func TestSliceFloat64(t *testing.T) {
 		expected signal.Float64
 	}{
 		{
-			in:       signal.Float64([][]float64{[]float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, []float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
+			in:       signal.Float64([][]float64{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
 			start:    1,
 			len:      2,
-			expected: signal.Float64([][]float64{[]float64{1, 2}, []float64{1, 2}}),
+			expected: signal.Float64([][]float64{{1, 2}, {1, 2}}),
 		},
 		{
-			in:       signal.Float64([][]float64{[]float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, []float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
+			in:       signal.Float64([][]float64{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
 			start:    5,
 			len:      2,
-			expected: signal.Float64([][]float64{[]float64{5, 6}, []float64{5, 6}}),
+			expected: signal.Float64([][]float64{{5, 6}, {5, 6}}),
 		},
 		{
-			in:       signal.Float64([][]float64{[]float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, []float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
+			in:       signal.Float64([][]float64{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
 			start:    7,
 			len:      4,
-			expected: signal.Float64([][]float64{[]float64{7, 8, 9}, []float64{7, 8, 9}}),
+			expected: signal.Float64([][]float64{{7, 8, 9}, {7, 8, 9}}),
 		},
 		{
-			in:       signal.Float64([][]float64{[]float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
+			in:       signal.Float64([][]float64{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
 			start:    9,
 			len:      1,
-			expected: signal.Float64([][]float64{[]float64{9}}),
+			expected: signal.Float64([][]float64{{9}}),
 		},
 		{
-			in:       signal.Float64([][]float64{[]float64{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
+			in:       signal.Float64([][]float64{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
 			start:    10,
 			len:      1,
 			expected: nil,
