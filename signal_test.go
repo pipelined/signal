@@ -269,3 +269,32 @@ func TestDuration(t *testing.T) {
 		assert.Equal(t, c.expected, signal.DurationOf(c.sampleRate, c.samples))
 	}
 }
+
+func TestMock(t *testing.T) {
+	tests := []struct {
+		numChannels int
+		size        int
+		value       float64
+		expected    [][]float64
+	}{
+		{
+			numChannels: 1,
+			size:        2,
+			value:       0.5,
+			expected:    [][]float64{{0.5, 0.5}},
+		},
+	}
+
+	for _, test := range tests {
+		result := signal.Mock(test.numChannels, test.size, test.value)
+
+		assert.Equal(t, test.numChannels, result.NumChannels())
+		assert.Equal(t, test.size, result.Size())
+		for i := 0; i < len(result); i++ {
+			assert.Equal(t, test.size, len(result[i]))
+			for j := 0; j < len(result[i]); j++ {
+				assert.Equal(t, test.expected[i][j], result[i][j])
+			}
+		}
+	}
+}
