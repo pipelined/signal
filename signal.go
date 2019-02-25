@@ -166,3 +166,15 @@ func (floats Float64) Slice(start int, len int) Float64 {
 	}
 	return result
 }
+
+// Mock generates signal with provided characteristics.
+func Mock(numChannels, size int, value float64) Float64 {
+	result := make([][]float64, numChannels)
+	for i := range result {
+		result[i] = make([]float64, size)
+		for j := range result[i] {
+			result[i][j] = value
+		}
+	}
+	return result
+}
