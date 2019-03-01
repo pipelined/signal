@@ -60,6 +60,15 @@ func TestInterIntsAsFloat64(t *testing.T) {
 			bitDepth: signal.BitDepth32,
 		},
 		{
+			ints:        []int{1<<23 - 1, (1<<23 - 1) * 2},
+			numChannels: 2,
+			expected: [][]float64{
+				{1},
+				{2},
+			},
+			bitDepth: signal.BitDepth24,
+		},
+		{
 			ints:     nil,
 			expected: nil,
 		},
@@ -90,7 +99,7 @@ func TestInterIntsAsFloat64(t *testing.T) {
 		assert.Equal(t, len(test.expected), len(result))
 		for i := range test.expected {
 			for j, val := range test.expected[i] {
-				assert.Equal(t, val, result[i][j])
+				assert.Equal(t, val, result[i][j], "Bit depth %v", test.bitDepth)
 			}
 		}
 	}
@@ -139,6 +148,14 @@ func TestFloat64AsInterInt(t *testing.T) {
 			},
 			bitDepth: signal.BitDepth32,
 			expected: []int{1 * (math.MaxInt32 - 1), 2 * (math.MaxInt32 - 1)},
+		},
+		{
+			floats: [][]float64{
+				{1},
+				{2},
+			},
+			bitDepth: signal.BitDepth24,
+			expected: []int{1 * (1<<23 - 2), 2 * (1<<23 - 2)},
 		},
 		{
 			floats:   nil,
