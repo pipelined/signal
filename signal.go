@@ -108,11 +108,17 @@ func (floats Float64) AsInterInt(bitDepth BitDepth, unsigned bool) []int {
 	return ints
 }
 
-// EmptyFloat64 returns an empty buffer of specified dimentions.
-func EmptyFloat64(numChannels int, bufferSize int) Float64 {
+// Float64Buffer returns an Float64 buffer of specified dimentions.
+// Optional value could be provided to mock signal.
+func Float64Buffer(numChannels, bufferSize int, value float64) Float64 {
 	result := make([][]float64, numChannels)
 	for i := range result {
 		result[i] = make([]float64, bufferSize)
+		if value != 0 {
+			for j := range result[i] {
+				result[i][j] = value
+			}
+		}
 	}
 	return result
 }
@@ -162,18 +168,6 @@ func (floats Float64) Slice(start int, len int) Float64 {
 			end = floats.Size()
 		}
 		result[i] = append(result[i], floats[i][start:end]...)
-	}
-	return result
-}
-
-// Mock generates signal with provided characteristics.
-func Mock(numChannels, size int, value float64) Float64 {
-	result := make([][]float64, numChannels)
-	for i := range result {
-		result[i] = make([]float64, size)
-		for j := range result[i] {
-			result[i][j] = value
-		}
 	}
 	return result
 }
