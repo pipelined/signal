@@ -31,41 +31,19 @@ type InterInt struct {
 	Data        []int
 	NumChannels int
 	BitDepth
+	Unsigned bool
 }
 
 // BitDepth contains values required for int-to-float and backward conversion.
-type BitDepth int
+type BitDepth uint
 
-// devider is used when int to float conversion is done.
-func (bitDepth BitDepth) devider() int {
-	switch bitDepth {
-	case BitDepth8:
-		return math.MaxInt8
-	case BitDepth16:
-		return math.MaxInt16
-	case BitDepth24:
-		return 1<<23 - 1
-	case BitDepth32:
-		return math.MaxInt32
-	default:
+// resolution returns a half resolution for a passed bit depth.
+// example: bit depth of 8 bits has resolution of (2^8)/2 -1 ie 127.
+func resolution(bitDepth BitDepth) int {
+	if bitDepth == 0 {
 		return 1
 	}
-}
-
-// devider is used when float to int conversion is done.
-func (bitDepth BitDepth) multiplier() int {
-	switch bitDepth {
-	case BitDepth8:
-		return math.MaxInt8 - 1
-	case BitDepth16:
-		return math.MaxInt16 - 1
-	case BitDepth24:
-		return 1<<23 - 2
-	case BitDepth32:
-		return math.MaxInt32 - 1
-	default:
-		return 1
-	}
+	return 1<<(bitDepth-1) - 1
 }
 
 // DurationOf returns time duration of passed samples for this sample rate.
@@ -81,14 +59,21 @@ func (ints InterInt) AsFloat64() Float64 {
 	floats := make([][]float64, ints.NumChannels)
 	bufSize := int(math.Ceil(float64(len(ints.Data)) / float64(ints.NumChannels)))
 
-	// determine the devider for bit depth conversion
-	devider := float64(ints.BitDepth.devider())
+	// get resolution of bit depth
+	res := resolution(ints.BitDepth)
+	// determine the divider for bit depth conversion
+	divider := float64(res)
+	// determine the shift for signed-unsigned conversion
+	shift := 0
+	if ints.Unsigned {
+		shift = res
+	}
 
 	for i := range floats {
 		floats[i] = make([]float64, bufSize)
 		pos := 0
 		for j := i; j < len(ints.Data); j = j + ints.NumChannels {
-			floats[i][pos] = float64(ints.Data[j]) / devider
+			floats[i][pos] = float64(ints.Data[j]-shift) / divider
 			pos++
 		}
 	}
@@ -96,20 +81,28 @@ func (ints InterInt) AsFloat64() Float64 {
 }
 
 // AsInterInt converts float64 signal to interleaved int.
-func (floats Float64) AsInterInt(bitDepth BitDepth) []int {
+// If unsigned is true, then all values are shifted and result will be in unsigned range.
+func (floats Float64) AsInterInt(bitDepth BitDepth, unsigned bool) []int {
 	var numChannels int
 	if numChannels = len(floats); numChannels == 0 {
 		return nil
 	}
 
+	// get resolution of bit depth
+	res := resolution(bitDepth)
 	// determine the multiplier for bit depth conversion
-	multiplier := float64(bitDepth.multiplier())
+	multiplier := float64(res)
+	// determine the shift for signed-unsigned conversion
+	shift := 0
+	if unsigned {
+		shift = res
+	}
 
 	ints := make([]int, len(floats[0])*numChannels)
 
 	for j := range floats {
 		for i := range floats[j] {
-			ints[i*numChannels+j] = int(floats[j][i] * multiplier)
+			ints[i*numChannels+j] = int(floats[j][i]*multiplier) + shift
 		}
 	}
 	return ints

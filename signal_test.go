@@ -11,12 +11,15 @@ import (
 
 func TestInterIntsAsFloat64(t *testing.T) {
 	tests := []struct {
+		name        string
 		ints        []int
 		numChannels int
 		bitDepth    signal.BitDepth
+		unsigned    bool
 		expected    [][]float64
 	}{
 		{
+			name:        "Same length",
 			ints:        []int{1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2},
 			numChannels: 2,
 			expected: [][]float64{
@@ -25,6 +28,7 @@ func TestInterIntsAsFloat64(t *testing.T) {
 			},
 		},
 		{
+			name:        "Different length",
 			ints:        []int{1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1},
 			numChannels: 2,
 			expected: [][]float64{
@@ -33,6 +37,7 @@ func TestInterIntsAsFloat64(t *testing.T) {
 			},
 		},
 		{
+			name:        "8 bits",
 			ints:        []int{math.MaxInt8, math.MaxInt8 * 2},
 			numChannels: 2,
 			expected: [][]float64{
@@ -42,6 +47,7 @@ func TestInterIntsAsFloat64(t *testing.T) {
 			bitDepth: signal.BitDepth8,
 		},
 		{
+			name:        "16 bits",
 			ints:        []int{math.MaxInt16, math.MaxInt16 * 2},
 			numChannels: 2,
 			expected: [][]float64{
@@ -51,6 +57,7 @@ func TestInterIntsAsFloat64(t *testing.T) {
 			bitDepth: signal.BitDepth16,
 		},
 		{
+			name:        "32 bits",
 			ints:        []int{math.MaxInt32, math.MaxInt32 * 2},
 			numChannels: 2,
 			expected: [][]float64{
@@ -60,6 +67,7 @@ func TestInterIntsAsFloat64(t *testing.T) {
 			bitDepth: signal.BitDepth32,
 		},
 		{
+			name:        "24 bits",
 			ints:        []int{1<<23 - 1, (1<<23 - 1) * 2},
 			numChannels: 2,
 			expected: [][]float64{
@@ -69,14 +77,17 @@ func TestInterIntsAsFloat64(t *testing.T) {
 			bitDepth: signal.BitDepth24,
 		},
 		{
+			name:     "Nil",
 			ints:     nil,
 			expected: nil,
 		},
 		{
+			name:     "0 channels",
 			ints:     []int{1, 2, 3},
 			expected: nil,
 		},
 		{
+			name:        "Padding",
 			ints:        []int{1, 2, 3, 4},
 			numChannels: 5,
 			expected: [][]float64{
@@ -87,19 +98,32 @@ func TestInterIntsAsFloat64(t *testing.T) {
 				{0},
 			},
 		},
+		{
+			name:        "Unsigned",
+			ints:        []int{0, math.MaxInt16, math.MaxInt16 * 2},
+			numChannels: 3,
+			bitDepth:    signal.BitDepth16,
+			unsigned:    true,
+			expected: [][]float64{
+				{-1},
+				{0},
+				{1},
+			},
+		},
 	}
 
-	for _, test := range tests {
+	for i, test := range tests {
 		ints := signal.InterInt{
 			Data:        test.ints,
 			NumChannels: test.numChannels,
 			BitDepth:    test.bitDepth,
+			Unsigned:    test.unsigned,
 		}
 		result := ints.AsFloat64()
-		assert.Equal(t, len(test.expected), len(result))
+		assert.Equal(t, len(test.expected), len(result), "Test %v Bit depth %v", i, test.bitDepth)
 		for i := range test.expected {
 			for j, val := range test.expected[i] {
-				assert.Equal(t, val, result[i][j], "Bit depth %v", test.bitDepth)
+				assert.Equal(t, val, result[i][j], "Test %v Bit depth %v", i, test.bitDepth)
 			}
 		}
 	}
@@ -107,11 +131,14 @@ func TestInterIntsAsFloat64(t *testing.T) {
 
 func TestFloat64AsInterInt(t *testing.T) {
 	tests := []struct {
+		name     string
 		floats   [][]float64
 		bitDepth signal.BitDepth
 		expected []int
+		unsigned bool
 	}{
 		{
+			name: "Same length",
 			floats: [][]float64{
 				{1, 1, 1, 1, 1, 1, 1, 1},
 				{2, 2, 2, 2, 2, 2, 2, 2},
@@ -119,6 +146,7 @@ func TestFloat64AsInterInt(t *testing.T) {
 			expected: []int{1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2},
 		},
 		{
+			name: "Diffirent length",
 			floats: [][]float64{
 				{1, 1, 1, 1, 1, 1, 1, 1},
 				{2, 2, 2, 2, 2, 2},
@@ -126,46 +154,53 @@ func TestFloat64AsInterInt(t *testing.T) {
 			expected: []int{1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 2, 1, 0, 1, 0},
 		},
 		{
+			name: "8 bits",
 			floats: [][]float64{
 				{1},
 				{2},
 			},
 			bitDepth: signal.BitDepth8,
-			expected: []int{1 * (math.MaxInt8 - 1), 2 * (math.MaxInt8 - 1)},
+			expected: []int{1 * math.MaxInt8, 2 * math.MaxInt8},
 		},
 		{
+			name: "16 bits",
 			floats: [][]float64{
 				{1},
 				{2},
 			},
 			bitDepth: signal.BitDepth16,
-			expected: []int{1 * (math.MaxInt16 - 1), 2 * (math.MaxInt16 - 1)},
+			expected: []int{1 * math.MaxInt16, 2 * math.MaxInt16},
 		},
 		{
+			name: "32 bits",
 			floats: [][]float64{
 				{1},
 				{2},
 			},
 			bitDepth: signal.BitDepth32,
-			expected: []int{1 * (math.MaxInt32 - 1), 2 * (math.MaxInt32 - 1)},
+			expected: []int{1 * math.MaxInt32, 2 * math.MaxInt32},
 		},
 		{
+			name: "24 bits",
 			floats: [][]float64{
 				{1},
 				{2},
 			},
 			bitDepth: signal.BitDepth24,
-			expected: []int{1 * (1<<23 - 2), 2 * (1<<23 - 2)},
+			expected: []int{1 * (1<<23 - 1), 2 * (1<<23 - 1)},
 		},
 		{
+			name:     "Nil",
 			floats:   nil,
 			expected: nil,
 		},
 		{
+			name:     "0 channels",
 			floats:   [][]float64{},
 			expected: nil,
 		},
 		{
+			name: "Empty channels",
 			floats: [][]float64{
 				{},
 				{},
@@ -173,6 +208,7 @@ func TestFloat64AsInterInt(t *testing.T) {
 			expected: []int{},
 		},
 		{
+			name: "5 channels",
 			floats: [][]float64{
 				{1},
 				{2},
@@ -182,14 +218,25 @@ func TestFloat64AsInterInt(t *testing.T) {
 			},
 			expected: []int{1, 2, 3, 4, 5},
 		},
+		{
+			name: "Unsigned",
+			floats: [][]float64{
+				{-1},
+				{0},
+				{1},
+			},
+			bitDepth: signal.BitDepth8,
+			unsigned: true,
+			expected: []int{0, math.MaxInt8, math.MaxInt8 * 2},
+		},
 	}
 
 	for _, test := range tests {
 		floats := signal.Float64(test.floats)
-		ints := floats.AsInterInt(test.bitDepth)
-		assert.Equal(t, len(test.expected), len(ints))
+		ints := floats.AsInterInt(test.bitDepth, test.unsigned)
+		assert.Equal(t, len(test.expected), len(ints), "Test: %v Bit depth: %v", test.name, test.bitDepth)
 		for i := range test.expected {
-			assert.Equal(t, test.expected[i], ints[i])
+			assert.Equal(t, test.expected[i], ints[i], "Test: %v Bit depth: %v", test.name, test.bitDepth)
 		}
 	}
 }
