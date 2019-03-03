@@ -37,41 +37,13 @@ type InterInt struct {
 // BitDepth contains values required for int-to-float and backward conversion.
 type BitDepth uint
 
-// divider is used when int to float conversion is done.
-func (bitDepth BitDepth) divider() float64 {
-	switch bitDepth {
-	case BitDepth8:
-		return math.MaxInt8
-	case BitDepth16:
-		return math.MaxInt16
-	case BitDepth24:
-		return 1<<23 - 1
-	case BitDepth32:
-		return math.MaxInt32
-	default:
+// resolution returns a half resolution for a passed bit depth.
+// example: bit depth of 8 bits has resolution of (2^8)/2 -1 ie 127.
+func resolution(bitDepth BitDepth) int {
+	if bitDepth == 0 {
 		return 1
 	}
-}
-
-// shit is needed to do a signed to unsigned conversion.
-func (bitDepth BitDepth) shift() int {
-	return int(bitDepth.divider())
-}
-
-// multiplier is used when float to int conversion is done.
-func (bitDepth BitDepth) multiplier() float64 {
-	switch bitDepth {
-	case BitDepth8:
-		return math.MaxInt8
-	case BitDepth16:
-		return math.MaxInt16
-	case BitDepth24:
-		return 1<<23 - 1
-	case BitDepth32:
-		return math.MaxInt32
-	default:
-		return 1
-	}
+	return 1<<(bitDepth-1) - 1
 }
 
 // DurationOf returns time duration of passed samples for this sample rate.
@@ -87,13 +59,14 @@ func (ints InterInt) AsFloat64() Float64 {
 	floats := make([][]float64, ints.NumChannels)
 	bufSize := int(math.Ceil(float64(len(ints.Data)) / float64(ints.NumChannels)))
 
+	// get resolution of bit depth
+	res := resolution(ints.BitDepth)
 	// determine the divider for bit depth conversion
-	divider := ints.BitDepth.divider()
-
+	divider := float64(res)
 	// determine the shift for signed-unsigned conversion
 	shift := 0
 	if ints.Unsigned {
-		shift = ints.BitDepth.shift()
+		shift = res
 	}
 
 	for i := range floats {
@@ -115,13 +88,14 @@ func (floats Float64) AsInterInt(bitDepth BitDepth, unsigned bool) []int {
 		return nil
 	}
 
+	// get resolution of bit depth
+	res := resolution(bitDepth)
 	// determine the multiplier for bit depth conversion
-	multiplier := bitDepth.multiplier()
-
+	multiplier := float64(res)
 	// determine the shift for signed-unsigned conversion
 	shift := 0
 	if unsigned {
-		shift = bitDepth.shift()
+		shift = res
 	}
 
 	ints := make([]int, len(floats[0])*numChannels)
