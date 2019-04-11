@@ -5,6 +5,7 @@
 package signal
 
 import (
+	"fmt"
 	"math"
 	"time"
 )
@@ -170,4 +171,8 @@ func (floats Float64) Slice(start int, len int) Float64 {
 		result[i] = append(result[i], floats[i][start:end]...)
 	}
 	return result
+}
+
+func (b BitDepth) String() string {
+	return fmt.Sprintf("%d bits", b)
 }
