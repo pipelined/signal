@@ -307,9 +307,9 @@ func TestFloat64(t *testing.T) {
 	assert.Equal(t, 4096, s.Size())
 }
 
-func TestDuration(t *testing.T) {
-	var tests = []struct {
-		sampleRate int
+func TestDurationOf(t *testing.T) {
+	var cases = []struct {
+		sampleRate signal.SampleRate
 		samples    int64
 		expected   time.Duration
 	}{
@@ -326,11 +326,38 @@ func TestDuration(t *testing.T) {
 		{
 			sampleRate: 44100,
 			samples:    50,
-			expected:   1133786 * time.Nanosecond,
+			expected:   1133787 * time.Nanosecond,
 		},
 	}
-	for _, c := range tests {
-		assert.Equal(t, c.expected, signal.DurationOf(c.sampleRate, c.samples))
+	for _, c := range cases {
+		assert.Equal(t, c.expected, c.sampleRate.DurationOf(c.samples))
+	}
+}
+
+func TestSamplesIn(t *testing.T) {
+	var cases = []struct {
+		sampleRate signal.SampleRate
+		duration   time.Duration
+		expected   int64
+	}{
+		{
+			sampleRate: 44100,
+			duration:   1 * time.Second,
+			expected:   44100,
+		},
+		{
+			sampleRate: 44100,
+			duration:   500 * time.Millisecond,
+			expected:   22050,
+		},
+		{
+			sampleRate: 44100,
+			duration:   1133787 * time.Nanosecond,
+			expected:   50,
+		},
+	}
+	for _, c := range cases {
+		assert.Equal(t, c.expected, c.sampleRate.SamplesIn(c.duration))
 	}
 }
 
