@@ -1,7 +1,4 @@
-// Package signal provides an API to manipulate digital signals. It allows to:
-// 	- convert interleaved data to non-interleaved
-//	- convert bit depth for int signals
-//	- convert int signal to float
+// Package signal provides functionality for manipulate digital signals and its attributes.
 package signal
 
 import (
@@ -10,11 +7,8 @@ import (
 	"time"
 )
 
-// Float64 is a non-interleaved float64 signal.
-type Float64 [][]float64
-
-// Int is a non-interleaved int signal.
-type Int [][]int
+// BitDepth is the number of bits of information in each sample.
+type BitDepth uint
 
 const (
 	// BitDepth8 is 8 bit depth.
@@ -27,6 +21,29 @@ const (
 	BitDepth32 = BitDepth(32)
 )
 
+func (b BitDepth) String() string {
+	return fmt.Sprintf("%d-bit", b)
+}
+
+// SampleRate is the number of samples obtained in one second.
+type SampleRate uint
+
+// DurationOf returns time duration of samples at this sample rate.
+func (rate SampleRate) DurationOf(samples int64) time.Duration {
+	return time.Duration(math.Round(float64(time.Second) / float64(rate) * float64(samples)))
+}
+
+// SamplesIn returns number of samples for time duration at this sample rate.
+func (rate SampleRate) SamplesIn(d time.Duration) int64 {
+	return int64(math.Round(float64(rate) / float64(time.Second) * float64(d)))
+}
+
+// Float64 is a non-interleaved float64 signal.
+type Float64 [][]float64
+
+// Int is a non-interleaved int signal.
+type Int [][]int
+
 // InterInt is an interleaved int signal.
 type InterInt struct {
 	Data        []int
@@ -35,9 +52,6 @@ type InterInt struct {
 	Unsigned bool
 }
 
-// BitDepth contains values required for int-to-float and backward conversion.
-type BitDepth uint
-
 // resolution returns a half resolution for a passed bit depth.
 // example: bit depth of 8 bits has resolution of (2^8)/2 -1 ie 127.
 func resolution(bitDepth BitDepth) int {
@@ -45,11 +59,6 @@ func resolution(bitDepth BitDepth) int {
 		return 1
 	}
 	return 1<<(bitDepth-1) - 1
-}
-
-// DurationOf returns time duration of passed samples for this sample rate.
-func DurationOf(sampleRate int, samples int64) time.Duration {
-	return time.Duration(float64(samples) / float64(sampleRate) * float64(time.Second))
 }
 
 // AsFloat64 converts interleaved int signal to float64.
@@ -171,8 +180,4 @@ func (floats Float64) Slice(start int, len int) Float64 {
 		result[i] = append(result[i], floats[i][start:end]...)
 	}
 	return result
-}
-
-func (b BitDepth) String() string {
-	return fmt.Sprintf("%d bits", b)
 }
