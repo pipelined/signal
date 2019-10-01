@@ -29,13 +29,13 @@ func (b BitDepth) String() string {
 type SampleRate uint
 
 // DurationOf returns time duration of samples at this sample rate.
-func (rate SampleRate) DurationOf(samples int64) time.Duration {
+func (rate SampleRate) DurationOf(samples int) time.Duration {
 	return time.Duration(math.Round(float64(time.Second) / float64(rate) * float64(samples)))
 }
 
 // SamplesIn returns number of samples for time duration at this sample rate.
-func (rate SampleRate) SamplesIn(d time.Duration) int64 {
-	return int64(math.Round(float64(rate) / float64(time.Second) * float64(d)))
+func (rate SampleRate) SamplesIn(d time.Duration) int {
+	return int(math.Round(float64(rate) / float64(time.Second) * float64(d)))
 }
 
 // Float64 is a non-interleaved float64 signal.

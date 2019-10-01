@@ -310,7 +310,7 @@ func TestFloat64(t *testing.T) {
 func TestDurationOf(t *testing.T) {
 	var cases = []struct {
 		sampleRate signal.SampleRate
-		samples    int64
+		samples    int
 		expected   time.Duration
 	}{
 		{
@@ -338,7 +338,7 @@ func TestSamplesIn(t *testing.T) {
 	var cases = []struct {
 		sampleRate signal.SampleRate
 		duration   time.Duration
-		expected   int64
+		expected   int
 	}{
 		{
 			sampleRate: 44100,
