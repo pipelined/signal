@@ -119,16 +119,10 @@ func (floats Float64) AsInterInt(bitDepth BitDepth, unsigned bool) []int {
 }
 
 // Float64Buffer returns an Float64 buffer of specified dimentions.
-// Optional value could be provided to mock signal.
-func Float64Buffer(numChannels, bufferSize int, value float64) Float64 {
+func Float64Buffer(numChannels, bufferSize int) Float64 {
 	result := make([][]float64, numChannels)
 	for i := range result {
 		result[i] = make([]float64, bufferSize)
-		if value != 0 {
-			for j := range result[i] {
-				result[i][j] = value
-			}
-		}
 	}
 	return result
 }
