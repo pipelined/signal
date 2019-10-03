@@ -303,7 +303,7 @@ func TestFloat64(t *testing.T) {
 	s2[0] = make([]float64, 1024)
 	s = s.Append(s2)
 	assert.Equal(t, 2048, s.Size())
-	s = s.Append(signal.Float64Buffer(1, 2048, 0))
+	s = s.Append(signal.Float64Buffer(1, 2048))
 	assert.Equal(t, 4096, s.Size())
 }
 
@@ -371,13 +371,12 @@ func TestMock(t *testing.T) {
 		{
 			numChannels: 1,
 			size:        2,
-			value:       0.5,
-			expected:    [][]float64{{0.5, 0.5}},
+			expected:    [][]float64{{0, 0}},
 		},
 	}
 
 	for _, test := range tests {
-		result := signal.Float64Buffer(test.numChannels, test.size, test.value)
+		result := signal.Float64Buffer(test.numChannels, test.size)
 
 		assert.Equal(t, test.numChannels, result.NumChannels())
 		assert.Equal(t, test.size, result.Size())
