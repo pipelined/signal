@@ -293,9 +293,9 @@ func TestFloat64AsInterInt(t *testing.T) {
 	for _, test := range tests {
 		floats := signal.Float64(test.floats)
 		ints := floats.AsInterInt(test.bitDepth, test.unsigned)
-		assert.Equal(t, len(test.expected), len(ints), "Test: %v Bit depth: %v", test.name, test.bitDepth)
+		assert.Equal(t, len(test.expected), ints.Size(), "Test: %v Bit depth: %v", test.name, test.bitDepth)
 		for i := range test.expected {
-			assert.Equal(t, test.expected[i], ints[i], "Test: %v Bit depth: %v", test.name, test.bitDepth)
+			assert.Equal(t, test.expected[i], ints.Data[i], "Test: %v Bit depth: %v", test.name, test.bitDepth)
 		}
 	}
 }

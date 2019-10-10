@@ -123,6 +123,8 @@ func (floats Float64) AsInterInt(bitDepth BitDepth, unsigned bool) InterInt {
 	return ints
 }
 
+// CopyToInterInt buffer the values of Float64 buffer.
+// If number of channels is not equal, function will panic.
 func (floats Float64) CopyToInterInt(ints InterInt) {
 	if floats.NumChannels() != ints.NumChannels {
 		panic(fmt.Errorf("unexpected number of channels in destination buffer: expected %v got %v", floats.NumChannels(), ints.NumChannels))
