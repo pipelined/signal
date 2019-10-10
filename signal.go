@@ -61,61 +61,87 @@ func resolution(bitDepth BitDepth) int {
 	return 1<<(bitDepth-1) - 1
 }
 
-// AsFloat64 converts interleaved int signal to float64.
+// Size of non-interleaved data.
+func (ints InterInt) Size() int {
+	return int(math.Ceil(float64(len(ints.Data)) / float64(ints.NumChannels)))
+}
+
+// AsFloat64 allocates new Float64 buffer of the same
+// size and copies signal values there.
 func (ints InterInt) AsFloat64() Float64 {
 	if ints.Data == nil || ints.NumChannels == 0 {
 		return nil
 	}
 	floats := make([][]float64, ints.NumChannels)
-	bufSize := int(math.Ceil(float64(len(ints.Data)) / float64(ints.NumChannels)))
 
-	// get resolution of bit depth
+	for i := range floats {
+		floats[i] = make([]float64, ints.Size())
+	}
+	ints.CopyToFloat64(floats)
+	return floats
+}
+
+// CopyToFloat64 buffer the values of InterInt buffer.
+// If number of channels is not equal, function will panic.
+func (ints InterInt) CopyToFloat64(floats Float64) {
+	if ints.NumChannels != floats.NumChannels() {
+		panic(fmt.Errorf("unexpected number of channels in destination buffer: expected %v got %v", ints.NumChannels, floats.NumChannels()))
+	}
+	// get resolution of bit depth.
 	res := resolution(ints.BitDepth)
-	// determine the divider for bit depth conversion
+	// determine the divider for bit depth conversion.
 	divider := float64(res)
-	// determine the shift for signed-unsigned conversion
+	// determine the shift for signed-unsigned conversion.
 	shift := 0
 	if ints.Unsigned {
 		shift = res
 	}
 
 	for i := range floats {
-		floats[i] = make([]float64, bufSize)
-		pos := 0
-		for j := i; j < len(ints.Data); j = j + ints.NumChannels {
-			floats[i][pos] = float64(ints.Data[j]-shift) / divider
-			pos++
+		for pos, j := i, 0; pos < len(ints.Data) && j < len(floats[i]); pos, j = pos+ints.NumChannels, j+1 {
+			floats[i][j] = float64(ints.Data[pos]-shift) / divider
 		}
 	}
-	return floats
 }
 
 // AsInterInt converts float64 signal to interleaved int.
 // If unsigned is true, then all values are shifted and result will be in unsigned range.
-func (floats Float64) AsInterInt(bitDepth BitDepth, unsigned bool) []int {
-	var numChannels int
-	if numChannels = len(floats); numChannels == 0 {
-		return nil
+func (floats Float64) AsInterInt(bitDepth BitDepth, unsigned bool) InterInt {
+	numChannels := floats.NumChannels()
+	if numChannels == 0 {
+		return InterInt{}
 	}
 
+	ints := InterInt{
+		Data:        make([]int, len(floats[0])*numChannels),
+		NumChannels: numChannels,
+		BitDepth:    bitDepth,
+		Unsigned:    unsigned,
+	}
+
+	floats.CopyToInterInt(ints)
+	return ints
+}
+
+func (floats Float64) CopyToInterInt(ints InterInt) {
+	if floats.NumChannels() != ints.NumChannels {
+		panic(fmt.Errorf("unexpected number of channels in destination buffer: expected %v got %v", floats.NumChannels(), ints.NumChannels))
+	}
 	// get resolution of bit depth
-	res := resolution(bitDepth)
+	res := resolution(ints.BitDepth)
 	// determine the multiplier for bit depth conversion
 	multiplier := float64(res)
 	// determine the shift for signed-unsigned conversion
 	shift := 0
-	if unsigned {
+	if ints.Unsigned {
 		shift = res
 	}
 
-	ints := make([]int, len(floats[0])*numChannels)
-
 	for j := range floats {
 		for i := range floats[j] {
-			ints[i*numChannels+j] = int(floats[j][i]*multiplier) + shift
+			ints.Data[i*ints.NumChannels+j] = int(floats[j][i]*multiplier) + shift
 		}
 	}
-	return ints
 }
 
 // Float64Buffer returns an Float64 buffer of specified dimentions.
