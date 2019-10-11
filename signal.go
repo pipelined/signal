@@ -139,8 +139,9 @@ func (floats Float64) CopyToInterInt(ints InterInt) {
 		shift = res
 	}
 
+	size := ints.Size()
 	for j := range floats {
-		for i := range floats[j] {
+		for i := 0; i < len(floats[j]) && i < size; i++ {
 			ints.Data[i*ints.NumChannels+j] = int(floats[j][i]*multiplier) + shift
 		}
 	}
@@ -155,12 +156,12 @@ func Float64Buffer(numChannels, bufferSize int) Float64 {
 	return result
 }
 
-// NumChannels returns number of channels in this sample slice
+// NumChannels returns number of channels in this sample slice.
 func (floats Float64) NumChannels() int {
 	return len(floats)
 }
 
-// Size returns number of samples in single block in this sample slice
+// Size returns number of samples in single block in this sample slice.
 func (floats Float64) Size() int {
 	if floats.NumChannels() == 0 {
 		return 0
@@ -168,8 +169,8 @@ func (floats Float64) Size() int {
 	return len(floats[0])
 }
 
-// Append buffers set to existing one one
-// new buffer is returned if b is nil
+// Append buffers to existing one.
+// New buffer is returned if b is nil.
 func (floats Float64) Append(source Float64) Float64 {
 	if floats == nil {
 		floats = make([][]float64, source.NumChannels())

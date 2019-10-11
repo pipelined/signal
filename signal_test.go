@@ -138,6 +138,13 @@ func TestInterIntCopyToFloat64(t *testing.T) {
 	}{
 		{
 			ints: signal.InterInt{
+				NumChannels: 1,
+			},
+			floats:   [][]float64{{0}},
+			expected: [][]float64{{0}},
+		},
+		{
+			ints: signal.InterInt{
 				Data:        []int{1, 2, 3, 4},
 				NumChannels: 2,
 			},
@@ -191,7 +198,7 @@ func TestInterIntCopyToFloat64(t *testing.T) {
 func TestFloat64AsInterInt(t *testing.T) {
 	tests := []struct {
 		name     string
-		floats   [][]float64
+		floats   signal.Float64
 		bitDepth signal.BitDepth
 		expected []int
 		unsigned bool
@@ -291,11 +298,93 @@ func TestFloat64AsInterInt(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		floats := signal.Float64(test.floats)
-		ints := floats.AsInterInt(test.bitDepth, test.unsigned)
-		assert.Equal(t, len(test.expected), ints.Size(), "Test: %v Bit depth: %v", test.name, test.bitDepth)
+		ints := test.floats.AsInterInt(test.bitDepth, test.unsigned)
+		assert.Equal(t, len(test.expected), ints.Size()*ints.NumChannels, "Test: %v Bit depth: %v", test.name, test.bitDepth)
 		for i := range test.expected {
 			assert.Equal(t, test.expected[i], ints.Data[i], "Test: %v Bit depth: %v", test.name, test.bitDepth)
+		}
+	}
+}
+
+func TestFloat64CopyToInterInt(t *testing.T) {
+	tests := []struct {
+		floats   signal.Float64
+		ints     signal.InterInt
+		expected []int
+		panics   bool
+	}{
+		{
+			floats: [][]float64{},
+			ints: signal.InterInt{
+				Data: []int{0},
+			},
+			expected: []int{0},
+		},
+		{
+			floats: [][]float64{{1, 1}},
+			ints: signal.InterInt{
+				NumChannels: 1,
+				Data:        []int{0},
+			},
+			expected: []int{1},
+		},
+		{
+			floats: [][]float64{{1, 1}},
+			ints: signal.InterInt{
+				NumChannels: 1,
+				Data:        []int{0, 0, 0},
+			},
+			expected: []int{1, 1, 0},
+		},
+		{
+			floats: [][]float64{{1, 1}},
+			ints: signal.InterInt{
+				NumChannels: 1,
+				Data:        []int{0, 0, 0},
+			},
+			expected: []int{1, 1, 0},
+		},
+		{
+			floats: [][]float64{{1, 1}, {2, 2}},
+			ints: signal.InterInt{
+				NumChannels: 2,
+				Data:        []int{0, 0, 0, 0},
+			},
+			expected: []int{1, 2, 1, 2},
+		},
+		{
+			floats: [][]float64{},
+			ints: signal.InterInt{
+				NumChannels: 1,
+			},
+			panics: true,
+		},
+		{
+			floats: [][]float64{{}},
+			ints:   signal.InterInt{},
+			panics: true,
+		},
+		{
+			floats: [][]float64{{1, 1}, {2, 2}},
+			ints: signal.InterInt{
+				NumChannels: 2,
+				Data:        []int{0, 0, 0},
+			},
+			panics: true,
+		},
+	}
+
+	for _, test := range tests {
+		if test.panics {
+			assert.Panics(t, func() {
+				test.floats.CopyToInterInt(test.ints)
+			})
+		} else {
+			test.floats.CopyToInterInt(test.ints)
+			assert.Equal(t, len(test.expected), len(test.ints.Data))
+			for i := range test.ints.Data {
+				assert.Equal(t, test.expected[i], test.ints.Data[i])
+			}
 		}
 	}
 }
