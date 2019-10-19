@@ -129,10 +129,76 @@ func TestInterIntsAsFloat64(t *testing.T) {
 	}
 }
 
+func TestInterIntCopyToFloat64(t *testing.T) {
+	tests := []struct {
+		ints     signal.InterInt
+		floats   signal.Float64
+		expected signal.Float64
+		panics   bool
+	}{
+		{
+			ints: signal.InterInt{
+				NumChannels: 1,
+			},
+			floats:   [][]float64{{0}},
+			expected: [][]float64{{0}},
+		},
+		{
+			ints: signal.InterInt{
+				Data:        []int{1, 2, 3, 4},
+				NumChannels: 2,
+			},
+			floats:   [][]float64{{0, 0}, {0, 0}},
+			expected: [][]float64{{1, 3}, {2, 4}},
+		},
+		{
+			ints: signal.InterInt{
+				Data:        []int{1, 2, 3, 0},
+				NumChannels: 2,
+			},
+			floats:   [][]float64{{0, 0}, {0, 0}},
+			expected: [][]float64{{1, 3}, {2, 0}},
+		},
+		{
+			ints: signal.InterInt{
+				Data:        []int{1, 2, 3, 4},
+				NumChannels: 2,
+			},
+			floats: [][]float64{{0, 0}},
+			panics: true,
+		},
+		{
+			ints: signal.InterInt{
+				Data:        []int{1, 2, 3, 4},
+				NumChannels: 1,
+			},
+			floats: [][]float64{{0, 0}, {0, 0}},
+			panics: true,
+		},
+	}
+
+	for _, test := range tests {
+		if test.panics {
+			assert.Panics(t, func() {
+				test.ints.CopyToFloat64(test.floats)
+			})
+		} else {
+			test.ints.CopyToFloat64(test.floats)
+			assert.Equal(t, len(test.expected), len(test.floats))
+			for i := range test.expected {
+				assert.Equal(t, len(test.expected[i]), len(test.floats[i]))
+				for j := range test.expected[i] {
+					assert.Equal(t, test.expected[i][j], test.floats[i][j])
+				}
+			}
+		}
+	}
+}
+
 func TestFloat64AsInterInt(t *testing.T) {
 	tests := []struct {
 		name     string
-		floats   [][]float64
+		floats   signal.Float64
 		bitDepth signal.BitDepth
 		expected []int
 		unsigned bool
@@ -232,11 +298,93 @@ func TestFloat64AsInterInt(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		floats := signal.Float64(test.floats)
-		ints := floats.AsInterInt(test.bitDepth, test.unsigned)
-		assert.Equal(t, len(test.expected), len(ints), "Test: %v Bit depth: %v", test.name, test.bitDepth)
+		ints := test.floats.AsInterInt(test.bitDepth, test.unsigned)
+		assert.Equal(t, len(test.expected), ints.Size()*ints.NumChannels, "Test: %v Bit depth: %v", test.name, test.bitDepth)
 		for i := range test.expected {
-			assert.Equal(t, test.expected[i], ints[i], "Test: %v Bit depth: %v", test.name, test.bitDepth)
+			assert.Equal(t, test.expected[i], ints.Data[i], "Test: %v Bit depth: %v", test.name, test.bitDepth)
+		}
+	}
+}
+
+func TestFloat64CopyToInterInt(t *testing.T) {
+	tests := []struct {
+		floats   signal.Float64
+		ints     signal.InterInt
+		expected []int
+		panics   bool
+	}{
+		{
+			floats: [][]float64{},
+			ints: signal.InterInt{
+				Data: []int{0},
+			},
+			expected: []int{0},
+		},
+		{
+			floats: [][]float64{{1, 1}},
+			ints: signal.InterInt{
+				NumChannels: 1,
+				Data:        []int{0},
+			},
+			expected: []int{1},
+		},
+		{
+			floats: [][]float64{{1, 1}},
+			ints: signal.InterInt{
+				NumChannels: 1,
+				Data:        []int{0, 0, 0},
+			},
+			expected: []int{1, 1, 0},
+		},
+		{
+			floats: [][]float64{{1, 1}},
+			ints: signal.InterInt{
+				NumChannels: 1,
+				Data:        []int{0, 0, 0},
+			},
+			expected: []int{1, 1, 0},
+		},
+		{
+			floats: [][]float64{{1, 1}, {2, 2}},
+			ints: signal.InterInt{
+				NumChannels: 2,
+				Data:        []int{0, 0, 0, 0},
+			},
+			expected: []int{1, 2, 1, 2},
+		},
+		{
+			floats: [][]float64{},
+			ints: signal.InterInt{
+				NumChannels: 1,
+			},
+			panics: true,
+		},
+		{
+			floats: [][]float64{{}},
+			ints:   signal.InterInt{},
+			panics: true,
+		},
+		{
+			floats: [][]float64{{1, 1}, {2, 2}},
+			ints: signal.InterInt{
+				NumChannels: 2,
+				Data:        []int{0, 0, 0},
+			},
+			panics: true,
+		},
+	}
+
+	for _, test := range tests {
+		if test.panics {
+			assert.Panics(t, func() {
+				test.floats.CopyToInterInt(test.ints)
+			})
+		} else {
+			test.floats.CopyToInterInt(test.ints)
+			assert.Equal(t, len(test.expected), len(test.ints.Data))
+			for i := range test.ints.Data {
+				assert.Equal(t, test.expected[i], test.ints.Data[i])
+			}
 		}
 	}
 }
@@ -361,7 +509,7 @@ func TestSamplesIn(t *testing.T) {
 	}
 }
 
-func TestMock(t *testing.T) {
+func TestFloat64Buffer(t *testing.T) {
 	tests := []struct {
 		numChannels int
 		size        int
@@ -382,6 +530,46 @@ func TestMock(t *testing.T) {
 		assert.Equal(t, test.size, result.Size())
 		for i := 0; i < len(result); i++ {
 			assert.Equal(t, test.size, len(result[i]))
+			for j := 0; j < len(result[i]); j++ {
+				assert.Equal(t, test.expected[i][j], result[i][j])
+			}
+		}
+	}
+}
+
+func TestFloat64Sum(t *testing.T) {
+	tests := []struct {
+		buffer   signal.Float64
+		addition signal.Float64
+		expected signal.Float64
+	}{
+		{
+			buffer:   [][]float64{{1, 1}},
+			expected: [][]float64{{1, 1}},
+		},
+		{
+			buffer:   nil,
+			addition: [][]float64{{1, 1}},
+			expected: nil,
+		},
+		{
+			buffer:   [][]float64{{1}, {1}},
+			addition: [][]float64{{2, 2}},
+			expected: [][]float64{{3}, {1}},
+		},
+		{
+			buffer:   [][]float64{{1, 1}, {1, 1}},
+			addition: [][]float64{{2}},
+			expected: [][]float64{{3, 1}, {1, 1}},
+		},
+	}
+
+	for _, test := range tests {
+		result := test.buffer.Sum(test.addition)
+
+		assert.Equal(t, test.expected.NumChannels(), result.NumChannels())
+		assert.Equal(t, test.expected.Size(), result.Size())
+		for i := 0; i < len(result); i++ {
 			for j := 0; j < len(result[i]); j++ {
 				assert.Equal(t, test.expected[i][j], result[i][j])
 			}
