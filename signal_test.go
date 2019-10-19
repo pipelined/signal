@@ -509,7 +509,7 @@ func TestSamplesIn(t *testing.T) {
 	}
 }
 
-func TestMock(t *testing.T) {
+func TestFloat64Buffer(t *testing.T) {
 	tests := []struct {
 		numChannels int
 		size        int
@@ -530,6 +530,46 @@ func TestMock(t *testing.T) {
 		assert.Equal(t, test.size, result.Size())
 		for i := 0; i < len(result); i++ {
 			assert.Equal(t, test.size, len(result[i]))
+			for j := 0; j < len(result[i]); j++ {
+				assert.Equal(t, test.expected[i][j], result[i][j])
+			}
+		}
+	}
+}
+
+func TestFloat64Sum(t *testing.T) {
+	tests := []struct {
+		buffer   signal.Float64
+		addition signal.Float64
+		expected signal.Float64
+	}{
+		{
+			buffer:   [][]float64{{1, 1}},
+			expected: [][]float64{{1, 1}},
+		},
+		{
+			buffer:   nil,
+			addition: [][]float64{{1, 1}},
+			expected: nil,
+		},
+		{
+			buffer:   [][]float64{{1}, {1}},
+			addition: [][]float64{{2, 2}},
+			expected: [][]float64{{3}, {1}},
+		},
+		{
+			buffer:   [][]float64{{1, 1}, {1, 1}},
+			addition: [][]float64{{2}},
+			expected: [][]float64{{3, 1}, {1, 1}},
+		},
+	}
+
+	for _, test := range tests {
+		result := test.buffer.Sum(test.addition)
+
+		assert.Equal(t, test.expected.NumChannels(), result.NumChannels())
+		assert.Equal(t, test.expected.Size(), result.Size())
+		for i := 0; i < len(result); i++ {
 			for j := 0; j < len(result[i]); j++ {
 				assert.Equal(t, test.expected[i][j], result[i][j])
 			}
