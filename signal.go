@@ -210,7 +210,7 @@ func (floats Float64) Slice(start, len int) Float64 {
 // The lesser dimensions are used.
 func (floats Float64) Sum(b Float64) Float64 {
 	if floats == nil {
-		return b
+		return nil
 	}
 
 	for i := 0; i < len(floats) && i < len(b); i++ {
