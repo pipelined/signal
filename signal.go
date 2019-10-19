@@ -104,8 +104,10 @@ func (ints InterInt) CopyToFloat64(floats Float64) {
 	}
 }
 
-// AsInterInt converts float64 signal to interleaved int.
-// If unsigned is true, then all values are shifted and result will be in unsigned range.
+// AsInterInt allocates new interleaved int buffer of
+// the same size and copies signal values there.
+// If unsigned is true, then all values are shifted
+// and result will be in unsigned range.
 func (floats Float64) AsInterInt(bitDepth BitDepth, unsigned bool) InterInt {
 	numChannels := floats.NumChannels()
 	if numChannels == 0 {
@@ -184,13 +186,12 @@ func (floats Float64) Append(source Float64) Float64 {
 	return floats
 }
 
-// Slice creates a new copy of buffer from start position with defined legth
-// if buffer doesn't have enough samples - shorten block is returned
-//
-// if start >= buffer size, nil is returned
-// if start + len >= buffer size, len is decreased till the end of slice
-// if start < 0, nil is returned
-func (floats Float64) Slice(start int, len int) Float64 {
+// Slice creates a new buffer that refers to floats data from start
+// position with defined legth. Shorten block is returned if buffer
+// doesn't have enough samples. If start is less than 0 or more than
+// buffer size, nil is returned. If len goes beyond the buffer size,
+// it's truncated up to length of the buffer.
+func (floats Float64) Slice(start, len int) Float64 {
 	if floats == nil || start >= floats.Size() || start < 0 {
 		return nil
 	}
@@ -200,7 +201,22 @@ func (floats Float64) Slice(start int, len int) Float64 {
 		if end > floats.Size() {
 			end = floats.Size()
 		}
-		result[i] = append(result[i], floats[i][start:end]...)
+		result[i] = floats[i][start:end]
 	}
 	return result
+}
+
+// Sum adds values from one buffer to another.
+// The lesser dimensions are used.
+func (floats Float64) Sum(b Float64) Float64 {
+	if floats == nil {
+		return b
+	}
+
+	for i := 0; i < len(floats) && i < len(b); i++ {
+		for j := 0; j < len(floats[i]) && j < len(b[i]); j++ {
+			floats[i][j] += b[i][j]
+		}
+	}
+	return floats
 }
