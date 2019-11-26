@@ -5,8 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pipelined/signal"
 	"github.com/stretchr/testify/assert"
+
+	"pipelined.dev/signal"
 )
 
 func TestInterIntsAsFloat64(t *testing.T) {

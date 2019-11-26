@@ -1,4 +1,4 @@
-module github.com/pipelined/signal
+module pipelined.dev/signal
 
 require github.com/stretchr/testify v1.3.0
 
