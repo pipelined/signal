@@ -107,17 +107,7 @@ func TestInterIntsAsFloat64(t *testing.T) {
 			BitDepth:    test.bitDepth,
 			Unsigned:    test.unsigned,
 		}
-		result := ints.AsFloat64()
-		if len(test.expected) != len(result) {
-			t.Fatalf("%v invalid length: %v expeced %v", name, len(result), len(test.expected))
-		}
-		for i := range test.expected {
-			for j, val := range test.expected[i] {
-				if val != result[i][j] {
-					t.Fatalf("%v invalid value: %v expeced %v", name, val, result[i][j])
-				}
-			}
-		}
+		assertFloat64Buffers(t, name, ints.AsFloat64(), test.expected)
 	}
 }
 
@@ -125,19 +115,7 @@ func TestInterIntCopyToFloat64(t *testing.T) {
 	testPositive := func(ints signal.InterInt, floats, expected signal.Float64) func(*testing.T) {
 		return func(t *testing.T) {
 			ints.CopyToFloat64(floats)
-			if len(expected) != len(floats) {
-				t.Fatalf("Invalid num channels: %v expeced %v", len(floats), len(expected))
-			}
-			for i := range expected {
-				if len(expected[i]) != len(floats[i]) {
-					t.Fatalf("Invalid buffer size: %v expeced %v", len(floats[i]), len(expected[i]))
-				}
-				for j := range expected[i] {
-					if expected[i][j] != floats[i][j] {
-						t.Fatalf("Invalid value: %v expeced %v", floats[i][j], expected[i][j])
-					}
-				}
-			}
+			assertFloat64Buffers(t, t.Name(), floats, expected)
 		}
 	}
 	testPanic := func(ints signal.InterInt, floats signal.Float64) func(*testing.T) {
@@ -282,14 +260,7 @@ func TestFloat64AsInterInt(t *testing.T) {
 
 	for name, test := range tests {
 		ints := test.floats.AsInterInt(test.bitDepth, test.unsigned)
-		if len(test.expected) != ints.Size()*ints.NumChannels {
-			t.Fatalf("%v invalid buffer size: %v expected: %v", name, len(test.expected), ints.Size()*ints.NumChannels)
-		}
-		for i := range test.expected {
-			if test.expected[i] != ints.Data[i] {
-				t.Fatalf("%v invalid value: %v expected: %v", name, ints.Data[i], test.expected[i])
-			}
-		}
+		assertIntBuffers(t, name, ints.Data, test.expected)
 	}
 }
 
@@ -297,14 +268,7 @@ func TestFloat64CopyToInterInt(t *testing.T) {
 	testPositive := func(floats signal.Float64, ints signal.InterInt, expected []int) func(*testing.T) {
 		return func(t *testing.T) {
 			floats.CopyToInterInt(ints)
-			if len(expected) != len(ints.Data) {
-				t.Fatalf("Invalid num channels: %v expeced %v", len(floats), len(expected))
-			}
-			for i := range ints.Data {
-				if expected[i] != ints.Data[i] {
-					t.Fatalf("Invalid value: %v expeced %v", ints.Data[i], expected[i])
-				}
-			}
+			assertIntBuffers(t, t.Name(), ints.Data, expected)
 		}
 	}
 	testPanic := func(floats signal.Float64, ints signal.InterInt) func(*testing.T) {
@@ -415,21 +379,7 @@ func TestSliceFloat64(t *testing.T) {
 	}
 
 	for name, test := range sliceTests {
-		result := test.in.Slice(test.start, test.len)
-		if test.expected.Size() != result.Size() {
-			t.Fatalf("%v invalid buffer size: %v expected: %v", name, result.Size(), test.expected.Size())
-		}
-
-		if test.expected.NumChannels() != result.NumChannels() {
-			t.Fatalf("%v invalid numb channels: %v expected: %v", name, result.NumChannels(), test.expected.NumChannels())
-		}
-		for i := range test.expected {
-			for j := 0; j < len(test.expected[i]); j++ {
-				if test.expected[i][j] != result[i][j] {
-					t.Fatalf("%v invalid value: %v expected: %v", name, result[i][j], test.expected[i][j])
-				}
-			}
-		}
+		assertFloat64Buffers(t, name, test.in.Slice(test.start, test.len), test.expected)
 	}
 }
 
@@ -548,16 +498,8 @@ func TestFloat64Buffer(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		result := signal.Float64Buffer(test.numChannels, test.size)
-		if test.expected.NumChannels() != result.NumChannels() {
-			t.Fatalf("Invalid num channels: %v expeced %v", result.NumChannels(), test.expected.NumChannels())
-		}
-		for i := range test.expected {
-			if len(test.expected[i]) != len(result[i]) {
-				t.Fatalf("Invalid buffer size: %v expeced %v", len(result[i]), len(test.expected[i]))
-			}
-		}
+	for name, test := range tests {
+		assertFloat64Buffers(t, name, signal.Float64Buffer(test.numChannels, test.size), test.expected)
 	}
 }
 
@@ -594,18 +536,32 @@ func TestFloat64Sum(t *testing.T) {
 	}
 
 	for name, test := range tests {
-		result := test.buffer.Sum(test.addition)
-		if test.expected.NumChannels() != result.NumChannels() {
-			t.Fatalf("%v: invalid num channels: %v expeced %v", name, result.NumChannels(), test.expected.NumChannels())
+		assertFloat64Buffers(t, name, test.buffer.Sum(test.addition), test.expected)
+	}
+}
+
+func assertIntBuffers(t *testing.T, name string, result, expected []int) {
+	if len(expected) != len(result) {
+		t.Fatalf("%v: invalid buffer size: %v expected: %v", name, len(expected), len(result))
+	}
+	for i := range expected {
+		if expected[i] != result[i] {
+			t.Fatalf("%v: invalid value: %v expected: %v", name, result[i], expected[i])
 		}
-		for i := range test.expected {
-			if len(test.expected[i]) != len(result[i]) {
-				t.Fatalf("%v: invalid buffer size: %v expeced %v", name, len(result[i]), len(test.expected[i]))
-			}
-			for j := range test.expected[i] {
-				if test.expected[i][j] != result[i][j] {
-					t.Fatalf("%v: invalid value: %v expeced %v", name, result[i][j], test.expected[i][j])
-				}
+	}
+}
+
+func assertFloat64Buffers(t *testing.T, name string, result, expected signal.Float64) {
+	if expected.NumChannels() != result.NumChannels() {
+		t.Fatalf("%v: invalid num channels: %v expeced %v", name, result.NumChannels(), expected.NumChannels())
+	}
+	for i := range expected {
+		if len(expected[i]) != len(result[i]) {
+			t.Fatalf("%v: invalid buffer size: %v expeced %v", name, len(result[i]), len(expected[i]))
+		}
+		for j := range expected[i] {
+			if expected[i][j] != result[i][j] {
+				t.Fatalf("%v: invalid value: %v expeced %v", name, result[i][j], expected[i][j])
 			}
 		}
 	}
