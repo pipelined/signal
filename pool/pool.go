@@ -1,3 +1,4 @@
+// Package pool provides allocation pool for float64 signal buffers.
 package pool
 
 import (
