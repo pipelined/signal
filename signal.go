@@ -180,7 +180,7 @@ func (floats Float64) Append(source Float64) Float64 {
 			floats[i] = make([]float64, 0, source.Size())
 		}
 	}
-	for i := range source {
+	for i := range floats {
 		floats[i] = append(floats[i], source[i]...)
 	}
 	return floats
