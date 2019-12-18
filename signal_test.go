@@ -290,7 +290,8 @@ func TestFloat64CopyToInterInt(t *testing.T) {
 		[]int{0},
 	))
 	t.Run("truncate floats", testPositive(
-		[][]float64{{1, 1}},
+		[][]float64{
+			{1, 1}},
 		signal.InterInt{
 			NumChannels: 1,
 			Data:        []int{0},
@@ -298,7 +299,8 @@ func TestFloat64CopyToInterInt(t *testing.T) {
 		[]int{1},
 	))
 	t.Run("pad floats", testPositive(
-		[][]float64{{1, 1}},
+		[][]float64{
+			{1, 1}},
 		signal.InterInt{
 			NumChannels: 1,
 			Data:        []int{0, 0, 0},
@@ -306,7 +308,9 @@ func TestFloat64CopyToInterInt(t *testing.T) {
 		[]int{1, 1, 0},
 	))
 	t.Run("two channels", testPositive(
-		[][]float64{{1, 1}, {2, 2}},
+		[][]float64{
+			{1, 1},
+			{2, 2}},
 		signal.InterInt{
 			NumChannels: 2,
 			Data:        []int{0, 0, 0, 0},
@@ -347,31 +351,46 @@ func TestSliceFloat64(t *testing.T) {
 		expected signal.Float64
 	}{
 		"slice start": {
-			in:       signal.Float64([][]float64{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
-			start:    0,
-			len:      2,
-			expected: signal.Float64([][]float64{{0, 1}, {0, 1}}),
+			in: signal.Float64([][]float64{
+				{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+				{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
+			start: 0,
+			len:   2,
+			expected: signal.Float64([][]float64{
+				{0, 1},
+				{0, 1}}),
 		},
 		"slice middle": {
-			in:       signal.Float64([][]float64{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
-			start:    5,
-			len:      2,
-			expected: signal.Float64([][]float64{{5, 6}, {5, 6}}),
+			in: signal.Float64([][]float64{
+				{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+				{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
+			start: 5,
+			len:   2,
+			expected: signal.Float64([][]float64{
+				{5, 6},
+				{5, 6}}),
 		},
 		"slice end padded": {
-			in:       signal.Float64([][]float64{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
-			start:    7,
-			len:      4,
-			expected: signal.Float64([][]float64{{7, 8, 9}, {7, 8, 9}}),
+			in: signal.Float64([][]float64{
+				{0, 1, 2, 3, 4, 5, 6, 7, 8, 9},
+				{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
+			start: 7,
+			len:   4,
+			expected: signal.Float64([][]float64{
+				{7, 8, 9},
+				{7, 8, 9}}),
 		},
 		"slice last": {
-			in:       signal.Float64([][]float64{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
-			start:    9,
-			len:      1,
-			expected: signal.Float64([][]float64{{9}}),
+			in: signal.Float64([][]float64{
+				{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
+			start: 9,
+			len:   1,
+			expected: signal.Float64([][]float64{
+				{9}}),
 		},
 		"slice after": {
-			in:       signal.Float64([][]float64{{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
+			in: signal.Float64([][]float64{
+				{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}}),
 			start:    10,
 			len:      1,
 			expected: nil,
@@ -385,32 +404,36 @@ func TestSliceFloat64(t *testing.T) {
 
 func TestFloat64Append(t *testing.T) {
 	tests := map[string]struct {
-		slice        signal.Float64
-		expectedSize int
+		buffer   signal.Float64
+		addition signal.Float64
+		expected signal.Float64
 	}{
 		"slice of slices": {
-			[][]float64{make([]float64, 1024)},
-			1024,
+			addition: [][]float64{
+				make([]float64, 1024),
+			},
+			expected: [][]float64{
+				make([]float64, 1024),
+			},
 		},
 		"single chan buffer": {
-			signal.Float64Buffer(1, 2048),
-			2048,
+			buffer: [][]float64{
+				make([]float64, 0),
+			},
+			addition: signal.Float64Buffer(1, 1024),
+			expected: signal.Float64Buffer(1, 1024),
 		},
 		"multiple chan buffer": {
-			signal.Float64Buffer(2, 4096),
-			4096,
+			buffer: [][]float64{
+				make([]float64, 0),
+			},
+			addition: signal.Float64Buffer(2, 1024),
+			expected: signal.Float64Buffer(1, 1024),
 		},
 	}
 
 	for name, test := range tests {
-		s := signal.Float64([][]float64{make([]float64, 0)})
-		s = s.Append(test.slice)
-		if s.NumChannels() != 1 {
-			t.Fatalf("%v invalid num channels: %v expected: 1", name, s.NumChannels())
-		}
-		if s.Size() != test.expectedSize {
-			t.Fatalf("%v invalid buffer size: %v expected: %v", name, s.Size(), test.expectedSize)
-		}
+		assertFloat64Buffers(t, name, test.buffer.Append(test.addition), test.expected)
 	}
 }
 
@@ -484,12 +507,17 @@ func TestFloat64Buffer(t *testing.T) {
 		"one channel": {
 			numChannels: 1,
 			size:        2,
-			expected:    [][]float64{{0, 0}},
+			expected: [][]float64{
+				{0, 0},
+			},
 		},
 		"two channels": {
 			numChannels: 2,
 			size:        2,
-			expected:    [][]float64{{0, 0}, {0, 0}},
+			expected: [][]float64{
+				{0, 0},
+				{0, 0},
+			},
 		},
 		"zero channels": {
 			numChannels: 0,
@@ -510,28 +538,45 @@ func TestFloat64Sum(t *testing.T) {
 		expected signal.Float64
 	}{
 		"add nil": {
-			buffer:   [][]float64{{1, 1}},
-			expected: [][]float64{{1, 1}},
+			buffer: [][]float64{
+				{1, 1}},
+			expected: [][]float64{
+				{1, 1}},
 		},
 		"add to nil": {
-			buffer:   nil,
-			addition: [][]float64{{1, 1}},
+			buffer: nil,
+			addition: [][]float64{
+				{1, 1}},
 			expected: nil,
 		},
 		"add same": {
-			buffer:   [][]float64{{1}, {1}},
-			addition: [][]float64{{2, 2}},
-			expected: [][]float64{{3}, {1}},
+			buffer: [][]float64{
+				{1},
+				{1}},
+			addition: [][]float64{
+				{2, 2}},
+			expected: [][]float64{
+				{3},
+				{1}},
 		},
 		"add smaller": {
-			buffer:   [][]float64{{1, 1}, {1, 1}},
-			addition: [][]float64{{2}},
-			expected: [][]float64{{3, 1}, {1, 1}},
+			buffer: [][]float64{
+				{1, 1},
+				{1, 1}},
+			addition: [][]float64{
+				{2}},
+			expected: [][]float64{
+				{3, 1},
+				{1, 1}},
 		},
 		"add to smaller": {
-			buffer:   [][]float64{{2}},
-			addition: [][]float64{{1, 1}, {1, 1}},
-			expected: [][]float64{{3}},
+			buffer: [][]float64{
+				{2}},
+			addition: [][]float64{
+				{1, 1},
+				{1, 1}},
+			expected: [][]float64{
+				{3}},
 		},
 	}
 
@@ -555,9 +600,13 @@ func assertFloat64Buffers(t *testing.T, name string, result, expected signal.Flo
 	if expected.NumChannels() != result.NumChannels() {
 		t.Fatalf("%v: invalid num channels: %v expeced %v", name, result.NumChannels(), expected.NumChannels())
 	}
+	if expected.Size() != result.Size() {
+		t.Fatalf("%v: invalid buffer size: %v expeced %v", name, result.Size(), expected.Size())
+	}
+
 	for i := range expected {
 		if len(expected[i]) != len(result[i]) {
-			t.Fatalf("%v: invalid buffer size: %v expeced %v", name, len(result[i]), len(expected[i]))
+			t.Fatalf("%v: invalid channel %d size: %v expeced %v", name, i, len(result[i]), len(expected[i]))
 		}
 		for j := range expected[i] {
 			if expected[i][j] != result[i][j] {
