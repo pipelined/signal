@@ -11,18 +11,32 @@ import (
 type BitDepth uint
 
 const (
+	// BitDepth4 is 4 bit depth.
+	BitDepth4 BitDepth = 1 << (iota + 2)
 	// BitDepth8 is 8 bit depth.
-	BitDepth8 = BitDepth(8)
+	BitDepth8
 	// BitDepth16 is 16 bit depth.
-	BitDepth16 = BitDepth(16)
-	// BitDepth24 is 32 bit depth.
-	BitDepth24 = BitDepth(24)
+	BitDepth16
 	// BitDepth32 is 32 bit depth.
-	BitDepth32 = BitDepth(32)
+	BitDepth32
+	// BitDepth64 is 64 bit depth.
+	BitDepth64
+	// BitDepth24 is 24 bit depth.
+	BitDepth24 BitDepth = 24
+
+	MaxBitDepth BitDepth = 64
 )
 
+var resolutions [64]uint64
+
+func init() {
+	for i := 0; i < len(resolutions); i++ {
+		resolutions[i] = 1 << i
+	}
+}
+
 func (b BitDepth) String() string {
-	return fmt.Sprintf("%d-bit", b)
+	return fmt.Sprintf("%d bits", b)
 }
 
 // SampleRate is the number of samples obtained in one second.
@@ -52,13 +66,13 @@ type InterInt struct {
 	Unsigned bool
 }
 
-// resolution returns a half resolution for a passed bit depth.
-// example: bit depth of 8 bits has resolution of (2^8)/2 -1 ie 127.
-func resolution(bitDepth BitDepth) int {
-	if bitDepth == 0 {
+// SignedResolution returns the signed bit resolution for a bit depth.
+func (b BitDepth) SignedResolution() uint64 {
+	if b == 0 {
 		return 1
 	}
-	return 1<<(bitDepth-1) - 1
+	b--
+	return resolutions[b]
 }
 
 // Size of non-interleaved data.
@@ -88,18 +102,18 @@ func (ints InterInt) CopyToFloat64(floats Float64) {
 		panic(fmt.Errorf("unexpected number of channels in destination buffer: expected %v got %v", ints.NumChannels, floats.NumChannels()))
 	}
 	// get resolution of bit depth.
-	res := resolution(ints.BitDepth)
+	res := ints.BitDepth.SignedResolution()
 	// determine the divider for bit depth conversion.
 	divider := float64(res)
 	// determine the shift for signed-unsigned conversion.
-	shift := 0
+	var shift uint64
 	if ints.Unsigned {
-		shift = res
+		shift = res - 1
 	}
 
 	for i := range floats {
 		for pos, j := i, 0; pos < len(ints.Data) && j < len(floats[i]); pos, j = pos+ints.NumChannels, j+1 {
-			floats[i][j] = float64(ints.Data[pos]-shift) / divider
+			floats[i][j] = float64(ints.Data[pos]-int(shift)) / divider
 		}
 	}
 }
@@ -132,19 +146,19 @@ func (floats Float64) CopyToInterInt(ints InterInt) {
 		panic(fmt.Errorf("unexpected number of channels in destination buffer: expected %v got %v", floats.NumChannels(), ints.NumChannels))
 	}
 	// get resolution of bit depth
-	res := resolution(ints.BitDepth)
+	res := ints.BitDepth.SignedResolution()
 	// determine the multiplier for bit depth conversion
 	multiplier := float64(res)
 	// determine the shift for signed-unsigned conversion
-	shift := 0
+	var shift uint64
 	if ints.Unsigned {
-		shift = res
+		shift = res - 1
 	}
 
 	size := ints.Size()
 	for j := range floats {
 		for i := 0; i < len(floats[j]) && i < size; i++ {
-			ints.Data[i*ints.NumChannels+j] = int(floats[j][i]*multiplier) + shift
+			ints.Data[i*ints.NumChannels+j] = int(floats[j][i]*multiplier) + int(shift)
 		}
 	}
 }
