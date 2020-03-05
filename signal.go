@@ -23,7 +23,7 @@ const (
 	BitDepth64
 	// BitDepth24 is 24 bit depth.
 	BitDepth24 BitDepth = 24
-
+	// MaxBitDepth is a maximum supported bit depth.
 	MaxBitDepth BitDepth = 64
 )
 
