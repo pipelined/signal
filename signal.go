@@ -30,13 +30,22 @@ const (
 var resolutions [64]uint64
 
 func init() {
-	for i := 0; i < len(resolutions); i++ {
+	for i := range resolutions {
 		resolutions[i] = 1 << i
 	}
 }
 
 func (b BitDepth) String() string {
 	return fmt.Sprintf("%d bits", b)
+}
+
+// SignedResolution returns the signed bit resolution for a bit depth.
+func (b BitDepth) SignedResolution() uint64 {
+	if b == 0 {
+		return 1
+	}
+	b--
+	return resolutions[b]
 }
 
 // SampleRate is the number of samples obtained in one second.
@@ -64,15 +73,6 @@ type InterInt struct {
 	NumChannels int
 	BitDepth
 	Unsigned bool
-}
-
-// SignedResolution returns the signed bit resolution for a bit depth.
-func (b BitDepth) SignedResolution() uint64 {
-	if b == 0 {
-		return 1
-	}
-	b--
-	return resolutions[b]
 }
 
 // Size of non-interleaved data.
