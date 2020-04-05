@@ -102,15 +102,41 @@ func (b BitDepth) MaxValue(signed bool) uint64 {
 }
 
 // MinValue returns the minimum value for a bit depth.
-func (b BitDepth) MinValue(signed bool) int64 {
-	if !signed {
-		return 0
-	}
+func (b BitDepth) MinValue() int64 {
 	if b == 0 {
 		return 1
 	}
 	b--
 	return -int64(resolutions[b])
+}
+
+// UnsignedValue limits the unsigned signal value for a given bit depth.
+func (b BitDepth) UnsignedValue(val uint64) uint64 {
+	var (
+		max = b.MaxValue(true)
+	)
+	switch {
+	case val > max:
+		return max
+	default:
+		return val
+	}
+}
+
+// SignedValue limits the signed signal value for a given bit depth.
+func (b BitDepth) SignedValue(val int64) int64 {
+	var (
+		max = int64(b.MaxValue(true))
+		min = b.MinValue()
+	)
+	switch {
+	case val < min:
+		return min
+	case val > max:
+		return max
+	default:
+		return val
+	}
 }
 
 // SampleRate is the number of samples obtained in one second.

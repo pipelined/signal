@@ -88,20 +88,14 @@ func (f Int64) WriteInt64(ints [][]int64) int {
 	var (
 		length = f.Length()
 		copied = 0
-		max    = int64(f.BitDepth().MaxValue(true))
-		min    = int64(f.BitDepth().MinValue(true))
 	)
 	for channel := range f.buffer {
 		c := 0
 		for pos := length; pos < f.Capacity() && c < len(ints[channel]); pos, c = pos+1, c+1 {
-			switch val := ints[channel][c]; {
-			case val > max:
-				f.buffer[channel][pos] = max
-			case val < min:
-				f.buffer[channel][pos] = min
-			default:
-				f.buffer[channel][pos] = val
-			}
+			f.buffer[channel][pos] = f.BitDepth().SignedValue(ints[channel][c])
+		}
+		if copied < c {
+			copied = c
 		}
 	}
 	f.setLength(length + copied)
@@ -113,20 +107,11 @@ func (f Int64) WriteInt(ints [][]int) int {
 	var (
 		length = f.Length()
 		copied = 0
-		max    = int64(f.BitDepth().MaxValue(true))
-		min    = int64(f.BitDepth().MinValue(true))
 	)
 	for channel := range f.buffer {
 		c := 0
 		for pos := length; pos < f.Capacity() && c < len(ints[channel]); pos, c = pos+1, c+1 {
-			switch val := int64(ints[channel][c]); {
-			case val > max:
-				f.buffer[channel][pos] = max
-			case val < min:
-				f.buffer[channel][pos] = min
-			default:
-				f.buffer[channel][pos] = val
-			}
+			f.buffer[channel][pos] = f.BitDepth().SignedValue(int64(ints[channel][c]))
 		}
 		if copied < c {
 			copied = c

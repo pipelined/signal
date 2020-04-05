@@ -93,22 +93,24 @@ func TestInt64InterleavedAsFloat64(t *testing.T) {
 			Capacity: len(test.expected[0]),
 		}.Float64()
 		expected.WriteFloat64(test.expected)
-		assertEqual(t, result, expected)
+		assertEqual(t, "slices", result, expected)
 	}
 }
 
 func TestWriteInt(t *testing.T) {
-	testInt64 := func(s signal.Int64, expected [][]int64, ints ...[][]int) func(t *testing.T) {
+	testInt64 := func(s signal.Int64, expectedLen int, expected [][]int64, ints ...[][]int) func(t *testing.T) {
 		return func(t *testing.T) {
 			for i := range ints {
 				s.WriteInt(ints[i])
 			}
-			assertEqual(t, s.Data(), expected)
+			assertEqual(t, "length", s.Length(), expectedLen)
+			assertEqual(t, "slices", s.Data(), expected)
 		}
 	}
 
 	t.Run("int64 full buffer", testInt64(
 		signal.Allocator{Capacity: 10, Channels: 2}.Int64(signal.MaxBitDepth),
+		10,
 		[][]int64{
 			{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 			{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
@@ -120,6 +122,7 @@ func TestWriteInt(t *testing.T) {
 	))
 	t.Run("int64 short buffer", testInt64(
 		signal.Allocator{Capacity: 10, Channels: 2}.Int64(signal.MaxBitDepth),
+		3,
 		[][]int64{
 			{1, 2, 3, 0, 0, 0, 0, 0, 0, 0},
 			{11, 12, 13, 0, 0, 0, 0, 0, 0, 0},
@@ -131,6 +134,7 @@ func TestWriteInt(t *testing.T) {
 	))
 	t.Run("int64 multiple short buffers", testInt64(
 		signal.Allocator{Capacity: 10, Channels: 2}.Int64(signal.MaxBitDepth),
+		6,
 		[][]int64{
 			{1, 2, 3, 4, 5, 6, 0, 0, 0, 0},
 			{11, 12, 13, 14, 15, 16, 0, 0, 0, 0},
@@ -146,6 +150,7 @@ func TestWriteInt(t *testing.T) {
 	))
 	t.Run("int64 long buffer", testInt64(
 		signal.Allocator{Capacity: 3, Channels: 2}.Int64(signal.MaxBitDepth),
+		3,
 		[][]int64{
 			{1, 2, 3},
 			{11, 12, 13},
@@ -157,6 +162,7 @@ func TestWriteInt(t *testing.T) {
 	))
 	t.Run("int64 8-bits overflow", testInt64(
 		signal.Allocator{Capacity: 1, Channels: 2}.Int64(signal.BitDepth8),
+		1,
 		[][]int64{
 			{math.MaxInt8},
 			{math.MinInt8},
@@ -168,6 +174,7 @@ func TestWriteInt(t *testing.T) {
 	))
 	t.Run("int64 16-bits overflow", testInt64(
 		signal.Allocator{Capacity: 1, Channels: 2}.Int64(signal.BitDepth16),
+		1,
 		[][]int64{
 			{math.MaxInt16},
 			{math.MinInt16},
@@ -179,9 +186,9 @@ func TestWriteInt(t *testing.T) {
 	))
 }
 
-func assertEqual(t *testing.T, result, expected interface{}) {
+func assertEqual(t *testing.T, name string, result, expected interface{}) {
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("invalid value: \n%+v \nexpected: \n%+v", result, expected)
+		t.Fatalf("\ninvalid %v value: %+v \nexpected: %+v", name, result, expected)
 	}
 }
 
