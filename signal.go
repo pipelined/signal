@@ -2,13 +2,68 @@
 package signal
 
 import (
-	"fmt"
 	"math"
 	"time"
 )
 
+type (
+	// Signal is a buffer that contains a digital representation of a
+	// physical signal that is a sampled and quantized.
+	Signal interface {
+		Capacity() int
+		Channels() int
+		Length() int
+		setLength(int)
+	}
+
+	// Fixed is a digital signal represented with fixed-point values.
+	Fixed interface {
+		Signal
+		BitDepth() BitDepth
+		MaxBitDepth() BitDepth
+	}
+
+	// Signed is a digital signal represented with signed fixed-point values.
+	Signed interface {
+		Fixed
+		Sample(channel, pos int) int64
+		setSample(channel, pos int, value int64)
+	}
+
+	// Unsigned is a digital signal represented with unsigned fixed-point values.
+	Unsigned interface {
+		Fixed
+		Sample(channel, pos int) uint64
+		setSample(channel, pos int, value uint64)
+	}
+
+	// Floating is a digital signal represented with floating-point values.
+	Floating interface {
+		Signal
+		Sample(channel, pos int) float64
+		setSample(channel, pos int, value float64)
+	}
+
+	// Allocator provides allocation of various signal buffers.
+	Allocator struct {
+		Capacity int
+		Channels int
+	}
+)
+
+// types for buffer properties.
+type (
+	bitDepth BitDepth
+	channels int
+	capacity int
+	// length is struct because we need to modify it from embedded context.
+	length struct {
+		value int
+	}
+)
+
 // BitDepth is the number of bits of information in each sample.
-type BitDepth uint
+type BitDepth uint8
 
 const (
 	// BitDepth4 is 4 bit depth.
@@ -24,7 +79,7 @@ const (
 	// BitDepth24 is 24 bit depth.
 	BitDepth24 BitDepth = 24
 	// MaxBitDepth is a maximum supported bit depth.
-	MaxBitDepth BitDepth = 64
+	MaxBitDepth BitDepth = BitDepth64
 )
 
 var resolutions [64]uint64
@@ -35,17 +90,27 @@ func init() {
 	}
 }
 
-func (b BitDepth) String() string {
-	return fmt.Sprintf("%d bits", b)
+// MaxValue returns the maximum value for a bit depth.
+func (b BitDepth) MaxValue(signed bool) uint64 {
+	if signed {
+		if b == 0 {
+			return 1
+		}
+		b--
+	}
+	return resolutions[b] - 1
 }
 
-// SignedResolution returns the signed bit resolution for a bit depth.
-func (b BitDepth) SignedResolution() uint64 {
+// MinValue returns the minimum value for a bit depth.
+func (b BitDepth) MinValue(signed bool) int64 {
+	if !signed {
+		return 0
+	}
 	if b == 0 {
 		return 1
 	}
 	b--
-	return resolutions[b]
+	return -int64(resolutions[b])
 }
 
 // SampleRate is the number of samples obtained in one second.
@@ -61,176 +126,97 @@ func (rate SampleRate) SamplesIn(d time.Duration) int {
 	return int(math.Round(float64(rate) / float64(time.Second) * float64(d)))
 }
 
-// Float64 is a non-interleaved float64 signal.
-type Float64 [][]float64
-
-// Int is a non-interleaved int signal.
-type Int [][]int
-
-// InterInt is an interleaved int signal.
-type InterInt struct {
-	Data        []int
-	NumChannels int
-	BitDepth
-	Unsigned bool
-}
-
-// Size of non-interleaved data.
-func (ints InterInt) Size() int {
-	return int(math.Ceil(float64(len(ints.Data)) / float64(ints.NumChannels)))
-}
-
-// AsFloat64 allocates new Float64 buffer of the same
-// size and copies signal values there.
-func (ints InterInt) AsFloat64() Float64 {
-	if ints.Data == nil || ints.NumChannels == 0 {
-		return nil
+// FloatingAsSigned converts floating-point signal into signed fixed-point.
+func FloatingAsSigned(src Floating, dst Signed) {
+	channels := min(src.Channels(), dst.Channels())
+	if channels == 0 {
+		return
 	}
-	floats := make([][]float64, ints.NumChannels)
-
-	for i := range floats {
-		floats[i] = make([]float64, ints.Size())
+	// cap length to destination capacity.
+	length := min(src.Length(), dst.Capacity())
+	if length == 0 {
+		return
 	}
-	ints.CopyToFloat64(floats)
-	return floats
-}
-
-// CopyToFloat64 buffer the values of InterInt buffer.
-// If number of channels is not equal, function will panic.
-func (ints InterInt) CopyToFloat64(floats Float64) {
-	if ints.NumChannels != floats.NumChannels() {
-		panic(fmt.Errorf("unexpected number of channels in destination buffer: expected %v got %v", ints.NumChannels, floats.NumChannels()))
-	}
-	// get resolution of bit depth.
-	res := ints.BitDepth.SignedResolution()
-	// determine the divider for bit depth conversion.
-	divider := float64(res)
-	// determine the shift for signed-unsigned conversion.
-	var shift uint64
-	if ints.Unsigned {
-		shift = res - 1
-	}
-
-	for i := range floats {
-		for pos, j := i, 0; pos < len(ints.Data) && j < len(floats[i]); pos, j = pos+ints.NumChannels, j+1 {
-			floats[i][j] = float64(ints.Data[pos]-int(shift)) / divider
-		}
-	}
-}
-
-// AsInterInt allocates new interleaved int buffer of
-// the same size and copies signal values there.
-// If unsigned is true, then all values are shifted
-// and result will be in unsigned range.
-func (floats Float64) AsInterInt(bitDepth BitDepth, unsigned bool) InterInt {
-	numChannels := floats.NumChannels()
-	if numChannels == 0 {
-		return InterInt{}
-	}
-
-	ints := InterInt{
-		Data:        make([]int, len(floats[0])*numChannels),
-		NumChannels: numChannels,
-		BitDepth:    bitDepth,
-		Unsigned:    unsigned,
-	}
-
-	floats.CopyToInterInt(ints)
-	return ints
-}
-
-// CopyToInterInt buffer the values of Float64 buffer.
-// If number of channels is not equal, function will panic.
-func (floats Float64) CopyToInterInt(ints InterInt) {
-	if floats.NumChannels() != ints.NumChannels {
-		panic(fmt.Errorf("unexpected number of channels in destination buffer: expected %v got %v", floats.NumChannels(), ints.NumChannels))
-	}
-	// get resolution of bit depth
-	res := ints.BitDepth.SignedResolution()
 	// determine the multiplier for bit depth conversion
-	multiplier := float64(res)
-	// determine the shift for signed-unsigned conversion
-	var shift uint64
-	if ints.Unsigned {
-		shift = res - 1
-	}
+	multiplier := float64(dst.BitDepth().MaxValue(true))
 
-	size := ints.Size()
-	for j := range floats {
-		for i := 0; i < len(floats[j]) && i < size; i++ {
-			ints.Data[i*ints.NumChannels+j] = int(floats[j][i]*multiplier) + int(shift)
+	for channel := 0; channel < channels; channel++ {
+		for pos := 0; pos < length; pos++ {
+			dst.setSample(channel, pos, int64(src.Sample(channel, pos)*multiplier))
 		}
 	}
+	dst.setLength(length)
 }
 
-// Float64Buffer returns an Float64 buffer of specified dimentions.
-func Float64Buffer(numChannels, bufferSize int) Float64 {
-	result := make([][]float64, numChannels)
-	for i := range result {
-		result[i] = make([]float64, bufferSize)
+// SignedAsFloating converts signed fixed-point signal into floating-point.
+func SignedAsFloating(src Signed, dst Floating) {
+	channels := min(src.Channels(), dst.Channels())
+	if channels == 0 {
+		return
 	}
-	return result
-}
-
-// NumChannels returns number of channels in this sample slice.
-func (floats Float64) NumChannels() int {
-	return len(floats)
-}
-
-// Size returns number of samples in single block in this sample slice.
-func (floats Float64) Size() int {
-	if floats.NumChannels() == 0 {
-		return 0
+	// cap length to destination capacity.
+	length := min(src.Length(), dst.Capacity())
+	if length == 0 {
+		return
 	}
-	return len(floats[0])
-}
-
-// Append buffers to existing one.
-// New buffer is returned if b is nil.
-func (floats Float64) Append(source Float64) Float64 {
-	if floats == nil {
-		floats = make([][]float64, source.NumChannels())
-		for i := range floats {
-			floats[i] = make([]float64, 0, source.Size())
+	// determine the divider for bit depth conversion.
+	divider := float64(src.BitDepth().MaxValue(true))
+	for channel := 0; channel < channels; channel++ {
+		for pos := 0; pos < length; pos++ {
+			dst.setSample(channel, pos, float64(src.Sample(channel, pos))/divider)
 		}
 	}
-	for i := range floats {
-		floats[i] = append(floats[i], source[i]...)
-	}
-	return floats
+	dst.setLength(length)
 }
 
-// Slice creates a new buffer that refers to floats data from start
-// position with defined legth. Shorten block is returned if buffer
-// doesn't have enough samples. If start is less than 0 or more than
-// buffer size, nil is returned. If len goes beyond the buffer size,
-// it's truncated up to length of the buffer.
-func (floats Float64) Slice(start, len int) Float64 {
-	if floats == nil || start >= floats.Size() || start < 0 {
-		return nil
-	}
-	end := start + len
-	result := make([][]float64, floats.NumChannels())
-	for i := range floats {
-		if end > floats.Size() {
-			end = floats.Size()
-		}
-		result[i] = floats[i][start:end]
-	}
-	return result
+func (bd bitDepth) BitDepth() BitDepth {
+	return BitDepth(bd)
 }
 
-// Sum adds values from one buffer to another.
-// The lesser dimensions are used.
-func (floats Float64) Sum(b Float64) Float64 {
-	if floats == nil {
-		return nil
-	}
+// Length returns actual signal length in signal channel of the buffer.
+func (l *length) Length() int {
+	return l.value
+}
 
-	for i := 0; i < len(floats) && i < len(b); i++ {
-		for j := 0; j < len(floats[i]) && j < len(b[i]); j++ {
-			floats[i][j] += b[i][j]
-		}
+func (l *length) setLength(val int) {
+	l.value = val
+}
+
+func (c capacity) Capacity() int {
+	return int(c)
+}
+
+// Channels returns number of channels in the buffer.
+func (c channels) Channels() int {
+	return int(c)
+}
+
+func interPos(channels, channel, pos int) int {
+	return channels*pos + channel
+}
+
+func interLen(channels, totalLen int) int {
+	if totalLen%channels > 0 {
+		return totalLen/channels + 1
 	}
-	return floats
+	return totalLen / channels
+}
+
+func min(v1, v2 int) int {
+	if v1 < v2 {
+		return v1
+	}
+	return v2
+}
+
+func mustSameChannels(c1, c2 int) {
+	if c1 != c2 {
+		panic("different number of channels")
+	}
+}
+
+func mustSameBitDepth(s1, s2 Fixed) {
+	if s1.BitDepth() != s2.BitDepth() {
+		panic("different bit depth")
+	}
 }
