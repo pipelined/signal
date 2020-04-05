@@ -3,6 +3,7 @@ package pool_test
 import (
 	"testing"
 
+	"pipelined.dev/signal"
 	"pipelined.dev/signal/pool"
 )
 
@@ -24,11 +25,11 @@ func TestPool(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		p := pool.New(test.numChannels, test.bufferSize)
+		p := pool.New(signal.Allocator{Channels: test.numChannels, Size: test.bufferSize})
 		for i := 0; i < test.allocs; i++ {
 			b := p.Alloc()
-			if test.numChannels != b.NumChannels() {
-				t.Fatalf("Invalid number of channels: %v expected: %v", b.NumChannels(), test.numChannels)
+			if test.numChannels != b.Channels() {
+				t.Fatalf("Invalid number of channels: %v expected: %v", b.Channels(), test.numChannels)
 			}
 			if test.bufferSize != b.Size() {
 				t.Fatalf("Invalid buffer size: %v expected: %v", b.Size(), test.bufferSize)
