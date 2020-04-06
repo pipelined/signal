@@ -22,6 +22,20 @@ func (a Allocator) Float64() Float64 {
 	}
 }
 
+// Sample returns signal value for provided channel and position.
+func (f Float64) Sample(channel, pos int) float64 {
+	return f.buffer[channel][pos]
+}
+
+// Data returns underlying signal buffer.
+func (f Float64) Data() [][]float64 {
+	return f.buffer
+}
+
+func (f Float64) setSample(channel, pos int, value float64) {
+	f.buffer[channel][pos] = value
+}
+
 // WriteFloat64 writes values from provided slice into buffer.
 // Provided slice must have the exactly same number of channels.
 // Length is updated with longest nested slice length.
@@ -41,13 +55,4 @@ func (f Float64) WriteFloat64(floats [][]float64) int {
 func (f Float64) Append(src Float64) Float64 {
 	mustSameChannels(f.Channels(), src.Channels())
 	panic("not implemented")
-}
-
-// Sample returns signal value for provided channel and position.
-func (f Float64) Sample(channel, pos int) float64 {
-	return f.buffer[channel][pos]
-}
-
-func (f Float64) setSample(channel, pos int, value float64) {
-	f.buffer[channel][pos] = value
 }
