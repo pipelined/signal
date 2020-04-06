@@ -8,6 +8,7 @@ type Float64 struct {
 	*length
 }
 
+// Float64 allocates new sequential float64 signal buffer.
 func (a Allocator) Float64() Float64 {
 	buffer := make([][]float64, a.Channels)
 	for i := range buffer {
@@ -21,6 +22,9 @@ func (a Allocator) Float64() Float64 {
 	}
 }
 
+// WriteFloat64 writes values from provided slice into buffer.
+// Provided slice must have the exactly same number of channels.
+// Length is updated with longest nested slice length.
 func (f Float64) WriteFloat64(floats [][]float64) int {
 	mustSameChannels(f.Channels(), len(floats))
 	l := f.Length()
@@ -39,6 +43,7 @@ func (f Float64) Append(src Float64) Float64 {
 	panic("not implemented")
 }
 
+// Sample returns signal value for provided channel and position.
 func (f Float64) Sample(channel, pos int) float64 {
 	return f.buffer[channel][pos]
 }
