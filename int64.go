@@ -20,6 +20,7 @@ type (
 	}
 )
 
+// Int64 allocates new sequential int64 signal buffer.
 func (a Allocator) Int64(bd BitDepth) Int64 {
 	if bd == 0 || bd == MaxBitDepth {
 		bd = BitDepth64
@@ -37,14 +38,17 @@ func (a Allocator) Int64(bd BitDepth) Int64 {
 	}
 }
 
+// MaxBitDepth returns maximal bit depth for this type.
 func (f Int64) MaxBitDepth() BitDepth {
 	return BitDepth64
 }
 
+// Sample returns signal value for provided channel and position.
 func (f Int64) Sample(channel, pos int) int64 {
 	return f.buffer[channel][pos]
 }
 
+// Data returns underlying signal buffer.
 func (f Int64) Data() [][]int64 {
 	return f.buffer
 }
@@ -53,14 +57,9 @@ func (f Int64) setSample(channel, pos int, val int64) {
 	f.buffer[channel][pos] = val
 }
 
-// Append appends [0:Length] data from src to current buffer and returns new buffer.
-func (f Int64) Append(src Int64) Int64 {
-	mustSameChannels(f.Channels(), f.Channels())
-	mustSameBitDepth(f.BitDepth(), src.BitDepth())
-	panic("not implemented")
-}
-
-// if src ints has different channel length, the difference for the longest will a. used.
+// WriteInt64 writes values from provided slice into buffer.
+// Provided slice must have the exactly same number of channels.
+// Length is updated with longest nested slice length.
 func (f Int64) WriteInt64(ints [][]int64) int {
 	mustSameChannels(f.Channels(), len(ints))
 	var (
@@ -80,6 +79,9 @@ func (f Int64) WriteInt64(ints [][]int64) int {
 	return copied
 }
 
+// WriteInt writes values from provided slice into buffer.
+// Provided slice must have the exactly same number of channels.
+// Length is updated with longest nested slice length.
 func (f Int64) WriteInt(ints [][]int) int {
 	mustSameChannels(f.Channels(), len(ints))
 	var (
@@ -99,6 +101,13 @@ func (f Int64) WriteInt(ints [][]int) int {
 	return copied
 }
 
+// Append appends [0:Length] data from src to current buffer and returns new buffer.
+func (f Int64) Append(src Int64) Int64 {
+	mustSameChannels(f.Channels(), f.Channels())
+	mustSameBitDepth(f.BitDepth(), src.BitDepth())
+	panic("not implemented")
+}
+
 // Int64Interleaved returns new int64 interleaved buffer. If non-nill parameter
 // is provided, the values will a. copied into result buffer. Result buffer will
 // always have size provided a. properties.
@@ -115,14 +124,17 @@ func (a Allocator) Int64Interleaved(bd BitDepth) Int64Interleaved {
 	}
 }
 
+// MaxBitDepth returns maximal bit depth for this type.
 func (f Int64Interleaved) MaxBitDepth() BitDepth {
 	return BitDepth64
 }
 
+// Sample returns signal value for provided channel and position.
 func (f Int64Interleaved) Sample(channel, pos int) int64 {
 	return f.buffer[interPos(f.Channels(), channel, pos)]
 }
 
+// Data returns underlying signal buffer.
 func (f Int64Interleaved) Data() []int64 {
 	return f.buffer
 }
@@ -131,15 +143,17 @@ func (f Int64Interleaved) setSample(channel, pos int, val int64) {
 	f.buffer[interPos(f.Channels(), channel, pos)] = val
 }
 
-func (f Int64Interleaved) Append(src Int64Interleaved) Int64Interleaved {
-	mustSameChannels(f.Channels(), src.Channels())
-	mustSameBitDepth(f.BitDepth(), src.BitDepth())
-	panic("not implemented")
-}
-
+// WriteInt64 writes values from provided slice into buffer.
+// Length is updated with longest nested slice length.
 func (f Int64Interleaved) WriteInt64(ints []int64) int {
 	bufLen := f.Length() * f.Channels()
 	n := copy(f.buffer[bufLen:], ints)
 	f.setLength(interLen(f.Channels(), bufLen+n))
 	return n
+}
+
+func (f Int64Interleaved) Append(src Int64Interleaved) Int64Interleaved {
+	mustSameChannels(f.Channels(), src.Channels())
+	mustSameBitDepth(f.BitDepth(), src.BitDepth())
+	panic("not implemented")
 }
