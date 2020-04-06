@@ -241,8 +241,8 @@ func mustSameChannels(c1, c2 int) {
 	}
 }
 
-func mustSameBitDepth(s1, s2 Fixed) {
-	if s1.BitDepth() != s2.BitDepth() {
+func mustSameBitDepth(bd1, bd2 BitDepth) {
+	if bd1 != bd2 {
 		panic("different bit depth")
 	}
 }

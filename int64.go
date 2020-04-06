@@ -72,13 +72,13 @@ func (f Int64Interleaved) Sample(channel, pos int) int64 {
 // Append appends [0:Length] data from src to current buffer and returns new buffer.
 func (f Int64) Append(src Int64) Int64 {
 	mustSameChannels(f.Channels(), f.Channels())
-	mustSameBitDepth(f, src)
+	mustSameBitDepth(f.BitDepth(), src.BitDepth())
 	panic("not implemented")
 }
 
 func (f Int64Interleaved) Append(src Int64Interleaved) Int64Interleaved {
 	mustSameChannels(f.Channels(), src.Channels())
-	mustSameBitDepth(f, src)
+	mustSameBitDepth(f.BitDepth(), src.BitDepth())
 	panic("not implemented")
 }
 
