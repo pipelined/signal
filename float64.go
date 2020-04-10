@@ -52,7 +52,19 @@ func (f Float64) WriteFloat64(floats [][]float64) int {
 	return n
 }
 
+// Append appends data from src buffer to the end of the buffer.
+// The result buffer has capacity and length equal to sum of lengths.
 func (f Float64) Append(src Float64) Float64 {
 	mustSameChannels(f.Channels(), src.Channels())
-	panic("not implemented")
+	l := f.Length() + src.Length()
+	result := make([][]float64, f.Channels())
+	for channel := range result {
+		result[channel] = append(f.buffer[channel][:f.Length()], src.buffer[channel][:src.Length()]...)
+	}
+	return Float64{
+		buffer:   result,
+		capacity: capacity(l),
+		channels: f.channels,
+		length:   &length{value: l},
+	}
 }
