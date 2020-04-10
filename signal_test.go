@@ -186,6 +186,46 @@ func TestWriteInt(t *testing.T) {
 	))
 }
 
+func TestAppend(t *testing.T) {
+	testFloat64 := func(s signal.Float64, expected [][]float64, slices ...[][]float64) func(*testing.T) {
+		return func(t *testing.T) {
+			for _, slice := range slices {
+				src := signal.Allocator{Channels: len(slice), Capacity: len(slice[0])}.Float64()
+				src.WriteFloat64(slice)
+				s = s.Append(src)
+			}
+			assertEqual(t, "slices", s.Data(), expected)
+		}
+	}
+
+	t.Run("single slice", testFloat64(
+		signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
+		[][]float64{
+			{1, 2},
+			{1, 2},
+		},
+		[][]float64{
+			{1, 2},
+			{1, 2},
+		},
+	))
+	t.Run("multiple slices", testFloat64(
+		signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
+		[][]float64{
+			{1, 2, 3, 4},
+			{1, 2, 3, 4},
+		},
+		[][]float64{
+			{1, 2},
+			{1, 2},
+		},
+		[][]float64{
+			{3, 4},
+			{3, 4},
+		},
+	))
+}
+
 func assertEqual(t *testing.T, name string, result, expected interface{}) {
 	if !reflect.DeepEqual(expected, result) {
 		t.Fatalf("\ninvalid %v value: %+v \nexpected: %+v", name, result, expected)
