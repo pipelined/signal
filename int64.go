@@ -84,20 +84,20 @@ func (f Int64) WriteInt64(ints [][]int64) int {
 // Length is updated with longest nested slice length.
 func (f Int64) WriteInt(ints [][]int) int {
 	mustSameChannels(f.Channels(), len(ints))
-	var (
-		length = f.Length()
-		copied = 0
-	)
+	copied := 0
 	for channel := range f.buffer {
 		c := 0
-		for pos := length; pos < f.Capacity() && c < len(ints[channel]); pos, c = pos+1, c+1 {
+		pos := f.Length()
+		for pos < f.Capacity() && c < len(ints[channel]) {
 			f.buffer[channel][pos] = f.BitDepth().SignedValue(int64(ints[channel][c]))
+			pos++
+			c++
 		}
 		if copied < c {
 			copied = c
 		}
 	}
-	f.setLength(length + copied)
+	f.setLength(f.Length() + copied)
 	return copied
 }
 
@@ -144,12 +144,26 @@ func (f Int64Interleaved) setSample(channel, pos int, val int64) {
 }
 
 // WriteInt64 writes values from provided slice into buffer.
-// Length is updated with longest nested slice length.
+// Length is updated with slice length.
 func (f Int64Interleaved) WriteInt64(ints []int64) int {
 	bufLen := f.Length() * f.Channels()
-	n := copy(f.buffer[bufLen:], ints)
-	f.setLength(interLen(f.Channels(), bufLen+n))
-	return n
+	c := copy(f.buffer[bufLen:], ints)
+	f.setLength(interLen(f.Channels(), bufLen+c))
+	return c
+}
+
+// WriteInt writes values from provided slice into buffer.
+// Length is updated with slice length.
+func (f Int64Interleaved) WriteInt(ints []int) int {
+	pos := 0
+	c := 0
+	for pos < f.Capacity() && c < len(ints) {
+		f.buffer[pos] = int64(ints[c])
+		pos++
+		c++
+	}
+	f.setLength(interLen(f.Channels(), f.Length()*f.Channels()+c))
+	return c
 }
 
 func (f Int64Interleaved) Append(src Int64Interleaved) Int64Interleaved {
