@@ -25,14 +25,14 @@ func TestPool(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
-		p := pool.New(signal.Allocator{Channels: test.numChannels, Size: test.bufferSize})
+		p := pool.New(signal.Allocator{Channels: test.numChannels, Capacity: test.bufferSize})
 		for i := 0; i < test.allocs; i++ {
 			b := p.Alloc()
 			if test.numChannels != b.Channels() {
 				t.Fatalf("Invalid number of channels: %v expected: %v", b.Channels(), test.numChannels)
 			}
-			if test.bufferSize != b.Size() {
-				t.Fatalf("Invalid buffer size: %v expected: %v", b.Size(), test.bufferSize)
+			if test.bufferSize != b.Capacity() {
+				t.Fatalf("Invalid buffer size: %v expected: %v", b.Capacity(), test.bufferSize)
 			}
 			p.Free(b)
 		}
