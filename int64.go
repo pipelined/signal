@@ -105,7 +105,18 @@ func (f Int64) WriteInt(ints [][]int) int {
 func (f Int64) Append(src Int64) Int64 {
 	mustSameChannels(f.Channels(), f.Channels())
 	mustSameBitDepth(f.BitDepth(), src.BitDepth())
-	panic("not implemented")
+	l := f.Length() + src.Length()
+	result := make([][]int64, f.Channels())
+	for channel := range result {
+		result[channel] = append(f.buffer[channel][:f.Length()], src.buffer[channel][:src.Length()]...)
+	}
+	return Int64{
+		buffer:   result,
+		capacity: capacity(l),
+		channels: f.channels,
+		length:   &length{value: l},
+		bitDepth: f.bitDepth,
+	}
 }
 
 // Int64Interleaved returns new int64 interleaved buffer. If non-nill parameter
