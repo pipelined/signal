@@ -197,8 +197,17 @@ func TestAppendFloat64(t *testing.T) {
 			assertEqual(t, "slices", s.Data(), expected)
 		}
 	}
+	testPanic := func(s signal.Float64, expected [][]float64, slice [][]float64) func(*testing.T) {
+		return func(t *testing.T) {
+			src := signal.Allocator{Channels: len(slice), Capacity: len(slice[0])}.Float64()
+			src.WriteFloat64(slice)
+			assertPanic(t, func() {
+				s = s.Append(src)
+			})
+		}
+	}
 
-	t.Run("float64 single slice", testOk(
+	t.Run("single slice", testOk(
 		signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
 		[][]float64{
 			{1, 2},
@@ -209,7 +218,7 @@ func TestAppendFloat64(t *testing.T) {
 			{1, 2},
 		},
 	))
-	t.Run("float64 multiple slices", testOk(
+	t.Run("multiple slices", testOk(
 		signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
 		[][]float64{
 			{1, 2, 3, 4},
@@ -222,6 +231,16 @@ func TestAppendFloat64(t *testing.T) {
 		[][]float64{
 			{3, 4},
 			{3, 4},
+		},
+	))
+	t.Run("different channels slice", testPanic(
+		signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
+		[][]float64{
+			{1, 2},
+			{1, 2},
+		},
+		[][]float64{
+			{1, 2},
 		},
 	))
 }
@@ -237,7 +256,7 @@ func TestAppendInt64(t *testing.T) {
 			assertEqual(t, "slices", s.Data(), expected)
 		}
 	}
-	t.Run("int64 single slice", testInt64(
+	t.Run("single slice", testInt64(
 		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
 		[][]int64{
 			{1, 2},
@@ -248,7 +267,7 @@ func TestAppendInt64(t *testing.T) {
 			{1, 2},
 		},
 	))
-	t.Run("int64 multiple slices", testInt64(
+	t.Run("multiple slices", testInt64(
 		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
 		[][]int64{
 			{1, 2, 3, 4},
@@ -269,6 +288,15 @@ func assertEqual(t *testing.T, name string, result, expected interface{}) {
 	if !reflect.DeepEqual(expected, result) {
 		t.Fatalf("\ninvalid %v value: %+v \nexpected: %+v", name, result, expected)
 	}
+}
+
+func assertPanic(t *testing.T, fn func()) {
+	defer func() {
+		if r := recover(); r == nil {
+			t.Fatalf("expected panic")
+		}
+	}()
+	fn()
 }
 
 // func assertFloatingBuffers(t *testing.T, result, expected signal.Floating) {
