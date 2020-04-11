@@ -100,7 +100,7 @@ func TestInt64InterleavedAsFloat64(t *testing.T) {
 func TestWrite(t *testing.T) {
 	type expected struct {
 		length int
-		Int64  [][]int64
+		data   interface{}
 	}
 	testOk := func(writer signal.Signal, data interface{}, ex expected) func(t *testing.T) {
 		return func(t *testing.T) {
@@ -112,7 +112,11 @@ func TestWrite(t *testing.T) {
 				case [][]int64:
 					w.WriteInt64(d)
 				}
-				assertEqual(t, "slices", w.Data(), ex.Int64)
+				assertEqual(t, "slices", w.Data(), ex.data)
+			case signal.Float64:
+				d := data.([][]float64)
+				w.WriteFloat64(d)
+				assertEqual(t, "slices", w.Data(), ex.data)
 			}
 			assertEqual(t, "length", writer.Length(), ex.length)
 		}
@@ -126,7 +130,7 @@ func TestWrite(t *testing.T) {
 		},
 		expected{
 			length: 10,
-			Int64: [][]int64{
+			data: [][]int64{
 				{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 			},
@@ -140,7 +144,7 @@ func TestWrite(t *testing.T) {
 		},
 		expected{
 			length: 3,
-			Int64: [][]int64{
+			data: [][]int64{
 				{1, 2, 3, 0, 0, 0, 0, 0, 0, 0},
 				{11, 12, 13, 0, 0, 0, 0, 0, 0, 0},
 			},
@@ -154,7 +158,7 @@ func TestWrite(t *testing.T) {
 		},
 		expected{
 			length: 3,
-			Int64: [][]int64{
+			data: [][]int64{
 				{1, 2, 3},
 				{11, 12, 13},
 			},
@@ -168,7 +172,7 @@ func TestWrite(t *testing.T) {
 		},
 		expected{
 			length: 1,
-			Int64: [][]int64{
+			data: [][]int64{
 				{math.MaxInt8},
 				{math.MinInt8},
 			},
@@ -182,7 +186,7 @@ func TestWrite(t *testing.T) {
 		},
 		expected{
 			length: 1,
-			Int64: [][]int64{
+			data: [][]int64{
 				{math.MaxInt16},
 				{math.MinInt16},
 			},
@@ -196,7 +200,7 @@ func TestWrite(t *testing.T) {
 		},
 		expected{
 			length: 10,
-			Int64: [][]int64{
+			data: [][]int64{
 				{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 			},
@@ -210,7 +214,7 @@ func TestWrite(t *testing.T) {
 		},
 		expected{
 			length: 3,
-			Int64: [][]int64{
+			data: [][]int64{
 				{1, 2, 3, 0, 0, 0, 0, 0, 0, 0},
 				{11, 12, 13, 0, 0, 0, 0, 0, 0, 0},
 			},
@@ -224,7 +228,7 @@ func TestWrite(t *testing.T) {
 		},
 		expected{
 			length: 3,
-			Int64: [][]int64{
+			data: [][]int64{
 				{1, 2, 3},
 				{11, 12, 13},
 			},
@@ -238,7 +242,7 @@ func TestWrite(t *testing.T) {
 		},
 		expected{
 			length: 1,
-			Int64: [][]int64{
+			data: [][]int64{
 				{math.MaxInt8},
 				{math.MinInt8},
 			},
@@ -252,9 +256,51 @@ func TestWrite(t *testing.T) {
 		},
 		expected{
 			length: 1,
-			Int64: [][]int64{
+			data: [][]int64{
 				{math.MaxInt16},
 				{math.MinInt16},
+			},
+		},
+	))
+	t.Run("float64 full buffer", testOk(
+		signal.Allocator{Capacity: 10, Channels: 2}.Float64(),
+		[][]float64{
+			{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+			{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
+		},
+		expected{
+			length: 10,
+			data: [][]float64{
+				{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
+			},
+		},
+	))
+	t.Run("float64 short buffer", testOk(
+		signal.Allocator{Capacity: 10, Channels: 2}.Float64(),
+		[][]float64{
+			{1, 2, 3},
+			{11, 12, 13},
+		},
+		expected{
+			length: 3,
+			data: [][]float64{
+				{1, 2, 3, 0, 0, 0, 0, 0, 0, 0},
+				{11, 12, 13, 0, 0, 0, 0, 0, 0, 0},
+			},
+		},
+	))
+	t.Run("float64 long buffer", testOk(
+		signal.Allocator{Capacity: 3, Channels: 2}.Float64(),
+		[][]float64{
+			{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+			{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
+		},
+		expected{
+			length: 3,
+			data: [][]float64{
+				{1, 2, 3},
+				{11, 12, 13},
 			},
 		},
 	))
@@ -397,7 +443,7 @@ func TestAppendInt64(t *testing.T) {
 
 func assertEqual(t *testing.T, name string, result, expected interface{}) {
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("%v\ngot: \t%+v \nexpected: \t%+v", name, result, expected)
+		t.Fatalf("%v\ngot: \t%T\t%+v \nexpected: \t%T\t%+v", name, result, result, expected, expected)
 	}
 }
 
