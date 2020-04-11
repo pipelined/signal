@@ -57,48 +57,46 @@ func (f Int64) setSample(channel, pos int, val int64) {
 	f.buffer[channel][pos] = val
 }
 
-// WriteInt64 writes values from provided slice into buffer.
-// Provided slice must have the exactly same number of channels.
-// Length is updated with longest nested slice length.
-func (f Int64) WriteInt64(ints [][]int64) int {
+// WriteInt64 writes values from provided slice into the buffer.
+// If the buffer already contains any data, it will be overwritten.
+// The length of provided slice must be equal to the number of channels,
+// otherwise function will panic. Length is set to the longest
+// nested slice length.
+func (f Int64) WriteInt64(ints [][]int64) {
 	mustSameChannels(f.Channels(), len(ints))
-	var (
-		length = f.Length()
-		copied = 0
-	)
+	var copied int
 	for channel := range f.buffer {
-		c := 0
-		for pos := length; pos < f.Capacity() && c < len(ints[channel]); pos, c = pos+1, c+1 {
-			f.buffer[channel][pos] = f.BitDepth().SignedValue(ints[channel][c])
+		var pos int
+		for pos < f.Capacity() && pos < len(ints[channel]) {
+			f.buffer[channel][pos] = f.BitDepth().SignedValue(ints[channel][pos])
+			pos++
 		}
-		if copied < c {
-			copied = c
+		if copied < pos {
+			copied = pos
 		}
 	}
-	f.setLength(length + copied)
-	return copied
+	f.setLength(copied)
 }
 
-// WriteInt writes values from provided slice into buffer.
-// Provided slice must have the exactly same number of channels.
-// Length is updated with longest nested slice length.
-func (f Int64) WriteInt(ints [][]int) int {
+// WriteInt writes values from provided slice into the buffer.
+// If the buffer already contains any data, it will be overwritten.
+// The length of provided slice must be equal to the number of channels,
+// otherwise function will panic. Length is set to the longest
+// nested slice length.
+func (f Int64) WriteInt(ints [][]int) {
 	mustSameChannels(f.Channels(), len(ints))
-	copied := 0
+	var copied int
 	for channel := range f.buffer {
-		c := 0
-		pos := f.Length()
-		for pos < f.Capacity() && c < len(ints[channel]) {
-			f.buffer[channel][pos] = f.BitDepth().SignedValue(int64(ints[channel][c]))
+		pos := 0
+		for pos < f.Capacity() && pos < len(ints[channel]) {
+			f.buffer[channel][pos] = f.BitDepth().SignedValue(int64(ints[channel][pos]))
 			pos++
-			c++
 		}
-		if copied < c {
-			copied = c
+		if copied < pos {
+			copied = pos
 		}
 	}
-	f.setLength(f.Length() + copied)
-	return copied
+	f.setLength(copied)
 }
 
 // Append appends [0:Length] data from src to current buffer and returns new buffer.
