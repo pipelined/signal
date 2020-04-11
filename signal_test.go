@@ -186,8 +186,8 @@ func TestWriteInt(t *testing.T) {
 	))
 }
 
-func TestAppend(t *testing.T) {
-	testFloat64 := func(s signal.Float64, expected [][]float64, slices ...[][]float64) func(*testing.T) {
+func TestAppendFloat64(t *testing.T) {
+	testOk := func(s signal.Float64, expected [][]float64, slices ...[][]float64) func(*testing.T) {
 		return func(t *testing.T) {
 			for _, slice := range slices {
 				src := signal.Allocator{Channels: len(slice), Capacity: len(slice[0])}.Float64()
@@ -198,7 +198,7 @@ func TestAppend(t *testing.T) {
 		}
 	}
 
-	t.Run("single slice", testFloat64(
+	t.Run("float64 single slice", testOk(
 		signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
 		[][]float64{
 			{1, 2},
@@ -209,7 +209,7 @@ func TestAppend(t *testing.T) {
 			{1, 2},
 		},
 	))
-	t.Run("multiple slices", testFloat64(
+	t.Run("float64 multiple slices", testOk(
 		signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
 		[][]float64{
 			{1, 2, 3, 4},
@@ -220,6 +220,45 @@ func TestAppend(t *testing.T) {
 			{1, 2},
 		},
 		[][]float64{
+			{3, 4},
+			{3, 4},
+		},
+	))
+}
+
+func TestAppendInt64(t *testing.T) {
+	testInt64 := func(s signal.Int64, expected [][]int64, slices ...[][]int64) func(*testing.T) {
+		return func(t *testing.T) {
+			for _, slice := range slices {
+				src := signal.Allocator{Channels: len(slice), Capacity: len(slice[0])}.Int64(signal.MaxBitDepth)
+				src.WriteInt64(slice)
+				s = s.Append(src)
+			}
+			assertEqual(t, "slices", s.Data(), expected)
+		}
+	}
+	t.Run("int64 single slice", testInt64(
+		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
+		[][]int64{
+			{1, 2},
+			{1, 2},
+		},
+		[][]int64{
+			{1, 2},
+			{1, 2},
+		},
+	))
+	t.Run("int64 multiple slices", testInt64(
+		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
+		[][]int64{
+			{1, 2, 3, 4},
+			{1, 2, 3, 4},
+		},
+		[][]int64{
+			{1, 2},
+			{1, 2},
+		},
+		[][]int64{
 			{3, 4},
 			{3, 4},
 		},
