@@ -97,104 +97,107 @@ func TestInt64InterleavedAsFloat64(t *testing.T) {
 	}
 }
 
-func TestWriteInt(t *testing.T) {
-	testInt64 := func(s signal.Int64, expectedLen int, expected [][]int64, ints ...[][]int) func(t *testing.T) {
+func TestWriteInt64(t *testing.T) {
+	type expected struct {
+		length int
+		data   [][]int64
+	}
+	testOk := func(s signal.Int64, ints [][]int, ex expected) func(t *testing.T) {
 		return func(t *testing.T) {
-			for i := range ints {
-				s.WriteInt(ints[i])
-			}
-			assertEqual(t, "length", s.Length(), expectedLen)
-			assertEqual(t, "slices", s.Data(), expected)
+			s.WriteInt(ints)
+			assertEqual(t, "length", s.Length(), ex.length)
+			assertEqual(t, "slices", s.Data(), ex.data)
 		}
 	}
 
-	t.Run("int64 full buffer", testInt64(
+	t.Run("full buffer", testOk(
 		signal.Allocator{Capacity: 10, Channels: 2}.Int64(signal.MaxBitDepth),
-		10,
-		[][]int64{
-			{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
-			{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
-		},
 		[][]int{
 			{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 			{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 		},
-	))
-	t.Run("int64 short buffer", testInt64(
-		signal.Allocator{Capacity: 10, Channels: 2}.Int64(signal.MaxBitDepth),
-		3,
-		[][]int64{
-			{1, 2, 3, 0, 0, 0, 0, 0, 0, 0},
-			{11, 12, 13, 0, 0, 0, 0, 0, 0, 0},
+		expected{
+			length: 10,
+			data: [][]int64{
+				{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
+			},
 		},
+	))
+	t.Run("short buffer", testOk(
+		signal.Allocator{Capacity: 10, Channels: 2}.Int64(signal.MaxBitDepth),
 		[][]int{
 			{1, 2, 3},
 			{11, 12, 13},
 		},
-	))
-	t.Run("int64 multiple short buffers", testInt64(
-		signal.Allocator{Capacity: 10, Channels: 2}.Int64(signal.MaxBitDepth),
-		6,
-		[][]int64{
-			{1, 2, 3, 4, 5, 6, 0, 0, 0, 0},
-			{11, 12, 13, 14, 15, 16, 0, 0, 0, 0},
-		},
-		[][]int{
-			{1, 2, 3},
-			{11, 12, 13},
-		},
-		[][]int{
-			{4, 5, 6},
-			{14, 15, 16},
+		expected{
+			length: 3,
+			data: [][]int64{
+				{1, 2, 3, 0, 0, 0, 0, 0, 0, 0},
+				{11, 12, 13, 0, 0, 0, 0, 0, 0, 0},
+			},
 		},
 	))
-	t.Run("int64 long buffer", testInt64(
+	t.Run("long buffer", testOk(
 		signal.Allocator{Capacity: 3, Channels: 2}.Int64(signal.MaxBitDepth),
-		3,
-		[][]int64{
-			{1, 2, 3},
-			{11, 12, 13},
-		},
 		[][]int{
 			{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 			{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 		},
-	))
-	t.Run("int64 8-bits overflow", testInt64(
-		signal.Allocator{Capacity: 1, Channels: 2}.Int64(signal.BitDepth8),
-		1,
-		[][]int64{
-			{math.MaxInt8},
-			{math.MinInt8},
+		expected{
+			length: 3,
+			data: [][]int64{
+				{1, 2, 3},
+				{11, 12, 13},
+			},
 		},
+	))
+	t.Run("8-bits overflow", testOk(
+		signal.Allocator{Capacity: 1, Channels: 2}.Int64(signal.BitDepth8),
 		[][]int{
 			{math.MaxInt32},
 			{math.MinInt32},
 		},
-	))
-	t.Run("int64 16-bits overflow", testInt64(
-		signal.Allocator{Capacity: 1, Channels: 2}.Int64(signal.BitDepth16),
-		1,
-		[][]int64{
-			{math.MaxInt16},
-			{math.MinInt16},
+		expected{
+			length: 1,
+			data: [][]int64{
+				{math.MaxInt8},
+				{math.MinInt8},
+			},
 		},
+	))
+	t.Run("16-bits overflow", testOk(
+		signal.Allocator{Capacity: 1, Channels: 2}.Int64(signal.BitDepth16),
 		[][]int{
 			{math.MaxInt64},
 			{math.MinInt64},
+		},
+		expected{
+			length: 1,
+			data: [][]int64{
+				{math.MaxInt16},
+				{math.MinInt16},
+			},
 		},
 	))
 }
 
 func TestAppendFloat64(t *testing.T) {
-	testOk := func(s signal.Float64, expected [][]float64, slices ...[][]float64) func(*testing.T) {
+	type expected struct {
+		length   int
+		capacity int
+		data     [][]float64
+	}
+	testOk := func(s signal.Float64, slices [][][]float64, ex expected) func(*testing.T) {
 		return func(t *testing.T) {
 			for _, slice := range slices {
 				src := signal.Allocator{Channels: len(slice), Capacity: len(slice[0])}.Float64()
 				src.WriteFloat64(slice)
 				s = s.Append(src)
 			}
-			assertEqual(t, "slices", s.Data(), expected)
+			assertEqual(t, "slices", s.Data(), ex.data)
+			assertEqual(t, "length", s.Length(), ex.length)
+			assertEqual(t, "capacity", s.Capacity(), ex.capacity)
 		}
 	}
 	testPanic := func(s signal.Float64, slice [][]float64) func(*testing.T) {
@@ -209,28 +212,39 @@ func TestAppendFloat64(t *testing.T) {
 
 	t.Run("single slice", testOk(
 		signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
-		[][]float64{
-			{1, 2},
-			{1, 2},
+		[][][]float64{
+			{
+				{1, 2},
+				{11, 12},
+			},
 		},
-		[][]float64{
-			{1, 2},
-			{1, 2},
+		expected{
+			length:   2,
+			capacity: 2,
+			data: [][]float64{
+				{1, 2},
+				{11, 12},
+			},
 		},
 	))
 	t.Run("multiple slices", testOk(
 		signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
-		[][]float64{
-			{1, 2, 3, 4},
-			{1, 2, 3, 4},
+		[][][]float64{
+			{
+				{1, 2},
+				{11, 12},
+			}, {
+				{3, 4},
+				{13, 14},
+			},
 		},
-		[][]float64{
-			{1, 2},
-			{1, 2},
-		},
-		[][]float64{
-			{3, 4},
-			{3, 4},
+		expected{
+			length:   4,
+			capacity: 4,
+			data: [][]float64{
+				{1, 2, 3, 4},
+				{11, 12, 13, 14},
+			},
 		},
 	))
 	t.Run("different channels", testPanic(
@@ -305,7 +319,7 @@ func TestAppendInt64(t *testing.T) {
 
 func assertEqual(t *testing.T, name string, result, expected interface{}) {
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("\ninvalid %v value: %+v \nexpected: %+v", name, result, expected)
+		t.Fatalf("%v\ngot: \t%+v \nexpected: \t%+v", name, result, expected)
 	}
 }
 
