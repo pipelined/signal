@@ -125,6 +125,8 @@ func TestWrite(t *testing.T) {
 				d := data.([][]float64)
 				w.WriteFloat64(d)
 				assertEqual(t, "slices", w.Data(), ex.data)
+			default:
+				t.Fatalf("unsupported write type %T", writer)
 			}
 			assertEqual(t, "length", writer.Length(), ex.length)
 		}
@@ -394,34 +396,102 @@ func TestWrite(t *testing.T) {
 	))
 }
 
-func TestAppendFloat64(t *testing.T) {
+func TestAppend(t *testing.T) {
 	type expected struct {
 		length   int
 		capacity int
-		data     [][]float64
+		data     interface{}
 	}
-	testOk := func(s signal.Float64, slices [][][]float64, ex expected) func(*testing.T) {
+	testOk := func(appender signal.Signal, data interface{}, ex expected) func(*testing.T) {
 		return func(t *testing.T) {
-			for _, slice := range slices {
-				src := signal.Allocator{Channels: len(slice), Capacity: len(slice[0])}.Float64()
-				src.WriteFloat64(slice)
-				s = s.Append(src)
+			var result signal.Signal
+			switch a := appender.(type) {
+			case signal.Int64:
+				d := data.([][][]int64)
+				for _, slice := range d {
+					src := signal.Allocator{Channels: len(slice), Capacity: len(slice[0])}.Int64(signal.MaxBitDepth)
+					src.WriteInt64(slice)
+					a = a.Append(src)
+				}
+				assertEqual(t, "slices", a.Data(), ex.data)
+				result = a
+			case signal.Float64:
+				d := data.([][][]float64)
+				for _, slice := range d {
+					src := signal.Allocator{Channels: len(slice), Capacity: len(slice[0])}.Float64()
+					src.WriteFloat64(slice)
+					a = a.Append(src)
+				}
+				assertEqual(t, "slices", a.Data(), ex.data)
+				result = a
+			default:
+				t.Fatalf("unsupported append type %T", appender)
 			}
-			assertEqual(t, "slices", s.Data(), ex.data)
-			assertEqual(t, "length", s.Length(), ex.length)
-			assertEqual(t, "capacity", s.Capacity(), ex.capacity)
+			assertEqual(t, "length", result.Length(), ex.length)
+			assertEqual(t, "capacity", result.Capacity(), ex.capacity)
 		}
 	}
-	testPanic := func(s signal.Float64, slice [][]float64) func(*testing.T) {
+	testPanic := func(appender signal.Signal, data interface{}) func(*testing.T) {
 		return func(t *testing.T) {
-			src := signal.Allocator{Channels: len(slice), Capacity: len(slice[0])}.Float64()
-			src.WriteFloat64(slice)
-			assertPanic(t, func() {
-				s = s.Append(src)
-			})
+			switch a := appender.(type) {
+			case signal.Int64:
+				d := data.([][]int64)
+				src := signal.Allocator{Channels: len(d), Capacity: len(d[0])}.Int64(signal.MaxBitDepth)
+				src.WriteInt64(d)
+				assertPanic(t, func() {
+					a.Append(src)
+				})
+			case signal.Float64:
+				d := data.([][]float64)
+				src := signal.Allocator{Channels: len(d), Capacity: len(d[0])}.Float64()
+				src.WriteFloat64(d)
+				assertPanic(t, func() {
+					a.Append(src)
+				})
+			default:
+				t.Fatalf("unsupported append panic type %T", appender)
+			}
 		}
 	}
 
+	t.Run("int64 single slice", testOk(
+		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
+		[][][]int64{
+			{
+				{1, 2},
+				{1, 2},
+			},
+		},
+		expected{
+			capacity: 2,
+			length:   2,
+			data: [][]int64{
+				{1, 2},
+				{1, 2},
+			},
+		},
+	))
+	t.Run("int64 multiple slices", testOk(
+		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
+		[][][]int64{
+			{
+				{1, 2},
+				{1, 2},
+			},
+			{
+				{3, 4},
+				{3, 4},
+			},
+		},
+		expected{
+			capacity: 4,
+			length:   4,
+			data: [][]int64{
+				{1, 2, 3, 4},
+				{1, 2, 3, 4},
+			},
+		},
+	))
 	t.Run("single slice", testOk(
 		signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
 		[][][]float64{
@@ -460,61 +530,6 @@ func TestAppendFloat64(t *testing.T) {
 		},
 	))
 	t.Run("different channels", testPanic(
-		signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
-		[][]float64{
-			{1, 2},
-		},
-	))
-}
-
-func TestAppendInt64(t *testing.T) {
-	testOk := func(s signal.Int64, expected [][]int64, slices ...[][]int64) func(*testing.T) {
-		return func(t *testing.T) {
-			for _, slice := range slices {
-				src := signal.Allocator{Channels: len(slice), Capacity: len(slice[0])}.Int64(signal.MaxBitDepth)
-				src.WriteInt64(slice)
-				s = s.Append(src)
-			}
-			assertEqual(t, "slices", s.Data(), expected)
-		}
-	}
-	testPanic := func(s signal.Int64, slice [][]int64) func(*testing.T) {
-		return func(t *testing.T) {
-			src := signal.Allocator{Channels: len(slice), Capacity: len(slice[0])}.Int64(signal.MaxBitDepth)
-			src.WriteInt64(slice)
-			assertPanic(t, func() {
-				s = s.Append(src)
-			})
-		}
-	}
-
-	t.Run("single slice", testOk(
-		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
-		[][]int64{
-			{1, 2},
-			{1, 2},
-		},
-		[][]int64{
-			{1, 2},
-			{1, 2},
-		},
-	))
-	t.Run("multiple slices", testOk(
-		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
-		[][]int64{
-			{1, 2, 3, 4},
-			{1, 2, 3, 4},
-		},
-		[][]int64{
-			{1, 2},
-			{1, 2},
-		},
-		[][]int64{
-			{3, 4},
-			{3, 4},
-		},
-	))
-	t.Run("different channels", testPanic(
 		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
 		[][]int64{
 			{1, 2},
@@ -524,6 +539,12 @@ func TestAppendInt64(t *testing.T) {
 		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.BitDepth8),
 		[][]int64{
 			{1, 2},
+			{1, 2},
+		},
+	))
+	t.Run("different channels", testPanic(
+		signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
+		[][]float64{
 			{1, 2},
 		},
 	))
