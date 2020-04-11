@@ -197,7 +197,7 @@ func TestAppendFloat64(t *testing.T) {
 			assertEqual(t, "slices", s.Data(), expected)
 		}
 	}
-	testPanic := func(s signal.Float64, expected [][]float64, slice [][]float64) func(*testing.T) {
+	testPanic := func(s signal.Float64, slice [][]float64) func(*testing.T) {
 		return func(t *testing.T) {
 			src := signal.Allocator{Channels: len(slice), Capacity: len(slice[0])}.Float64()
 			src.WriteFloat64(slice)
@@ -233,12 +233,8 @@ func TestAppendFloat64(t *testing.T) {
 			{3, 4},
 		},
 	))
-	t.Run("different channels slice", testPanic(
+	t.Run("different channels", testPanic(
 		signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
-		[][]float64{
-			{1, 2},
-			{1, 2},
-		},
 		[][]float64{
 			{1, 2},
 		},
@@ -246,7 +242,7 @@ func TestAppendFloat64(t *testing.T) {
 }
 
 func TestAppendInt64(t *testing.T) {
-	testInt64 := func(s signal.Int64, expected [][]int64, slices ...[][]int64) func(*testing.T) {
+	testOk := func(s signal.Int64, expected [][]int64, slices ...[][]int64) func(*testing.T) {
 		return func(t *testing.T) {
 			for _, slice := range slices {
 				src := signal.Allocator{Channels: len(slice), Capacity: len(slice[0])}.Int64(signal.MaxBitDepth)
@@ -256,7 +252,17 @@ func TestAppendInt64(t *testing.T) {
 			assertEqual(t, "slices", s.Data(), expected)
 		}
 	}
-	t.Run("single slice", testInt64(
+	testPanic := func(s signal.Int64, slice [][]int64) func(*testing.T) {
+		return func(t *testing.T) {
+			src := signal.Allocator{Channels: len(slice), Capacity: len(slice[0])}.Int64(signal.MaxBitDepth)
+			src.WriteInt64(slice)
+			assertPanic(t, func() {
+				s = s.Append(src)
+			})
+		}
+	}
+
+	t.Run("single slice", testOk(
 		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
 		[][]int64{
 			{1, 2},
@@ -267,7 +273,7 @@ func TestAppendInt64(t *testing.T) {
 			{1, 2},
 		},
 	))
-	t.Run("multiple slices", testInt64(
+	t.Run("multiple slices", testOk(
 		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
 		[][]int64{
 			{1, 2, 3, 4},
@@ -280,6 +286,19 @@ func TestAppendInt64(t *testing.T) {
 		[][]int64{
 			{3, 4},
 			{3, 4},
+		},
+	))
+	t.Run("different channels", testPanic(
+		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
+		[][]int64{
+			{1, 2},
+		},
+	))
+	t.Run("different bit depth", testPanic(
+		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.BitDepth8),
+		[][]int64{
+			{1, 2},
+			{1, 2},
 		},
 	))
 }
