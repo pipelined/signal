@@ -61,7 +61,8 @@ func (f Int64) setSample(channel, pos int, val int64) {
 // If the buffer already contains any data, it will be overwritten.
 // The length of provided slice must be equal to the number of channels,
 // otherwise function will panic. Length is set to the longest
-// nested slice length.
+// nested slice length. Sample values are capped by maximum value of
+// the buffer bit depth.
 func (f Int64) WriteInt64(ints [][]int64) {
 	mustSameChannels(f.Channels(), len(ints))
 	var copied int
@@ -82,7 +83,8 @@ func (f Int64) WriteInt64(ints [][]int64) {
 // If the buffer already contains any data, it will be overwritten.
 // The length of provided slice must be equal to the number of channels,
 // otherwise function will panic. Length is set to the longest
-// nested slice length.
+// nested slice length. Sample values are capped by maximum value of
+// the buffer bit depth.
 func (f Int64) WriteInt(ints [][]int) {
 	mustSameChannels(f.Channels(), len(ints))
 	var copied int
@@ -153,7 +155,8 @@ func (f Int64Interleaved) setSample(channel, pos int, val int64) {
 }
 
 // WriteInt64 writes values from provided slice into buffer.
-// Length is updated with slice length.
+// Length is updated with slice length. Sample values are capped
+// by maximum value of the buffer bit depth.
 func (f Int64Interleaved) WriteInt64(ints []int64) {
 	pos := 0
 	for pos < f.Capacity()*f.Channels() && pos < len(ints) {
@@ -166,6 +169,7 @@ func (f Int64Interleaved) WriteInt64(ints []int64) {
 // WriteInt writes values from provided slice into the buffer.
 // If the buffer already contains any data, it will be overwritten.
 // Length is set to the number of copied samples per channel.
+// Sample values are capped by maximum value of the buffer bit depth.
 func (f Int64Interleaved) WriteInt(ints []int) {
 	pos := 0
 	for pos < f.Capacity()*f.Channels() && pos < len(ints) {
