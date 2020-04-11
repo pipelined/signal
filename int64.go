@@ -154,11 +154,13 @@ func (f Int64Interleaved) setSample(channel, pos int, val int64) {
 
 // WriteInt64 writes values from provided slice into buffer.
 // Length is updated with slice length.
-func (f Int64Interleaved) WriteInt64(ints []int64) int {
-	bufLen := f.Length() * f.Channels()
-	c := copy(f.buffer[bufLen:], ints)
-	f.setLength(interLen(f.Channels(), bufLen+c))
-	return c
+func (f Int64Interleaved) WriteInt64(ints []int64) {
+	pos := 0
+	for pos < f.Capacity()*f.Channels() && pos < len(ints) {
+		f.buffer[pos] = f.BitDepth().SignedValue(ints[pos])
+		pos++
+	}
+	f.setLength(interLen(f.Channels(), pos))
 }
 
 // WriteInt writes values from provided slice into the buffer.

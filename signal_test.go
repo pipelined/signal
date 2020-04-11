@@ -29,7 +29,7 @@ func TestInt64InterleavedAsFloat64(t *testing.T) {
 		expected [][]float64
 	}{
 		"8 bits": {
-			ints: []int64{math.MaxInt8, math.MaxInt8 * 2},
+			ints: []int64{math.MaxInt8, math.MaxInt8 + 1},
 			props: signal.Allocator{
 				Channels: 2,
 				Capacity: 1,
@@ -37,11 +37,11 @@ func TestInt64InterleavedAsFloat64(t *testing.T) {
 			BitDepth: signal.BitDepth8,
 			expected: [][]float64{
 				{1},
-				{2},
+				{1},
 			},
 		},
 		"16 bits": {
-			ints: []int64{math.MaxInt16, math.MaxInt16 * 2},
+			ints: []int64{math.MaxInt16, math.MaxInt16 + 1},
 			props: signal.Allocator{
 				Channels: 2,
 				Capacity: 1,
@@ -49,11 +49,11 @@ func TestInt64InterleavedAsFloat64(t *testing.T) {
 			BitDepth: signal.BitDepth16,
 			expected: [][]float64{
 				{1},
-				{2},
+				{1},
 			},
 		},
 		"32 bits": {
-			ints: []int64{math.MaxInt32, math.MaxInt32 * 2},
+			ints: []int64{math.MaxInt32, math.MaxInt32 + 1},
 			props: signal.Allocator{
 				Channels: 2,
 				Capacity: 1,
@@ -61,11 +61,11 @@ func TestInt64InterleavedAsFloat64(t *testing.T) {
 			BitDepth: signal.BitDepth32,
 			expected: [][]float64{
 				{1},
-				{2},
+				{1},
 			},
 		},
 		"24 bits": {
-			ints: []int64{1<<23 - 1, (1<<23 - 1) * 2},
+			ints: []int64{1<<23 - 1, (1<<23 - 1) + 1},
 			props: signal.Allocator{
 				Channels: 2,
 				Capacity: 1,
@@ -73,7 +73,7 @@ func TestInt64InterleavedAsFloat64(t *testing.T) {
 			BitDepth: signal.BitDepth24,
 			expected: [][]float64{
 				{1},
-				{2},
+				{1},
 			},
 		},
 	}
@@ -310,6 +310,46 @@ func TestWrite(t *testing.T) {
 			data:   []int64{math.MaxInt16, math.MinInt16},
 		},
 	))
+	t.Run("int64interleaved int full buffer", testOk(
+		signal.Allocator{Capacity: 10, Channels: 2}.Int64Interleaved(signal.MaxBitDepth),
+		[]int64{1, 11, 2, 12, 3, 13, 4, 14, 5, 15, 6, 16, 7, 17, 8, 18, 9, 19, 10, 20},
+		expected{
+			length: 10,
+			data:   []int64{1, 11, 2, 12, 3, 13, 4, 14, 5, 15, 6, 16, 7, 17, 8, 18, 9, 19, 10, 20},
+		},
+	))
+	t.Run("int64interleaved int short buffer", testOk(
+		signal.Allocator{Capacity: 10, Channels: 2}.Int64Interleaved(signal.MaxBitDepth),
+		[]int64{1, 11, 2, 12, 3, 13},
+		expected{
+			length: 3,
+			data:   []int64{1, 11, 2, 12, 3, 13, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+		},
+	))
+	t.Run("int64interleaved int long buffer", testOk(
+		signal.Allocator{Capacity: 3, Channels: 2}.Int64Interleaved(signal.MaxBitDepth),
+		[]int64{1, 11, 2, 12, 3, 13, 4, 14, 5, 15, 6, 16, 7, 17, 8, 18, 9, 19, 10, 20},
+		expected{
+			length: 3,
+			data:   []int64{1, 11, 2, 12, 3, 13},
+		},
+	))
+	t.Run("int64interleaved int 8-bits overflow", testOk(
+		signal.Allocator{Capacity: 1, Channels: 2}.Int64Interleaved(signal.BitDepth8),
+		[]int64{math.MaxInt32, math.MinInt32},
+		expected{
+			length: 1,
+			data:   []int64{math.MaxInt8, math.MinInt8},
+		},
+	))
+	t.Run("int64interleaved int 16-bits overflow", testOk(
+		signal.Allocator{Capacity: 1, Channels: 2}.Int64Interleaved(signal.BitDepth16),
+		[]int64{math.MaxInt64, math.MinInt64},
+		expected{
+			length: 1,
+			data:   []int64{math.MaxInt16, math.MinInt16},
+		},
+	))
 	t.Run("float64 full buffer", testOk(
 		signal.Allocator{Capacity: 10, Channels: 2}.Float64(),
 		[][]float64{
@@ -491,7 +531,7 @@ func TestAppendInt64(t *testing.T) {
 
 func assertEqual(t *testing.T, name string, result, expected interface{}) {
 	if !reflect.DeepEqual(expected, result) {
-		t.Fatalf("%v\ngot: \t%T\t%+v \nexpected: \t%T\t%+v", name, result, result, expected, expected)
+		t.Fatalf("%v\nresult: \t%T\t%+v \nexpected: \t%T\t%+v", name, result, result, expected, expected)
 	}
 }
 
