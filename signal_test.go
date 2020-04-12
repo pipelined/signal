@@ -104,6 +104,7 @@ func TestWrite(t *testing.T) {
 	}
 	testOk := func(writer signal.Signal, data interface{}, ex expected) func(t *testing.T) {
 		return func(t *testing.T) {
+			t.Helper()
 			switch w := writer.(type) {
 			case signal.Int64:
 				switch d := data.(type) {
@@ -404,6 +405,7 @@ func TestAppend(t *testing.T) {
 	}
 	testOk := func(appender signal.Signal, data interface{}, ex expected) func(*testing.T) {
 		return func(t *testing.T) {
+			t.Helper()
 			var result signal.Signal
 			switch a := appender.(type) {
 			case signal.Int64:
@@ -442,6 +444,7 @@ func TestAppend(t *testing.T) {
 	}
 	testPanic := func(appender signal.Signal, data signal.Signal) func(*testing.T) {
 		return func(t *testing.T) {
+			t.Helper()
 			switch a := appender.(type) {
 			case signal.Int64:
 				d := data.(signal.Int64)
@@ -585,12 +588,14 @@ func TestAppend(t *testing.T) {
 }
 
 func assertEqual(t *testing.T, name string, result, expected interface{}) {
+	t.Helper()
 	if !reflect.DeepEqual(expected, result) {
 		t.Fatalf("%v\nresult: \t%T\t%+v \nexpected: \t%T\t%+v", name, result, result, expected, expected)
 	}
 }
 
 func assertPanic(t *testing.T, fn func()) {
+	t.Helper()
 	defer func() {
 		if r := recover(); r == nil {
 			t.Fatalf("expected panic")
