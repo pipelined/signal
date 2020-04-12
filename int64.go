@@ -102,14 +102,16 @@ func (f Int64) WriteInt(ints [][]int) {
 }
 
 // Append appends [0:Length] data from src to current buffer and returns new buffer.
+// Both buffers must have same number of channels and bit depth, otherwise function
+// will panic. The result buffer has capacity and length equal to sum of lengths.
 func (f Int64) Append(src Int64) Int64 {
 	mustSameChannels(f.Channels(), f.Channels())
 	mustSameBitDepth(f.BitDepth(), src.BitDepth())
-	l := f.Length() + src.Length()
 	result := make([][]int64, f.Channels())
 	for channel := range result {
 		result[channel] = append(f.buffer[channel][:f.Length()], src.buffer[channel][:src.Length()]...)
 	}
+	l := f.Length() + src.Length()
 	return Int64{
 		buffer:   result,
 		capacity: capacity(l),
@@ -179,8 +181,19 @@ func (f Int64Interleaved) WriteInt(ints []int) {
 	f.setLength(interLen(f.Channels(), pos))
 }
 
+// Append appends [0:Length] data from src to current buffer and returns new buffer.
+// Both buffers must have same number of channels and bit depth, otherwise function
+// will panic. The result buffer has capacity and length equal to sum of lengths.
 func (f Int64Interleaved) Append(src Int64Interleaved) Int64Interleaved {
 	mustSameChannels(f.Channels(), src.Channels())
 	mustSameBitDepth(f.BitDepth(), src.BitDepth())
-	panic("not implemented")
+	result := append(f.buffer[:f.Channels()*f.Length()], src.buffer[:src.Channels()*src.Length()]...)
+	l := f.Length() + src.Length()
+	return Int64Interleaved{
+		buffer:   result,
+		capacity: capacity(l),
+		channels: f.channels,
+		length:   &length{value: l},
+		bitDepth: f.bitDepth,
+	}
 }

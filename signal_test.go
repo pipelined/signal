@@ -415,6 +415,15 @@ func TestAppend(t *testing.T) {
 				}
 				assertEqual(t, "slices", a.Data(), ex.data)
 				result = a
+			case signal.Int64Interleaved:
+				d := data.([][]int64)
+				for _, slice := range d {
+					src := signal.Allocator{Channels: a.Channels(), Capacity: len(slice)}.Int64Interleaved(signal.MaxBitDepth)
+					src.WriteInt64(slice)
+					a = a.Append(src)
+				}
+				assertEqual(t, "slices", a.Data(), ex.data)
+				result = a
 			case signal.Float64:
 				d := data.([][][]float64)
 				for _, slice := range d {
@@ -431,22 +440,23 @@ func TestAppend(t *testing.T) {
 			assertEqual(t, "capacity", result.Capacity(), ex.capacity)
 		}
 	}
-	testPanic := func(appender signal.Signal, data interface{}) func(*testing.T) {
+	testPanic := func(appender signal.Signal, data signal.Signal) func(*testing.T) {
 		return func(t *testing.T) {
 			switch a := appender.(type) {
 			case signal.Int64:
-				d := data.([][]int64)
-				src := signal.Allocator{Channels: len(d), Capacity: len(d[0])}.Int64(signal.MaxBitDepth)
-				src.WriteInt64(d)
+				d := data.(signal.Int64)
 				assertPanic(t, func() {
-					a.Append(src)
+					a.Append(d)
+				})
+			case signal.Int64Interleaved:
+				d := data.(signal.Int64Interleaved)
+				assertPanic(t, func() {
+					a.Append(d)
 				})
 			case signal.Float64:
-				d := data.([][]float64)
-				src := signal.Allocator{Channels: len(d), Capacity: len(d[0])}.Float64()
-				src.WriteFloat64(d)
+				d := data.(signal.Float64)
 				assertPanic(t, func() {
-					a.Append(src)
+					a.Append(d)
 				})
 			default:
 				t.Fatalf("unsupported append panic type %T", appender)
@@ -492,7 +502,46 @@ func TestAppend(t *testing.T) {
 			},
 		},
 	))
-	t.Run("single slice", testOk(
+	t.Run("int64 different channels", testPanic(
+		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
+		signal.Allocator{Channels: 1, Capacity: 2}.Int64(signal.MaxBitDepth),
+	))
+	t.Run("int64 different bit depth", testPanic(
+		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.BitDepth8),
+		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
+	))
+	t.Run("int64interleaved single slice", testOk(
+		signal.Allocator{Channels: 2, Capacity: 2}.Int64Interleaved(signal.MaxBitDepth),
+		[][]int64{
+			{1, 2, 11, 12},
+		},
+		expected{
+			capacity: 2,
+			length:   2,
+			data:     []int64{1, 2, 11, 12},
+		},
+	))
+	t.Run("int64interleaved multiple slices", testOk(
+		signal.Allocator{Channels: 2, Capacity: 2}.Int64Interleaved(signal.MaxBitDepth),
+		[][]int64{
+			{1, 2, 11, 12},
+			{3, 4, 13, 14},
+		},
+		expected{
+			capacity: 4,
+			length:   4,
+			data:     []int64{1, 2, 11, 12, 3, 4, 13, 14},
+		},
+	))
+	t.Run("int64interleaved different channels", testPanic(
+		signal.Allocator{Channels: 2, Capacity: 2}.Int64Interleaved(signal.MaxBitDepth),
+		signal.Allocator{Channels: 1, Capacity: 2}.Int64Interleaved(signal.MaxBitDepth),
+	))
+	t.Run("int64interleaved different bit depth", testPanic(
+		signal.Allocator{Channels: 2, Capacity: 2}.Int64Interleaved(signal.BitDepth8),
+		signal.Allocator{Channels: 2, Capacity: 2}.Int64Interleaved(signal.MaxBitDepth),
+	))
+	t.Run("float64 single slice", testOk(
 		signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
 		[][][]float64{
 			{
@@ -509,7 +558,7 @@ func TestAppend(t *testing.T) {
 			},
 		},
 	))
-	t.Run("multiple slices", testOk(
+	t.Run("float64 multiple slices", testOk(
 		signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
 		[][][]float64{
 			{
@@ -529,24 +578,9 @@ func TestAppend(t *testing.T) {
 			},
 		},
 	))
-	t.Run("different channels", testPanic(
-		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
-		[][]int64{
-			{1, 2},
-		},
-	))
-	t.Run("different bit depth", testPanic(
-		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.BitDepth8),
-		[][]int64{
-			{1, 2},
-			{1, 2},
-		},
-	))
-	t.Run("different channels", testPanic(
+	t.Run("float64 different channels", testPanic(
 		signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
-		[][]float64{
-			{1, 2},
-		},
+		signal.Allocator{Channels: 1, Capacity: 2}.Float64(),
 	))
 }
 
