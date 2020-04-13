@@ -139,6 +139,14 @@ func (b BitDepth) SignedValue(val int64) int64 {
 	}
 }
 
+// cap limits bit depth value to max and returns max if it's value is 0.
+func (b BitDepth) cap(max BitDepth) bitDepth {
+	if b == 0 || b > max {
+		return bitDepth(max)
+	}
+	return bitDepth(b)
+}
+
 // SampleRate is the number of samples obtained in one second.
 type SampleRate uint
 
