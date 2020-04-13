@@ -22,9 +22,6 @@ type (
 
 // Int64 allocates new sequential int64 signal buffer.
 func (a Allocator) Int64(bd BitDepth) Int64 {
-	if bd == 0 || bd == MaxBitDepth {
-		bd = BitDepth64
-	}
 	buffer := make([][]int64, a.Channels)
 	for i := range buffer {
 		buffer[i] = make([]int64, a.Capacity)
@@ -33,7 +30,7 @@ func (a Allocator) Int64(bd BitDepth) Int64 {
 		buffer:   buffer,
 		capacity: capacity(a.Capacity),
 		channels: channels(a.Channels),
-		bitDepth: bitDepth(bd),
+		bitDepth: bd.cap(BitDepth64),
 		length:   &length{},
 	}
 }
@@ -125,14 +122,11 @@ func (f Int64) Append(src Int64) Int64 {
 // is provided, the values will a. copied into result buffer. Result buffer will
 // always have size provided a. properties.
 func (a Allocator) Int64Interleaved(bd BitDepth) Int64Interleaved {
-	if bd == 0 || bd == MaxBitDepth {
-		bd = BitDepth64
-	}
 	return Int64Interleaved{
 		buffer:   make([]int64, a.Capacity*a.Channels),
 		capacity: capacity(a.Capacity),
 		channels: channels(a.Channels),
-		bitDepth: bitDepth(bd),
+		bitDepth: bd.cap(BitDepth64),
 		length:   &length{},
 	}
 }
