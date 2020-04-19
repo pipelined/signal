@@ -266,20 +266,20 @@ func mustSameBitDepth(bd1, bd2 BitDepth) {
 // The length of enclosing slice must be equal to the number of channels,
 // otherwise function will panic. Length is set to the longest
 // nested slice length.
-func WriteFloat64(f Floating, buf [][]float64) Floating {
-	mustSameChannels(f.Channels(), len(buf))
+func WriteFloat64(s Floating, buf [][]float64) Floating {
+	mustSameChannels(s.Channels(), len(buf))
 	n := 0
-	for channel := 0; channel < f.Channels(); channel++ {
+	for channel := 0; channel < s.Channels(); channel++ {
 		pos := 0
-		for pos < f.Capacity() && pos < len(buf[channel]) {
-			f.setSample(channel, pos, buf[channel][pos])
+		for pos < s.Capacity() && pos < len(buf[channel]) {
+			s.setSample(channel, pos, buf[channel][pos])
 			pos++
 		}
 		if n < pos {
 			n = pos
 		}
 	}
-	return f.setLength(n)
+	return s.setLength(n)
 }
 
 // WriteInt writes values from provided slice into the buffer.
@@ -288,20 +288,20 @@ func WriteFloat64(f Floating, buf [][]float64) Floating {
 // otherwise function will panic. Length is set to the longest
 // nested slice length. Sample values are capped by maximum value of
 // the buffer bit depth.
-func WriteInt(f Signed, buf [][]int) Signed {
-	mustSameChannels(f.Channels(), len(buf))
+func WriteInt(s Signed, buf [][]int) Signed {
+	mustSameChannels(s.Channels(), len(buf))
 	var n int
-	for channel := 0; channel < f.Channels(); channel++ {
+	for channel := 0; channel < s.Channels(); channel++ {
 		pos := 0
-		for pos < f.Capacity() && pos < len(buf[channel]) {
-			f.setSample(channel, pos, f.BitDepth().SignedValue(int64(buf[channel][pos])))
+		for pos < s.Capacity() && pos < len(buf[channel]) {
+			s.setSample(channel, pos, s.BitDepth().SignedValue(int64(buf[channel][pos])))
 			pos++
 		}
 		if n < pos {
 			n = pos
 		}
 	}
-	return f.setLength(n)
+	return s.setLength(n)
 }
 
 // WriteInt64 writes values from provided slice into the buffer.
@@ -310,20 +310,20 @@ func WriteInt(f Signed, buf [][]int) Signed {
 // otherwise function will panic. Length is set to the longest
 // nested slice length. Sample values are capped by maximum value of
 // the buffer bit depth.
-func WriteInt64(f Signed, buf [][]int64) Signed {
-	mustSameChannels(f.Channels(), len(buf))
+func WriteInt64(s Signed, buf [][]int64) Signed {
+	mustSameChannels(s.Channels(), len(buf))
 	var n int
-	for channel := 0; channel < f.Channels(); channel++ {
+	for channel := 0; channel < s.Channels(); channel++ {
 		pos := 0
-		for pos < f.Capacity() && pos < len(buf[channel]) {
-			f.setSample(channel, pos, f.BitDepth().SignedValue(buf[channel][pos]))
+		for pos < s.Capacity() && pos < len(buf[channel]) {
+			s.setSample(channel, pos, s.BitDepth().SignedValue(buf[channel][pos]))
 			pos++
 		}
 		if n < pos {
 			n = pos
 		}
 	}
-	return f.setLength(n)
+	return s.setLength(n)
 }
 
 // WriteStripedInt writes values from provided slice into the buffer.
@@ -332,19 +332,19 @@ func WriteInt64(f Signed, buf [][]int64) Signed {
 // otherwise function will panic. Length is set to the longest
 // nested slice length. Sample values are capped by maximum value of
 // the buffer bit depth.
-func WriteStripedInt(f Signed, buf []int) Signed {
+func WriteStripedInt(s Signed, buf []int) Signed {
 	var n int
-	for channel := 0; channel < f.Channels(); channel++ {
+	for channel := 0; channel < s.Channels(); channel++ {
 		pos := 0
-		for pos < f.Capacity() && pos < interLen(f.Channels(), len(buf)) {
-			f.setSample(channel, pos, f.BitDepth().SignedValue(int64(buf[interPos(f.Channels(), channel, pos)])))
+		for pos < s.Capacity() && pos < interLen(s.Channels(), len(buf)) {
+			s.setSample(channel, pos, s.BitDepth().SignedValue(int64(buf[interPos(s.Channels(), channel, pos)])))
 			pos++
 		}
 		if n < pos {
 			n = pos
 		}
 	}
-	return f.setLength(n)
+	return s.setLength(n)
 }
 
 // WriteStripedInt64 writes values from provided slice into the buffer.
@@ -353,44 +353,44 @@ func WriteStripedInt(f Signed, buf []int) Signed {
 // otherwise function will panic. Length is set to the longest
 // nested slice length. Sample values are capped by maximum value of
 // the buffer bit depth.
-func WriteStripedInt64(f Signed, buf []int64) Signed {
+func WriteStripedInt64(s Signed, buf []int64) Signed {
 	var n int
-	for channel := 0; channel < f.Channels(); channel++ {
+	for channel := 0; channel < s.Channels(); channel++ {
 		pos := 0
-		for pos < f.Capacity() && pos < interLen(f.Channels(), len(buf)) {
-			f.setSample(channel, pos, f.BitDepth().SignedValue(buf[interPos(f.Channels(), channel, pos)]))
+		for pos < s.Capacity() && pos < interLen(s.Channels(), len(buf)) {
+			s.setSample(channel, pos, s.BitDepth().SignedValue(buf[interPos(s.Channels(), channel, pos)]))
 			pos++
 		}
 		if n < pos {
 			n = pos
 		}
 	}
-	return f.setLength(n)
+	return s.setLength(n)
 }
 
-func ReadFloat64(f Floating, buf [][]float64) {
-	mustSameChannels(f.Channels(), len(buf))
-	for channel := 0; channel < f.Channels(); channel++ {
-		for pos := 0; pos < f.Capacity() && pos < len(buf[channel]); pos++ {
-			buf[channel][pos] = f.Sample(channel, pos)
+func ReadFloat64(s Floating, buf [][]float64) {
+	mustSameChannels(s.Channels(), len(buf))
+	for channel := 0; channel < s.Channels(); channel++ {
+		for pos := 0; pos < s.Capacity() && pos < len(buf[channel]); pos++ {
+			buf[channel][pos] = s.Sample(channel, pos)
 		}
 	}
 }
 
-func ReadInt(f Signed, buf [][]int) {
-	mustSameChannels(f.Channels(), len(buf))
-	for channel := 0; channel < f.Channels(); channel++ {
-		for pos := 0; pos < f.Capacity() && pos < len(buf[channel]); pos++ {
-			buf[channel][pos] = int(f.Sample(channel, pos))
+func ReadInt(s Signed, buf [][]int) {
+	mustSameChannels(s.Channels(), len(buf))
+	for channel := 0; channel < s.Channels(); channel++ {
+		for pos := 0; pos < s.Capacity() && pos < len(buf[channel]); pos++ {
+			buf[channel][pos] = int(s.Sample(channel, pos))
 		}
 	}
 }
 
-func ReadInt64(f Signed, buf [][]int64) {
-	mustSameChannels(f.Channels(), len(buf))
-	for channel := 0; channel < f.Channels(); channel++ {
-		for pos := 0; pos < f.Capacity() && pos < len(buf[channel]); pos++ {
-			buf[channel][pos] = f.Sample(channel, pos)
+func ReadInt64(s Signed, buf [][]int64) {
+	mustSameChannels(s.Channels(), len(buf))
+	for channel := 0; channel < s.Channels(); channel++ {
+		for pos := 0; pos < s.Capacity() && pos < len(buf[channel]); pos++ {
+			buf[channel][pos] = s.Sample(channel, pos)
 		}
 	}
 }
