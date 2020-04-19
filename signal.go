@@ -163,25 +163,29 @@ func (rate SampleRate) SamplesIn(d time.Duration) int {
 }
 
 // FloatingAsSigned converts floating-point signal into signed fixed-point.
-func FloatingAsSigned(src Floating, dst Signed) {
+func FloatingAsSigned(src Floating, dst Signed) Signed {
 	channels := min(src.Channels(), dst.Channels())
 	if channels == 0 {
-		return
+		return dst
 	}
 	// cap length to destination capacity.
 	length := min(src.Length(), dst.Capacity())
 	if length == 0 {
-		return
+		return dst
 	}
 	// determine the multiplier for bit depth conversion
 	multiplier := float64(dst.BitDepth().MaxValue(true))
 
 	for channel := 0; channel < channels; channel++ {
 		for pos := 0; pos < length; pos++ {
-			dst.setSample(channel, pos, int64(src.Sample(channel, pos)*multiplier))
+			if sample := src.Sample(channel, pos); sample > 0 {
+				dst.setSample(channel, pos, int64(sample*multiplier))
+			} else {
+				dst.setSample(channel, pos, int64(sample*(multiplier+1)))
+			}
 		}
 	}
-	dst.setLength(length)
+	return dst.setLength(length)
 }
 
 // SignedAsFloating converts signed fixed-point signal into floating-point.
@@ -199,7 +203,11 @@ func SignedAsFloating(src Signed, dst Floating) Floating {
 	divider := float64(src.BitDepth().MaxValue(true))
 	for channel := 0; channel < channels; channel++ {
 		for pos := 0; pos < length; pos++ {
-			dst.setSample(channel, pos, float64(src.Sample(channel, pos))/divider)
+			if sample := src.Sample(channel, pos); sample > 0 {
+				dst.setSample(channel, pos, float64(sample)/divider)
+			} else {
+				dst.setSample(channel, pos, float64(sample)/(divider+1))
+			}
 		}
 	}
 	return dst.setLength(length)

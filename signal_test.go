@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	// _ signal.Signed   = signal.Allocator{}.Int64Interleaved(signal.MaxBitDepth)
 	_ signal.Signed   = signal.Allocator{}.Int64(signal.MaxBitDepth)
+	_ signal.Signed   = signal.Allocator{}.Uint64(signal.MaxBitDepth)
 	_ signal.Floating = signal.Allocator{}.Float64()
 )
 
@@ -22,6 +22,7 @@ func TestSignedAsFloating(t *testing.T) {
 	}
 	testSignedOk := func(s signal.Signed, f signal.Floating, ex expected) func(t *testing.T) {
 		return func(t *testing.T) {
+			t.Helper()
 			f := signal.SignedAsFloating(s, f)
 			assertEqual(t, "slices", result(f), ex.data)
 			assertEqual(t, "length", f.Length(), ex.length)
@@ -36,7 +37,7 @@ func TestSignedAsFloating(t *testing.T) {
 			}.Int64(signal.BitDepth8),
 			[][]int64{
 				{math.MaxInt8},
-				{math.MaxInt8 + 1},
+				{math.MinInt8},
 			}),
 		signal.Allocator{
 			Channels: 2,
@@ -46,10 +47,11 @@ func TestSignedAsFloating(t *testing.T) {
 			length: 1,
 			data: [][]float64{
 				{1},
-				{1},
+				{-1},
 			},
 		},
 	))
+	t.Skip()
 	t.Run("16 bits", testSignedOk(
 		signal.WriteInt64(
 			signal.Allocator{
@@ -125,17 +127,37 @@ func TestWrite(t *testing.T) {
 	}
 	testSignedOk := func(s signal.Signed, ex expected) func(t *testing.T) {
 		return func(t *testing.T) {
+			t.Helper()
 			assertEqual(t, "slices", result(s), ex.data)
 			assertEqual(t, "length", s.Length(), ex.length)
 		}
 	}
 	testFloatingOk := func(s signal.Floating, ex expected) func(t *testing.T) {
 		return func(t *testing.T) {
+			t.Helper()
 			assertEqual(t, "slices", result(s), ex.data)
 			assertEqual(t, "length", s.Length(), ex.length)
 		}
 	}
 
+	t.Run("int64 int64 8 bits", testSignedOk(
+		signal.WriteInt64(
+			signal.Allocator{
+				Capacity: 1,
+				Channels: 2,
+			}.Int64(signal.BitDepth8),
+			[][]int64{
+				{math.MaxInt16},
+				{math.MinInt16},
+			}),
+		expected{
+			length: 1,
+			data: [][]int64{
+				{127},
+				{-128},
+			},
+		},
+	))
 	t.Run("int64 int full buffer", testSignedOk(
 		signal.WriteInt(
 			signal.Allocator{
