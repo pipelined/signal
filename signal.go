@@ -9,6 +9,8 @@ import (
 type (
 	// Signal is a buffer that contains a digital representation of a
 	// physical signal that is a sampled and quantized.
+	// Signal types have semantics of go slices. They can be sliced
+	// and appended.
 	Signal interface {
 		Capacity() int
 		Channels() int
@@ -394,7 +396,7 @@ func WriteStripedInt64(s Signed, buf [][]int64) Signed {
 func ReadFloat64(s Floating, buf [][]float64) {
 	mustSameChannels(s.Channels(), len(buf))
 	for channel := 0; channel < s.Channels(); channel++ {
-		for pos := 0; pos < s.Capacity() && pos < len(buf[channel]); pos++ {
+		for pos := 0; pos < s.Length() && pos < len(buf[channel]); pos++ {
 			buf[channel][pos] = s.Sample(channel, pos)
 		}
 	}
@@ -403,7 +405,7 @@ func ReadFloat64(s Floating, buf [][]float64) {
 func ReadInt(s Signed, buf [][]int) {
 	mustSameChannels(s.Channels(), len(buf))
 	for channel := 0; channel < s.Channels(); channel++ {
-		for pos := 0; pos < s.Capacity() && pos < len(buf[channel]); pos++ {
+		for pos := 0; pos < s.Length() && pos < len(buf[channel]); pos++ {
 			buf[channel][pos] = int(s.Sample(channel, pos))
 		}
 	}
@@ -412,7 +414,7 @@ func ReadInt(s Signed, buf [][]int) {
 func ReadInt64(s Signed, buf [][]int64) {
 	mustSameChannels(s.Channels(), len(buf))
 	for channel := 0; channel < s.Channels(); channel++ {
-		for pos := 0; pos < s.Capacity() && pos < len(buf[channel]); pos++ {
+		for pos := 0; pos < s.Length() && pos < len(buf[channel]); pos++ {
 			buf[channel][pos] = s.Sample(channel, pos)
 		}
 	}

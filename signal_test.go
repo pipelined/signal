@@ -15,103 +15,113 @@ var (
 	_ signal.Floating = signal.Allocator{}.Float64()
 )
 
-func TestSignedAsFloating(t *testing.T) {
-	type expected struct {
-		length int
-		data   interface{}
-	}
-	testSignedOk := func(s signal.Signed, f signal.Floating, ex expected) func(t *testing.T) {
-		return func(t *testing.T) {
-			t.Helper()
-			f := signal.SignedAsFloating(s, f)
-			assertEqual(t, "slices", result(f), ex.data)
-			assertEqual(t, "length", f.Length(), ex.length)
-		}
-	}
+type expected struct {
+	length   int
+	capacity int
+	data     interface{}
+}
 
-	t.Run("8 bits", testSignedOk(
-		signal.WriteStripedInt64(
+func testOk(r signal.Signal, ex expected) func(t *testing.T) {
+	return func(t *testing.T) {
+		t.Helper()
+		assertEqual(t, "capacity", r.Capacity(), ex.capacity)
+		assertEqual(t, "length", r.Length(), ex.length)
+		assertEqual(t, "slices", result(r), ex.data)
+	}
+}
+
+func TestSignedAsFloating(t *testing.T) {
+	t.Run("8 bits", testOk(
+		signal.SignedAsFloating(
+			signal.WriteStripedInt64(signal.Allocator{Channels: 2, Capacity: 1}.
+				Int64(signal.BitDepth8),
+				[][]int64{
+					{math.MaxInt8},
+					{math.MinInt8},
+				}),
 			signal.Allocator{
 				Channels: 2,
 				Capacity: 1,
-			}.Int64(signal.BitDepth8),
-			[][]int64{
-				{math.MaxInt8},
-				{math.MinInt8},
-			}),
-		signal.Allocator{
-			Channels: 2,
-			Capacity: 1,
-		}.Float64(),
+			}.Float64(),
+		),
 		expected{
-			length: 1,
+			length:   1,
+			capacity: 1,
 			data: [][]float64{
 				{1},
 				{-1},
 			},
 		},
 	))
-	t.Skip()
-	t.Run("16 bits", testSignedOk(
-		signal.WriteStripedInt64(
+	t.Run("16 bits", testOk(
+		signal.SignedAsFloating(
+			signal.WriteStripedInt64(
+				signal.Allocator{
+					Channels: 2,
+					Capacity: 1,
+				}.Int64(signal.BitDepth16),
+				[][]int64{
+					{math.MaxInt16},
+					{math.MaxInt16 + 1},
+				}),
 			signal.Allocator{
 				Channels: 2,
 				Capacity: 1,
-			}.Int64(signal.BitDepth16),
-			[][]int64{
-				{math.MaxInt16},
-				{math.MaxInt16 + 1},
-			}),
-		signal.Allocator{
-			Channels: 2,
-			Capacity: 1,
-		}.Float64(),
+			}.Float64(),
+		),
 		expected{
-			length: 1,
+			length:   1,
+			capacity: 1,
 			data: [][]float64{
 				{1},
 				{1},
 			},
 		},
 	))
-	t.Run("32 bits", testSignedOk(
-		signal.WriteStripedInt64(
+	t.Run("32 bits", testOk(
+		signal.SignedAsFloating(
+			signal.WriteStripedInt64(
+				signal.Allocator{
+					Channels: 2,
+					Capacity: 1,
+				}.Int64(signal.BitDepth32),
+				[][]int64{
+					{math.MaxInt32},
+					{math.MaxInt32 + 1},
+				}),
 			signal.Allocator{
 				Channels: 2,
 				Capacity: 1,
-			}.Int64(signal.BitDepth32),
-			[][]int64{
-				{math.MaxInt32},
-				{math.MaxInt32 + 1},
-			}),
-		signal.Allocator{
-			Channels: 2,
-			Capacity: 1,
-		}.Float64(),
+			}.Float64(),
+		),
 		expected{
-			length: 1,
+			length:   1,
+			capacity: 1,
 			data: [][]float64{
 				{1},
 				{1},
 			},
 		},
 	))
-	t.Run("24 bits", testSignedOk(
-		signal.WriteStripedInt64(
+	t.Run("24 bits", testOk(
+		signal.SignedAsFloating(
+			signal.WriteStripedInt64(
+				signal.Allocator{
+					Channels: 2,
+					Capacity: 1,
+				}.Int64(signal.BitDepth24),
+				[][]int64{
+					{1<<23 - 1},
+					{(1<<23 - 1) + 1},
+				}),
 			signal.Allocator{
 				Channels: 2,
 				Capacity: 1,
-			}.Int64(signal.BitDepth24),
-			[][]int64{
-				{1<<23 - 1},
-				{(1<<23 - 1) + 1},
-			}),
-		signal.Allocator{
-			Channels: 2,
-			Capacity: 1,
-		}.Float64(),
+			}.Float64(),
+		),
 		expected{
-			length: 1,
+			length:   1,
+			capacity: 1,
 			data: [][]float64{
 				{1},
 				{1},
@@ -121,17 +131,13 @@ func TestSignedAsFloating(t *testing.T) {
 }
 
 func TestWrite(t *testing.T) {
-	type expected struct {
-		length int
-		data   interface{}
-	}
-	testSignedOk := func(s signal.Signed, ex expected) func(t *testing.T) {
-		return func(t *testing.T) {
-			t.Helper()
-			assertEqual(t, "slices", result(s), ex.data)
-			assertEqual(t, "length", s.Length(), ex.length)
-		}
-	}
+	// testOk := func(s signal.Signed, ex expected) func(t *testing.T) {
+	// 	return func(t *testing.T) {
+	// 		t.Helper()
+	// 		assertEqual(t, "slices", result(s), ex.data)
+	// 		assertEqual(t, "length", s.Length(), ex.length)
+	// 	}
+	// }
 	testFloatingOk := func(s signal.Floating, ex expected) func(t *testing.T) {
 		return func(t *testing.T) {
 			t.Helper()
@@ -140,7 +146,7 @@ func TestWrite(t *testing.T) {
 		}
 	}
 
-	t.Run("int64 int64 8 bits", testSignedOk(
+	t.Run("int64 int64 8 bits", testOk(
 		signal.WriteStripedInt64(
 			signal.Allocator{
 				Capacity: 1,
@@ -151,14 +157,15 @@ func TestWrite(t *testing.T) {
 				{math.MinInt16},
 			}),
 		expected{
-			length: 1,
+			length:   1,
+			capacity: 1,
 			data: [][]int64{
 				{127},
 				{-128},
 			},
 		},
 	))
-	t.Run("int64 striped int full buffer", testSignedOk(
+	t.Run("int64 striped int full buffer", testOk(
 		signal.WriteStripedInt(
 			signal.Allocator{
 				Capacity: 10,
@@ -169,14 +176,15 @@ func TestWrite(t *testing.T) {
 				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 			}),
 		expected{
-			length: 10,
+			length:   10,
+			capacity: 10,
 			data: [][]int64{
 				{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 			},
 		},
 	))
-	t.Run("int64 striped int signle channel", testSignedOk(
+	t.Run("int64 striped int signle channel", testOk(
 		signal.WriteStripedInt(
 			signal.Allocator{
 				Capacity: 10,
@@ -187,14 +195,15 @@ func TestWrite(t *testing.T) {
 				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 			}),
 		expected{
-			length: 10,
+			length:   10,
+			capacity: 10,
 			data: [][]int64{
 				{0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 			},
 		},
 	))
-	t.Run("int64 striped int short buffer", testSignedOk(
+	t.Run("int64 striped int short buffer", testOk(
 		signal.WriteStripedInt(
 			signal.Allocator{
 				Capacity: 10,
@@ -205,14 +214,15 @@ func TestWrite(t *testing.T) {
 				{11, 12, 0},
 			}),
 		expected{
-			length: 3,
+			length:   3,
+			capacity: 10,
 			data: [][]int64{
-				{1, 2, 3, 0, 0, 0, 0, 0, 0, 0},
-				{11, 12, 0, 0, 0, 0, 0, 0, 0, 0},
+				{1, 2, 3},
+				{11, 12, 0},
 			},
 		},
 	))
-	t.Run("int64 striped int long buffer", testSignedOk(
+	t.Run("int64 striped int long buffer", testOk(
 		signal.WriteStripedInt(
 			signal.Allocator{
 				Capacity: 3,
@@ -223,14 +233,15 @@ func TestWrite(t *testing.T) {
 				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 			}),
 		expected{
-			length: 3,
+			length:   3,
+			capacity: 3,
 			data: [][]int64{
 				{1, 2, 3},
 				{11, 12, 13},
 			},
 		},
 	))
-	t.Run("int64 striped int 8-bits overflow", testSignedOk(
+	t.Run("int64 striped int 8-bits overflow", testOk(
 		signal.WriteStripedInt(
 			signal.Allocator{
 				Capacity: 1,
@@ -241,14 +252,15 @@ func TestWrite(t *testing.T) {
 				{math.MinInt32},
 			}),
 		expected{
-			length: 1,
+			length:   1,
+			capacity: 1,
 			data: [][]int64{
 				{math.MaxInt8},
 				{math.MinInt8},
 			},
 		},
 	))
-	t.Run("int64 striped int 16-bits overflow", testSignedOk(
+	t.Run("int64 striped int 16-bits overflow", testOk(
 		signal.WriteStripedInt(
 			signal.Allocator{
 				Capacity: 1,
@@ -259,14 +271,15 @@ func TestWrite(t *testing.T) {
 				{math.MinInt64},
 			}),
 		expected{
-			length: 1,
+			length:   1,
+			capacity: 1,
 			data: [][]int64{
 				{math.MaxInt16},
 				{math.MinInt16},
 			},
 		},
 	))
-	t.Run("int64 striped int64 full buffer", testSignedOk(
+	t.Run("int64 striped int64 full buffer", testOk(
 		signal.WriteStripedInt64(
 			signal.Allocator{
 				Capacity: 10,
@@ -277,14 +290,15 @@ func TestWrite(t *testing.T) {
 				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 			}),
 		expected{
-			length: 10,
+			length:   10,
+			capacity: 10,
 			data: [][]int64{
 				{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 			},
 		},
 	))
-	t.Run("int64 striped int64 short buffer", testSignedOk(
+	t.Run("int64 striped int64 short buffer", testOk(
 		signal.WriteStripedInt64(
 			signal.Allocator{
 				Capacity: 10,
@@ -295,14 +309,15 @@ func TestWrite(t *testing.T) {
 				{11, 12, 13},
 			}),
 		expected{
-			length: 3,
+			length:   3,
+			capacity: 10,
 			data: [][]int64{
-				{1, 2, 3, 0, 0, 0, 0, 0, 0, 0},
-				{11, 12, 13, 0, 0, 0, 0, 0, 0, 0},
+				{1, 2, 3},
+				{11, 12, 13},
 			},
 		},
 	))
-	t.Run("int64 striped int64 long buffer", testSignedOk(
+	t.Run("int64 striped int64 long buffer", testOk(
 		signal.WriteStripedInt64(
 			signal.Allocator{
 				Capacity: 3,
@@ -313,14 +328,15 @@ func TestWrite(t *testing.T) {
 				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 			}),
 		expected{
-			length: 3,
+			length:   3,
+			capacity: 3,
 			data: [][]int64{
 				{1, 2, 3},
 				{11, 12, 13},
 			},
 		},
 	))
-	t.Run("int64 striped int64 8-bits overflow", testSignedOk(
+	t.Run("int64 striped int64 8-bits overflow", testOk(
 		signal.WriteStripedInt64(
 			signal.Allocator{
 				Capacity: 1,
@@ -331,14 +347,15 @@ func TestWrite(t *testing.T) {
 				{math.MinInt32},
 			}),
 		expected{
-			length: 1,
+			length:   1,
+			capacity: 1,
 			data: [][]int64{
 				{math.MaxInt8},
 				{math.MinInt8},
 			},
 		},
 	))
-	t.Run("int64 striped int64 16-bits overflow", testSignedOk(
+	t.Run("int64 striped int64 16-bits overflow", testOk(
 		signal.WriteStripedInt64(
 			signal.Allocator{
 				Capacity: 1,
@@ -349,14 +366,15 @@ func TestWrite(t *testing.T) {
 				{math.MinInt64},
 			}),
 		expected{
-			length: 1,
+			length:   1,
+			capacity: 1,
 			data: [][]int64{
 				{math.MaxInt16},
 				{math.MinInt16},
 			},
 		},
 	))
-	t.Run("int64 int full buffer", testSignedOk(
+	t.Run("int64 int full buffer", testOk(
 		signal.WriteInt(
 			signal.Allocator{
 				Capacity: 10,
@@ -364,14 +382,15 @@ func TestWrite(t *testing.T) {
 			}.Int64(signal.MaxBitDepth),
 			[]int{1, 11, 2, 12, 3, 13, 4, 14, 5, 15, 6, 16, 7, 17, 8, 18, 9, 19, 10, 20}),
 		expected{
-			length: 10,
+			length:   10,
+			capacity: 10,
 			data: [][]int64{
 				{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 			},
 		},
 	))
-	t.Run("int64 int short buffer", testSignedOk(
+	t.Run("int64 int short buffer", testOk(
 		signal.WriteInt(
 			signal.Allocator{
 				Capacity: 10,
@@ -379,14 +398,15 @@ func TestWrite(t *testing.T) {
 			}.Int64(signal.MaxBitDepth),
 			[]int{1, 11, 2, 12, 3, 13}),
 		expected{
-			length: 3,
+			length:   3,
+			capacity: 10,
 			data: [][]int64{
-				{1, 2, 3, 0, 0, 0, 0, 0, 0, 0},
-				{11, 12, 13, 0, 0, 0, 0, 0, 0, 0},
+				{1, 2, 3},
+				{11, 12, 13},
 			},
 		},
 	))
-	t.Run("int64 int long buffer", testSignedOk(
+	t.Run("int64 int long buffer", testOk(
 		signal.WriteInt(
 			signal.Allocator{
 				Capacity: 3,
@@ -394,14 +414,15 @@ func TestWrite(t *testing.T) {
 			}.Int64(signal.MaxBitDepth),
 			[]int{1, 11, 2, 12, 3, 13, 4, 14, 5, 15, 6, 16, 7, 17, 8, 18, 9, 19, 10, 20}),
 		expected{
-			length: 3,
+			length:   3,
+			capacity: 3,
 			data: [][]int64{
 				{1, 2, 3},
 				{11, 12, 13},
 			},
 		},
 	))
-	t.Run("int64 int 8-bits overflow", testSignedOk(
+	t.Run("int64 int 8-bits overflow", testOk(
 		signal.WriteInt(
 			signal.Allocator{
 				Capacity: 1,
@@ -409,14 +430,15 @@ func TestWrite(t *testing.T) {
 			}.Int64(signal.BitDepth8),
 			[]int{math.MaxInt32, math.MinInt32}),
 		expected{
-			length: 1,
+			length:   1,
+			capacity: 1,
 			data: [][]int64{
 				{math.MaxInt8},
 				{math.MinInt8},
 			},
 		},
 	))
-	t.Run("int64 int 16-bits overflow", testSignedOk(
+	t.Run("int64 int 16-bits overflow", testOk(
 		signal.WriteInt(
 			signal.Allocator{
 				Capacity: 1,
@@ -424,14 +446,15 @@ func TestWrite(t *testing.T) {
 			}.Int64(signal.BitDepth16),
 			[]int{math.MaxInt64, math.MinInt64}),
 		expected{
-			length: 1,
+			length:   1,
+			capacity: 1,
 			data: [][]int64{
 				{math.MaxInt16},
 				{math.MinInt16},
 			},
 		},
 	))
-	t.Run("int64 int64 full buffer", testSignedOk(
+	t.Run("int64 int64 full buffer", testOk(
 		signal.WriteInt64(
 			signal.Allocator{
 				Capacity: 10,
@@ -439,14 +462,15 @@ func TestWrite(t *testing.T) {
 			}.Int64(signal.MaxBitDepth),
 			[]int64{1, 11, 2, 12, 3, 13, 4, 14, 5, 15, 6, 16, 7, 17, 8, 18, 9, 19, 10, 20}),
 		expected{
-			length: 10,
+			length:   10,
+			capacity: 10,
 			data: [][]int64{
 				{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 			},
 		},
 	))
-	t.Run("int64 int64 short buffer", testSignedOk(
+	t.Run("int64 int64 short buffer", testOk(
 		signal.WriteInt64(
 			signal.Allocator{
 				Capacity: 10,
@@ -454,14 +478,15 @@ func TestWrite(t *testing.T) {
 			}.Int64(signal.MaxBitDepth),
 			[]int64{1, 11, 2, 12, 3, 13}),
 		expected{
-			length: 3,
+			length:   3,
+			capacity: 10,
 			data: [][]int64{
-				{1, 2, 3, 0, 0, 0, 0, 0, 0, 0},
-				{11, 12, 13, 0, 0, 0, 0, 0, 0, 0},
+				{1, 2, 3},
+				{11, 12, 13},
 			},
 		},
 	))
-	t.Run("int64 int64 long buffer", testSignedOk(
+	t.Run("int64 int64 long buffer", testOk(
 		signal.WriteInt64(
 			signal.Allocator{
 				Capacity: 3,
@@ -469,14 +494,15 @@ func TestWrite(t *testing.T) {
 			}.Int64(signal.MaxBitDepth),
 			[]int64{1, 11, 2, 12, 3, 13, 4, 14, 5, 15, 6, 16, 7, 17, 8, 18, 9, 19, 10, 20}),
 		expected{
-			length: 3,
+			length:   3,
+			capacity: 3,
 			data: [][]int64{
 				{1, 2, 3},
 				{11, 12, 13},
 			},
 		},
 	))
-	t.Run("int64 8-bits overflow", testSignedOk(
+	t.Run("int64 8-bits overflow", testOk(
 		signal.WriteInt64(
 			signal.Allocator{
 				Capacity: 1,
@@ -484,14 +510,15 @@ func TestWrite(t *testing.T) {
 			}.Int64(signal.BitDepth8),
 			[]int64{math.MaxInt32, math.MinInt32}),
 		expected{
-			length: 1,
+			length:   1,
+			capacity: 1,
 			data: [][]int64{
 				{math.MaxInt8},
 				{math.MinInt8},
 			},
 		},
 	))
-	t.Run("int64 16-bits overflow", testSignedOk(
+	t.Run("int64 16-bits overflow", testOk(
 		signal.WriteInt64(
 			signal.Allocator{
 				Capacity: 1,
@@ -499,7 +526,8 @@ func TestWrite(t *testing.T) {
 			}.Int64(signal.BitDepth16),
 			[]int64{math.MaxInt64, math.MinInt64}),
 		expected{
-			length: 1,
+			length:   1,
+			capacity: 1,
 			data: [][]int64{
 				{math.MaxInt16},
 				{math.MinInt16},
@@ -517,7 +545,8 @@ func TestWrite(t *testing.T) {
 				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 			}),
 		expected{
-			length: 10,
+			length:   10,
+			capacity: 10,
 			data: [][]float64{
 				{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
@@ -535,10 +564,11 @@ func TestWrite(t *testing.T) {
 				{11, 12, 13},
 			}),
 		expected{
-			length: 3,
+			length:   3,
+			capacity: 10,
 			data: [][]float64{
-				{1, 2, 3, 0, 0, 0, 0, 0, 0, 0},
-				{11, 12, 13, 0, 0, 0, 0, 0, 0, 0},
+				{1, 2, 3},
+				{11, 12, 13},
 			},
 		},
 	))
@@ -553,7 +583,8 @@ func TestWrite(t *testing.T) {
 				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
 			}),
 		expected{
-			length: 3,
+			length:   3,
+			capacity: 3,
 			data: [][]float64{
 				{1, 2, 3},
 				{11, 12, 13},
@@ -563,29 +594,6 @@ func TestWrite(t *testing.T) {
 }
 
 func TestAppend(t *testing.T) {
-	type expected struct {
-		length   int
-		capacity int
-		data     interface{}
-	}
-	testSignedOk := func(sig, src signal.Signed, ex expected) func(*testing.T) {
-		return func(t *testing.T) {
-			t.Helper()
-			sig = sig.Append(src)
-			assertEqual(t, "slices", result(sig), ex.data)
-			assertEqual(t, "length", sig.Length(), ex.length)
-			assertEqual(t, "capacity", sig.Capacity(), ex.capacity)
-		}
-	}
-	testFloatingOk := func(sig, src signal.Floating, ex expected) func(*testing.T) {
-		return func(t *testing.T) {
-			t.Helper()
-			sig = sig.Append(src)
-			assertEqual(t, "slices", result(sig), ex.data)
-			assertEqual(t, "length", sig.Length(), ex.length)
-			assertEqual(t, "capacity", sig.Capacity(), ex.capacity)
-		}
-	}
 	testPanic := func(appender signal.Signal, data signal.Signal) func(*testing.T) {
 		return func(t *testing.T) {
 			t.Helper()
@@ -606,15 +614,16 @@ func TestAppend(t *testing.T) {
 		}
 	}
 
-	t.Run("int64 single slice", testSignedOk(
-		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
-		signal.WriteStripedInt64(
-			signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
-			[][]int64{
-				{1, 2},
-				{11, 12},
-			},
-		),
+	t.Run("int64 single slice", testOk(
+		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth).
+			Append(
+				signal.WriteStripedInt64(signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
+					[][]int64{
+						{1, 2},
+						{11, 12},
+					},
+				),
+			),
 		expected{
 			capacity: 2,
 			length:   2,
@@ -624,20 +633,19 @@ func TestAppend(t *testing.T) {
 			},
 		},
 	))
-	t.Run("int64 multiple slices", testSignedOk(
-		signal.WriteStripedInt64(
-			signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
+	t.Run("int64 multiple slices", testOk(
+		signal.WriteStripedInt64(signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
 			[][]int64{
 				{1, 2},
 				{1, 2},
 			},
-		),
-		signal.WriteStripedInt64(
-			signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
-			[][]int64{
-				{3, 4},
-				{3, 4},
-			},
+		).Append(
+			signal.WriteStripedInt64(signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
+				[][]int64{
+					{3, 4},
+					{3, 4},
+				},
+			),
 		),
 		expected{
 			capacity: 4,
@@ -656,15 +664,17 @@ func TestAppend(t *testing.T) {
 		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.BitDepth8),
 		signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
 	))
-	t.Run("float64 single slice", testFloatingOk(
-		signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
-		signal.WriteStripedFloat64(
-			signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
-			[][]float64{
-				{1, 2},
-				{11, 12},
-			},
-		),
+	t.Run("float64 single slice", testOk(
+		signal.Allocator{Channels: 2, Capacity: 2}.Float64().
+			Append(
+				signal.WriteStripedFloat64(
+					signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
+					[][]float64{
+						{1, 2},
+						{11, 12},
+					},
+				),
+			),
 		expected{
 			length:   2,
 			capacity: 2,
@@ -674,20 +684,21 @@ func TestAppend(t *testing.T) {
 			},
 		},
 	))
-	t.Run("float64 multiple slices", testFloatingOk(
+	t.Run("float64 multiple slices", testOk(
 		signal.WriteStripedFloat64(
 			signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
 			[][]float64{
 				{1, 2},
 				{11, 12},
 			},
-		),
-		signal.WriteStripedFloat64(
-			signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
-			[][]float64{
-				{3, 4},
-				{13, 14},
-			},
+		).Append(
+			signal.WriteStripedFloat64(
+				signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
+				[][]float64{
+					{3, 4},
+					{13, 14},
+				},
+			),
 		),
 		expected{
 			length:   4,
@@ -701,6 +712,57 @@ func TestAppend(t *testing.T) {
 	t.Run("float64 different channels", testPanic(
 		signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
 		signal.Allocator{Channels: 1, Capacity: 2}.Float64(),
+	))
+}
+
+func TestSlice(t *testing.T) {
+	t.Run("int64", testOk(
+		signal.WriteStripedInt64(signal.Allocator{Channels: 2, Capacity: 10}.Int64(signal.MaxBitDepth),
+			[][]int64{
+				{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
+			},
+		).Slice(3, 6),
+		expected{
+			length:   3,
+			capacity: 7,
+			data: [][]int64{
+				{4, 5, 6},
+				{14, 15, 16},
+			},
+		},
+	))
+	t.Run("int64", testOk(
+		signal.WriteStripedInt64(signal.Allocator{Channels: 2, Capacity: 10}.Int64(signal.MaxBitDepth),
+			[][]int64{
+				{1, 2, 3, 4, 0},
+				{11, 12, 13, 14, 0},
+			},
+		).Slice(3, 6),
+		expected{
+			length:   3,
+			capacity: 7,
+			data: [][]int64{
+				{4, 0, 0},
+				{14, 0, 0},
+			},
+		},
+	))
+	t.Run("float64", testOk(
+		signal.WriteStripedFloat64(signal.Allocator{Channels: 2, Capacity: 10}.Float64(),
+			[][]float64{
+				{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+				{11, 12, 13, 14, 15, 16, 17, 18, 19, 20},
+			},
+		).Slice(3, 6),
+		expected{
+			length:   3,
+			capacity: 7,
+			data: [][]float64{
+				{4, 5, 6},
+				{14, 15, 16},
+			},
+		},
 	))
 }
 
@@ -726,7 +788,7 @@ func result(sig signal.Signal) interface{} {
 	case signal.Signed:
 		result := make([][]int64, s.Channels())
 		for i := range result {
-			result[i] = make([]int64, s.Capacity())
+			result[i] = make([]int64, s.Length())
 		}
 		signal.ReadInt64(s, result)
 		return result
@@ -735,7 +797,7 @@ func result(sig signal.Signal) interface{} {
 	case signal.Floating:
 		result := make([][]float64, s.Channels())
 		for i := range result {
-			result[i] = make([]float64, s.Capacity())
+			result[i] = make([]float64, s.Length())
 		}
 		signal.ReadFloat64(s, result)
 		return result
