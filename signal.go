@@ -25,6 +25,7 @@ type (
 	// Signed is a digital signal represented with signed fixed-point values.
 	Signed interface {
 		Fixed
+		Slice(int, int) Signed
 		Append(Signed) Signed
 		Sample(channel, pos int) int64
 		setSample(channel, pos int, value int64)
@@ -34,6 +35,7 @@ type (
 	// Unsigned is a digital signal represented with unsigned fixed-point values.
 	Unsigned interface {
 		Fixed
+		Slice(int, int) Unsigned
 		Append(Unsigned) Unsigned
 		Sample(channel, pos int) uint64
 		setSample(channel, pos int, value uint64)
@@ -43,6 +45,7 @@ type (
 	// Floating is a digital signal represented with floating-point values.
 	Floating interface {
 		Signal
+		Slice(int, int) Floating
 		Append(Floating) Floating
 		Sample(channel, pos int) float64
 		setSample(channel, pos int, value float64)
@@ -266,13 +269,13 @@ func mustSameBitDepth(bd1, bd2 BitDepth) {
 // The length of enclosing slice must be equal to the number of channels,
 // otherwise function will panic. Length is set to the longest
 // nested slice length.
-func WriteFloat64(s Floating, buf [][]float64) Floating {
-	mustSameChannels(s.Channels(), len(buf))
+func WriteFloat64(s Floating, buf []float64) Floating {
+	length := min(s.Length(), interLen(s.Channels(), len(buf)))
 	n := 0
 	for channel := 0; channel < s.Channels(); channel++ {
 		pos := 0
-		for pos < s.Capacity() && pos < len(buf[channel]) {
-			s.setSample(channel, pos, buf[channel][pos])
+		for pos < s.Capacity() && pos < length {
+			s.setSample(channel, pos, buf[interPos(s.Channels(), channel, pos)])
 			pos++
 		}
 		if n < pos {
@@ -288,17 +291,15 @@ func WriteFloat64(s Floating, buf [][]float64) Floating {
 // otherwise function will panic. Length is set to the longest
 // nested slice length. Sample values are capped by maximum value of
 // the buffer bit depth.
-func WriteInt(s Signed, buf [][]int) Signed {
-	mustSameChannels(s.Channels(), len(buf))
+func WriteInt(s Signed, buf []int) Signed {
 	var n int
 	for channel := 0; channel < s.Channels(); channel++ {
-		pos := 0
-		for pos < s.Capacity() && pos < len(buf[channel]) {
-			s.setSample(channel, pos, s.BitDepth().SignedValue(int64(buf[channel][pos])))
-			pos++
+		length := min(s.Capacity(), interLen(s.Channels(), len(buf)))
+		for pos := 0; pos < length; pos++ {
+			s.setSample(channel, pos, s.BitDepth().SignedValue(int64(buf[interPos(s.Channels(), channel, pos)])))
 		}
-		if n < pos {
-			n = pos
+		if n < length {
+			n = length
 		}
 	}
 	return s.setLength(n)
@@ -310,13 +311,33 @@ func WriteInt(s Signed, buf [][]int) Signed {
 // otherwise function will panic. Length is set to the longest
 // nested slice length. Sample values are capped by maximum value of
 // the buffer bit depth.
-func WriteInt64(s Signed, buf [][]int64) Signed {
-	mustSameChannels(s.Channels(), len(buf))
+func WriteInt64(s Signed, buf []int64) Signed {
 	var n int
 	for channel := 0; channel < s.Channels(); channel++ {
 		pos := 0
-		for pos < s.Capacity() && pos < len(buf[channel]) {
-			s.setSample(channel, pos, s.BitDepth().SignedValue(buf[channel][pos]))
+		for pos < s.Capacity() && pos < interLen(s.Channels(), len(buf)) {
+			s.setSample(channel, pos, s.BitDepth().SignedValue(buf[interPos(s.Channels(), channel, pos)]))
+			pos++
+		}
+		if n < pos {
+			n = pos
+		}
+	}
+	return s.setLength(n)
+}
+
+// WriteStripedFloat64 writes values from provided slice into the buffer.
+// If the buffer already contains any data, it will be overwritten.
+// The length of enclosing slice must be equal to the number of channels,
+// otherwise function will panic. Length is set to the longest
+// nested slice length.
+func WriteStripedFloat64(s Floating, buf [][]float64) Floating {
+	mustSameChannels(s.Channels(), len(buf))
+	n := 0
+	for channel := 0; channel < s.Channels(); channel++ {
+		pos := 0
+		for pos < min(s.Capacity(), len(buf[channel])) {
+			s.setSample(channel, pos, buf[channel][pos])
 			pos++
 		}
 		if n < pos {
@@ -332,12 +353,13 @@ func WriteInt64(s Signed, buf [][]int64) Signed {
 // otherwise function will panic. Length is set to the longest
 // nested slice length. Sample values are capped by maximum value of
 // the buffer bit depth.
-func WriteStripedInt(s Signed, buf []int) Signed {
+func WriteStripedInt(s Signed, buf [][]int) Signed {
+	mustSameChannels(s.Channels(), len(buf))
 	var n int
 	for channel := 0; channel < s.Channels(); channel++ {
 		pos := 0
-		for pos < s.Capacity() && pos < interLen(s.Channels(), len(buf)) {
-			s.setSample(channel, pos, s.BitDepth().SignedValue(int64(buf[interPos(s.Channels(), channel, pos)])))
+		for pos < min(s.Capacity(), len(buf[channel])) {
+			s.setSample(channel, pos, s.BitDepth().SignedValue(int64(buf[channel][pos])))
 			pos++
 		}
 		if n < pos {
@@ -353,12 +375,13 @@ func WriteStripedInt(s Signed, buf []int) Signed {
 // otherwise function will panic. Length is set to the longest
 // nested slice length. Sample values are capped by maximum value of
 // the buffer bit depth.
-func WriteStripedInt64(s Signed, buf []int64) Signed {
+func WriteStripedInt64(s Signed, buf [][]int64) Signed {
+	mustSameChannels(s.Channels(), len(buf))
 	var n int
 	for channel := 0; channel < s.Channels(); channel++ {
 		pos := 0
-		for pos < s.Capacity() && pos < interLen(s.Channels(), len(buf)) {
-			s.setSample(channel, pos, s.BitDepth().SignedValue(buf[interPos(s.Channels(), channel, pos)]))
+		for pos < min(s.Capacity(), len(buf[channel])) {
+			s.setSample(channel, pos, s.BitDepth().SignedValue(buf[channel][pos]))
 			pos++
 		}
 		if n < pos {
