@@ -1,18 +1,18 @@
 package signal
 
-// Int64 is int64 signed fixed signal.
-type Int64 struct {
-	buffer []int64
+// Uint64 is uint64 unsigned fixed signal.
+type Uint64 struct {
+	buffer []uint64
 	capacity
 	channels
 	bitDepth
 	length
 }
 
-// Int64 allocates new sequential int64 signal buffer.
-func (a Allocator) Int64(bd BitDepth) Int64 {
-	return Int64{
-		buffer:   make([]int64, a.Capacity*a.Channels),
+// Uint64 allocates new uint64 signal buffer.
+func (a Allocator) Uint64(bd BitDepth) Uint64 {
+	return Uint64{
+		buffer:   make([]uint64, a.Channels*a.Capacity),
 		capacity: capacity(a.Capacity),
 		channels: channels(a.Channels),
 		bitDepth: bd.cap(BitDepth64),
@@ -20,25 +20,25 @@ func (a Allocator) Int64(bd BitDepth) Int64 {
 }
 
 // MaxBitDepth returns maximal bit depth for this type.
-func (s Int64) MaxBitDepth() BitDepth {
+func (s Uint64) MaxBitDepth() BitDepth {
 	return BitDepth64
 }
 
 // Sample returns signal value for provided channel and position.
-func (s Int64) Sample(channel, pos int) int64 {
+func (s Uint64) Sample(channel, pos int) uint64 {
 	return s.buffer[interPos(s.Channels(), channel, pos)]
 }
 
-func (s Int64) setSample(channel, pos int, val int64) {
+func (s Uint64) setSample(channel, pos int, val uint64) {
 	s.buffer[interPos(s.Channels(), channel, pos)] = val
 }
 
-func (s Int64) setLength(l int) Signed {
+func (s Uint64) setLength(l int) Unsigned {
 	s.length = length(l)
 	return s
 }
 
-func (s Int64) Slice(start, end int) Signed {
+func (s Uint64) Slice(start, end int) Unsigned {
 	s.buffer = s.buffer[interPos(s.Channels(), 0, start):]
 	s.capacity = capacity(s.Capacity() - start)
 	return s.setLength(end - start)
@@ -49,12 +49,12 @@ func (s Int64) Slice(start, end int) Signed {
 // otherwise function will panic. If current buffer doesn't have enough capacity,
 // additional memory will be allocated and result buffer will have capacity and
 // length equal to sum of lengths.
-func (s Int64) Append(src Signed) Signed {
+func (s Uint64) Append(src Unsigned) Unsigned {
 	mustSameChannels(s.Channels(), src.Channels())
 	mustSameBitDepth(s.BitDepth(), src.BitDepth())
 	newLen := s.Length() + src.Length()
 	if s.Capacity() < newLen {
-		s.buffer = append(s.buffer, make([]int64, (newLen-s.Capacity())*s.Channels())...)
+		s.buffer = append(s.buffer, make([]uint64, (newLen-s.Capacity())*s.Channels())...)
 		s.capacity = capacity(newLen)
 	}
 	for channel := 0; channel < s.Channels(); channel++ {

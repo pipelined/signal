@@ -31,6 +31,12 @@ func (s Float64) setSample(channel, pos int, value float64) {
 	s.buffer[interPos(s.Channels(), channel, pos)] = value
 }
 
+func (s Float64) Slice(start, end int) Floating {
+	s.buffer = s.buffer[interPos(s.Channels(), 0, start):]
+	s.capacity = capacity(s.Capacity() - start)
+	return s.setLength(end - start)
+}
+
 // Append appends data from src buffer to the end of the buffer.
 // The result buffer has capacity and length equal to sum of lengths.
 func (s Float64) Append(src Floating) Floating {
