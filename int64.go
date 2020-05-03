@@ -3,17 +3,14 @@ package signal
 // Int64 is int64 signed fixed signal.
 type Int64 struct {
 	buffer []int64
-	capacity
 	channels
 	bitDepth
-	length
 }
 
 // Int64 allocates new sequential int64 signal buffer.
 func (a Allocator) Int64(bd BitDepth) Int64 {
 	return Int64{
-		buffer:   make([]int64, a.Capacity*a.Channels),
-		capacity: capacity(a.Capacity),
+		buffer:   make([]int64, 0, a.Capacity*a.Channels),
 		channels: channels(a.Channels),
 		bitDepth: bd.cap(BitDepth64),
 	}
@@ -24,24 +21,48 @@ func (s Int64) MaxBitDepth() BitDepth {
 	return BitDepth64
 }
 
-// Sample returns signal value for provided channel and position.
-func (s Int64) Sample(channel, pos int) int64 {
-	return s.buffer[interPos(s.Channels(), channel, pos)]
+func (s Int64) Capacity() int {
+	return cap(s.buffer) / int(s.channels)
 }
 
-func (s Int64) setSample(channel, pos int, val int64) {
-	s.buffer[interPos(s.Channels(), channel, pos)] = val
+func (s Int64) Length() int {
+	return len(s.buffer) / int(s.channels)
 }
 
-func (s Int64) setLength(l int) Signed {
-	s.length = length(l)
+func (s Int64) Cap() int {
+	return cap(s.buffer)
+}
+
+func (s Int64) Len() int {
+	return len(s.buffer)
+}
+
+func (s Int64) Reset() Signed {
+	return s.Slice(0, 0)
+}
+
+func (s Int64) AppendSample(value int64) Signed {
+	if len(s.buffer) == cap(s.buffer) {
+		return s
+	}
+	s.buffer = append(s.buffer, value)
 	return s
 }
 
+// Sample returns signal value for provided channel and position.
+func (s Int64) Sample(pos int) int64 {
+	return s.buffer[pos]
+}
+
+func (s Int64) SetSample(pos int, value int64) {
+	s.buffer[pos] = value
+}
+
 func (s Int64) Slice(start, end int) Signed {
-	s.buffer = s.buffer[interPos(s.Channels(), 0, start):]
-	s.capacity = capacity(s.Capacity() - start)
-	return s.setLength(end - start)
+	start = s.ChannelPos(0, start)
+	end = s.ChannelPos(0, end)
+	s.buffer = s.buffer[start:end]
+	return s
 }
 
 // Append appends [0:Length] data from src to current buffer and returns new
@@ -52,16 +73,16 @@ func (s Int64) Slice(start, end int) Signed {
 func (s Int64) Append(src Signed) Signed {
 	mustSameChannels(s.Channels(), src.Channels())
 	mustSameBitDepth(s.BitDepth(), src.BitDepth())
-	newLen := s.Length() + src.Length()
-	if s.Capacity() < newLen {
-		s.buffer = append(s.buffer, make([]int64, (newLen-s.Capacity())*s.Channels())...)
-		s.capacity = capacity(newLen)
+	if s.Cap() < s.Len()+src.Len() {
+		// if capacity is not enough, then:
+		// * extend buffer to cap;
+		// * allocate and append buffer with length of source capacity;
+		// * slice it to current data length;
+		s.buffer = append(s.buffer[:s.Cap()], make([]int64, src.Cap())...)[:s.Len()]
 	}
-	for channel := 0; channel < s.Channels(); channel++ {
-		for pos := 0; pos < src.Length(); pos++ {
-			s.setSample(channel, pos+s.Length(), src.Sample(channel, pos))
-		}
+	result := Signed(s)
+	for pos := 0; pos < src.Len(); pos++ {
+		result = result.AppendSample(src.Sample(pos))
 	}
-	s.length = length(newLen)
-	return s
+	return result
 }
