@@ -3,54 +3,74 @@ package signal
 // Float64 is a sequential float64 floating-point signal.
 type Float64 struct {
 	buffer []float64
-	capacity
 	channels
-	length
 }
 
 // Float64 allocates new sequential float64 signal buffer.
 func (a Allocator) Float64() Float64 {
 	return Float64{
-		buffer:   make([]float64, a.Channels*a.Capacity),
-		capacity: capacity(a.Capacity),
+		buffer:   make([]float64, 0, a.Channels*a.Capacity),
 		channels: channels(a.Channels),
 	}
 }
 
-func (s Float64) setLength(l int) Floating {
-	s.length = length(l)
+func (s Float64) Capacity() int {
+	return cap(s.buffer) / int(s.channels)
+}
+
+func (s Float64) Length() int {
+	return len(s.buffer) / int(s.channels)
+}
+
+func (s Float64) Cap() int {
+	return cap(s.buffer)
+}
+
+func (s Float64) Len() int {
+	return len(s.buffer)
+}
+
+func (s Float64) Reset() Floating {
+	return s.Slice(0, 0)
+}
+
+func (s Float64) AppendSample(value float64) Floating {
+	if len(s.buffer) == cap(s.buffer) {
+		return s
+	}
+	s.buffer = append(s.buffer, value)
 	return s
 }
 
 // Sample returns signal value for provided channel and position.
-func (s Float64) Sample(channel, pos int) float64 {
-	return s.buffer[interPos(s.Channels(), channel, pos)]
+func (s Float64) Sample(pos int) float64 {
+	return s.buffer[pos]
 }
 
-func (s Float64) setSample(channel, pos int, value float64) {
-	s.buffer[interPos(s.Channels(), channel, pos)] = value
+func (s Float64) SetSample(pos int, value float64) {
+	s.buffer[pos] = value
 }
 
 func (s Float64) Slice(start, end int) Floating {
-	s.buffer = s.buffer[interPos(s.Channels(), 0, start):]
-	s.capacity = capacity(s.Capacity() - start)
-	return s.setLength(end - start)
+	start = s.ChannelPos(0, start)
+	end = s.ChannelPos(0, end)
+	s.buffer = s.buffer[start:end]
+	return s
 }
 
 // Append appends data from src buffer to the end of the buffer.
-// The result buffer has capacity and length equal to sum of lengths.
 func (s Float64) Append(src Floating) Floating {
 	mustSameChannels(s.Channels(), src.Channels())
-	newLen := s.Length() + src.Length()
-	if s.Capacity() < newLen {
-		s.buffer = append(s.buffer, make([]float64, (newLen-s.Capacity())*s.Channels())...)
-		s.capacity = capacity(newLen)
+	if s.Cap() < s.Len()+src.Len() {
+		// if capacity is not enough, then:
+		// * extend buffer to cap;
+		// * allocate and append buffer with length of source capacity;
+		// * slice it to current data length;
+		s.buffer = append(s.buffer[:s.Cap()], make([]float64, src.Cap())...)[:s.Len()]
 	}
-	for channel := 0; channel < s.Channels(); channel++ {
-		for pos := 0; pos < src.Length(); pos++ {
-			s.setSample(channel, pos+s.Length(), src.Sample(channel, pos))
-		}
+	result := Floating(s)
+	for pos := 0; pos < src.Len(); pos++ {
+		result = result.AppendSample(src.Sample(pos))
 	}
-	s.length = length(newLen)
-	return s
+	return result
 }

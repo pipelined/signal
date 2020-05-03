@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	_ signal.Signed   = signal.Allocator{}.Int64(signal.MaxBitDepth)
-	_ signal.Unsigned = signal.Allocator{}.Uint64(signal.MaxBitDepth)
+	_ signal.Signed = signal.Allocator{}.Int64(signal.MaxBitDepth)
+	// _ signal.Unsigned = signal.Allocator{}.Uint64(signal.MaxBitDepth)
 	_ signal.Floating = signal.Allocator{}.Float64()
 )
 
@@ -131,13 +131,6 @@ func TestSignedAsFloating(t *testing.T) {
 }
 
 func TestWrite(t *testing.T) {
-	// testOk := func(s signal.Signed, ex expected) func(t *testing.T) {
-	// 	return func(t *testing.T) {
-	// 		t.Helper()
-	// 		assertEqual(t, "slices", result(s), ex.data)
-	// 		assertEqual(t, "length", s.Length(), ex.length)
-	// 	}
-	// }
 	testFloatingOk := func(s signal.Floating, ex expected) func(t *testing.T) {
 		return func(t *testing.T) {
 			t.Helper()
@@ -553,22 +546,48 @@ func TestWrite(t *testing.T) {
 			},
 		},
 	))
-	t.Run("float64 striped short buffer", testFloatingOk(
-		signal.WriteStripedFloat64(
-			signal.Allocator{
-				Capacity: 10,
-				Channels: 2,
-			}.Float64(),
-			[][]float64{
-				{1, 2, 3},
-				{11, 12, 13},
-			}),
+	t.Run("float64 multiple buffers", testFloatingOk(
+		signal.WriteFloat64(
+			signal.WriteFloat64(
+				signal.Allocator{
+					Capacity: 10,
+					Channels: 2,
+				}.Float64(),
+				[]float64{1, 11, 2, 12, 3, 13},
+			),
+			[]float64{101, 111, 102, 112, 103, 113, 104, 114, 105, 115, 106, 116, 107, 117, 108, 118, 109, 119, 110, 120},
+		),
 		expected{
-			length:   3,
+			length:   10,
 			capacity: 10,
 			data: [][]float64{
-				{1, 2, 3},
-				{11, 12, 13},
+				{1, 2, 3, 101, 102, 103, 104, 105, 106, 107},
+				{11, 12, 13, 111, 112, 113, 114, 115, 116, 117},
+			},
+		},
+	))
+	t.Run("float64 striped multiple buffers", testFloatingOk(
+		signal.WriteStripedFloat64(
+			signal.WriteStripedFloat64(
+				signal.Allocator{
+					Capacity: 10,
+					Channels: 2,
+				}.Float64(),
+				[][]float64{
+					{1, 2, 3},
+					{11, 12, 13},
+				}),
+			[][]float64{
+				{101, 102, 103, 104, 105, 106, 107, 108, 109, 110},
+				{111, 112, 113, 114, 115, 116, 117, 118, 119, 120},
+			},
+		),
+		expected{
+			length:   10,
+			capacity: 10,
+			data: [][]float64{
+				{1, 2, 3, 101, 102, 103, 104, 105, 106, 107},
+				{11, 12, 13, 111, 112, 113, 114, 115, 116, 117},
 			},
 		},
 	))
@@ -693,7 +712,7 @@ func TestAppend(t *testing.T) {
 			},
 		).Append(
 			signal.WriteStripedFloat64(
-				signal.Allocator{Channels: 2, Capacity: 2}.Float64(),
+				signal.Allocator{Channels: 2, Capacity: 3}.Float64(),
 				[][]float64{
 					{3, 4},
 					{13, 14},
@@ -702,7 +721,7 @@ func TestAppend(t *testing.T) {
 		),
 		expected{
 			length:   4,
-			capacity: 4,
+			capacity: 5,
 			data: [][]float64{
 				{1, 2, 3, 4},
 				{11, 12, 13, 14},
@@ -790,7 +809,7 @@ func result(sig signal.Signal) interface{} {
 		for i := range result {
 			result[i] = make([]int64, s.Length())
 		}
-		signal.ReadInt64(s, result)
+		signal.ReadStripedInt64(s, result)
 		return result
 	case signal.Unsigned:
 		return nil
@@ -799,7 +818,7 @@ func result(sig signal.Signal) interface{} {
 		for i := range result {
 			result[i] = make([]float64, s.Length())
 		}
-		signal.ReadFloat64(s, result)
+		signal.ReadStripedFloat64(s, result)
 		return result
 	default:
 		panic(fmt.Sprintf("unsupported result type: %T", sig))
