@@ -221,12 +221,12 @@ func FloatingAsUnsigned(src Floating, dst Unsigned) Unsigned {
 		return dst
 	}
 	// determine the multiplier for bit depth conversion
-	msv := dst.BitDepth().MaxSignedValue()
+	msv := uint64(dst.BitDepth().MaxSignedValue())
 	for pos := 0; pos < length; pos++ {
 		if sample := src.Sample(pos); sample > 0 {
-			dst = dst.AppendSample(uint64(int64(sample)*msv + (msv + 1)))
+			dst = dst.AppendSample(uint64(sample)*msv + (msv + 1))
 		} else {
-			dst = dst.AppendSample(uint64(int64(sample)*(msv+1) + (msv + 1)))
+			dst = dst.AppendSample(uint64(sample)*(msv+1) + (msv + 1))
 		}
 	}
 	return dst
@@ -241,12 +241,32 @@ func SignedAsFloating(src Signed, dst Floating) Floating {
 		return dst
 	}
 	// determine the divider for bit depth conversion.
-	divider := float64(src.BitDepth().MaxSignedValue())
+	msv := float64(src.BitDepth().MaxSignedValue())
 	for pos := 0; pos < length; pos++ {
 		if sample := src.Sample(pos); sample > 0 {
-			dst = dst.AppendSample(float64(sample) / divider)
+			dst = dst.AppendSample(float64(sample) / msv)
 		} else {
-			dst = dst.AppendSample(float64(sample) / (divider + 1))
+			dst = dst.AppendSample(float64(sample) / (msv + 1))
+		}
+	}
+	return dst
+}
+
+// UnsignedAsFloating converts unsigned fixed-point signal into floating-point.
+func UnsignedAsFloating(src Unsigned, dst Floating) Floating {
+	mustSameChannels(src.Channels(), dst.Channels())
+	// cap length to destination capacity.
+	length := min(src.Len(), dst.Cap()-dst.Len())
+	if length == 0 {
+		return dst
+	}
+	// determine the multiplier for bit depth conversion
+	msv := float64(src.BitDepth().MaxSignedValue())
+	for pos := 0; pos < length; pos++ {
+		if sample := src.Sample(pos); sample > 0 {
+			dst = dst.AppendSample((float64(sample) - (msv + 1)) / msv)
+		} else {
+			dst = dst.AppendSample((float64(sample) - (msv + 1)) / (msv + 1))
 		}
 	}
 	return dst
