@@ -30,34 +30,34 @@ type (
 	// Signed is a digital signal represented with signed fixed-point values.
 	Signed interface {
 		Fixed
-		Reset() Signed
-		AppendSample(int64) Signed
 		Slice(int, int) Signed
 		Append(Signed) Signed
+		AppendSample(int64) Signed
 		Sample(pos int) int64
 		SetSample(pos int, value int64)
+		Reset() Signed
 	}
 
 	// Unsigned is a digital signal represented with unsigned fixed-point values.
 	Unsigned interface {
 		Fixed
-		Reset() Signed
-		AppendSample(float64) Signed
 		Slice(int, int) Unsigned
 		Append(Unsigned) Unsigned
+		AppendSample(uint64) Unsigned
 		Sample(pos int) uint64
 		SetSample(pos int, value uint64)
+		Reset() Unsigned
 	}
 
 	// Floating is a digital signal represented with floating-point values.
 	Floating interface {
 		Signal
-		Reset() Floating
-		AppendSample(float64) Floating
 		Slice(int, int) Floating
 		Append(Floating) Floating
+		AppendSample(float64) Floating
 		Sample(pos int) float64
 		SetSample(pos int, value float64)
+		Reset() Floating
 	}
 
 	// Allocator provides allocation of various signal buffers.
@@ -93,39 +93,47 @@ const (
 	MaxBitDepth BitDepth = BitDepth64
 )
 
-var resolutions [64]uint64
+var (
+	maximum [65]uint64
+	minimum [64]int64
+)
 
 func init() {
-	for i := range resolutions {
-		resolutions[i] = 1 << i
+	for i := range maximum {
+		maximum[i] = (1 << i) - 1
+	}
+	for i := range minimum {
+		minimum[i] = (-1) << i
 	}
 }
 
-// MaxValue returns the maximum value for a bit depth.
-func (b BitDepth) MaxValue(signed bool) uint64 {
-	if signed {
-		if b == 0 {
-			return 1
-		}
-		b--
-	}
-	return resolutions[b] - 1
-}
-
-// MinValue returns the minimum value for a bit depth.
-func (b BitDepth) MinValue() int64 {
+// MaxSignedValue returns the maximum signed value for a bit depth.
+func (b BitDepth) MaxSignedValue() int64 {
 	if b == 0 {
-		return 1
+		return 0
 	}
-	b--
-	return -int64(resolutions[b])
+	return int64(maximum[b-1])
+}
+
+// MaxUnsignedValue returns the maximum unsigned value for a bit depth.
+func (b BitDepth) MaxUnsignedValue() uint64 {
+	if b == 0 {
+		return 0
+	}
+	return maximum[b]
+}
+
+// MinSignedValue returns the minimum signed value for a bit depth.
+func (b BitDepth) MinSignedValue() int64 {
+	if b == 0 {
+		return 0
+	}
+	return minimum[b-1]
 }
 
 // UnsignedValue limits the unsigned signal value for a given bit depth.
 func (b BitDepth) UnsignedValue(val uint64) uint64 {
-	var (
-		max = b.MaxValue(true)
-	)
+	max := b.MaxUnsignedValue()
 	switch {
 	case val > max:
 		return max
@@ -136,10 +144,8 @@ func (b BitDepth) UnsignedValue(val uint64) uint64 {
 
 // SignedValue limits the signed signal value for a given bit depth.
 func (b BitDepth) SignedValue(val int64) int64 {
-	var (
-		max = int64(b.MaxValue(true))
-		min = b.MinValue()
-	)
+	max := b.MaxSignedValue()
+	min := b.MinSignedValue()
 	switch {
 	case val < min:
 		return min
@@ -171,6 +177,21 @@ func (rate SampleRate) SamplesIn(d time.Duration) int {
 	return int(math.Round(float64(rate) / float64(time.Second) * float64(d)))
 }
 
+// FloatingAsFloating converts floating-point signal into floating-point.
+func FloatingAsFloating(src Floating, dst Floating) Floating {
+	mustSameChannels(src.Channels(), dst.Channels())
+	// cap length to destination capacity.
+	length := min(src.Len(), dst.Cap()-dst.Len())
+	if length == 0 {
+		return dst
+	}
+	// determine the multiplier for bit depth conversion
+	for pos := 0; pos < length; pos++ {
+		dst = dst.AppendSample(src.Sample(pos))
+	}
+	return dst
+}
+
 // FloatingAsSigned converts floating-point signal into signed fixed-point.
 func FloatingAsSigned(src Floating, dst Signed) Signed {
 	mustSameChannels(src.Channels(), dst.Channels())
@@ -180,13 +201,32 @@ func FloatingAsSigned(src Floating, dst Signed) Signed {
 		return dst
 	}
 	// determine the multiplier for bit depth conversion
-	multiplier := float64(dst.BitDepth().MaxValue(true))
-
+	msv := dst.BitDepth().MaxSignedValue()
 	for pos := 0; pos < length; pos++ {
 		if sample := src.Sample(pos); sample > 0 {
-			dst = dst.AppendSample(int64(sample * multiplier))
+			dst = dst.AppendSample(int64(sample) * msv)
 		} else {
-			dst = dst.AppendSample(int64(sample * (multiplier + 1)))
+			dst = dst.AppendSample(int64(sample) * (msv + 1))
+		}
+	}
+	return dst
+}
+
+// FloatingAsUnsigned converts floating-point signal into unsigned fixed-point.
+func FloatingAsUnsigned(src Floating, dst Unsigned) Unsigned {
+	mustSameChannels(src.Channels(), dst.Channels())
+	// cap length to destination capacity.
+	length := min(src.Len(), dst.Cap()-dst.Len())
+	if length == 0 {
+		return dst
+	}
+	// determine the multiplier for bit depth conversion
+	msv := dst.BitDepth().MaxSignedValue()
+	for pos := 0; pos < length; pos++ {
+		if sample := src.Sample(pos); sample > 0 {
+			dst = dst.AppendSample(uint64(int64(sample)*msv + (msv + 1)))
+		} else {
+			dst = dst.AppendSample(uint64(int64(sample)*(msv+1) + (msv + 1)))
 		}
 	}
 	return dst
@@ -201,7 +241,7 @@ func SignedAsFloating(src Signed, dst Floating) Floating {
 		return dst
 	}
 	// determine the divider for bit depth conversion.
-	divider := float64(src.BitDepth().MaxValue(true))
+	divider := float64(src.BitDepth().MaxSignedValue())
 	for pos := 0; pos < length; pos++ {
 		if sample := src.Sample(pos); sample > 0 {
 			dst = dst.AppendSample(float64(sample) / divider)
@@ -211,6 +251,13 @@ func SignedAsFloating(src Signed, dst Floating) Floating {
 	}
 	return dst
 }
+
+//TODO:
+// SignedAsUnsigned
+// SignedAsSigned
+// UnsingedAsFloating
+// UnsignedAsSigned
+// UnsignedAsUnsigned
 
 func (bd bitDepth) BitDepth() BitDepth {
 	return BitDepth(bd)
@@ -255,28 +302,22 @@ func WriteFloat64(s Floating, buf []float64) Floating {
 
 // WriteInt writes values from provided slice into the buffer.
 // If the buffer already contains any data, it will be overwritten.
-// The length of provided slice must be equal to the number of channels,
-// otherwise function will panic. Length is set to the longest
-// nested slice length. Sample values are capped by maximum value of
-// the buffer bit depth.
+// Sample values are capped by maximum value of the buffer bit depth.
 func WriteInt(s Signed, buf []int) Signed {
 	length := min(s.Cap()-s.Len(), len(buf))
 	for pos := 0; pos < length; pos++ {
-		s = s.AppendSample(s.BitDepth().SignedValue(int64(buf[pos])))
+		s = s.AppendSample(int64(buf[pos]))
 	}
 	return s
 }
 
 // WriteInt64 writes values from provided slice into the buffer.
 // If the buffer already contains any data, it will be overwritten.
-// The length of provided slice must be equal to the number of channels,
-// otherwise function will panic. Length is set to the longest
-// nested slice length. Sample values are capped by maximum value of
-// the buffer bit depth.
+// Sample values are capped by maximum value of the buffer bit depth.
 func WriteInt64(s Signed, buf []int64) Signed {
 	length := min(s.Cap()-s.Len(), len(buf))
 	for pos := 0; pos < length; pos++ {
-		s = s.AppendSample(s.BitDepth().SignedValue(buf[pos]))
+		s = s.AppendSample(buf[pos])
 	}
 	return s
 }
@@ -325,7 +366,7 @@ func WriteStripedInt(s Signed, buf [][]int) Signed {
 	for pos := 0; pos < length; pos++ {
 		for channel := 0; channel < s.Channels(); channel++ {
 			if pos < len(buf[channel]) {
-				s = s.AppendSample(s.BitDepth().SignedValue(int64(buf[channel][pos])))
+				s = s.AppendSample(int64(buf[channel][pos]))
 			} else {
 				s = s.AppendSample(0)
 			}
@@ -352,7 +393,7 @@ func WriteStripedInt64(s Signed, buf [][]int64) Signed {
 	for pos := 0; pos < length; pos++ {
 		for channel := 0; channel < s.Channels(); channel++ {
 			if pos < len(buf[channel]) {
-				s = s.AppendSample(s.BitDepth().SignedValue(buf[channel][pos]))
+				s = s.AppendSample(buf[channel][pos])
 			} else {
 				s = s.AppendSample(0)
 			}
