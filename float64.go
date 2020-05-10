@@ -75,13 +75,29 @@ func (s Float64) Append(src Floating) Floating {
 	return result
 }
 
-// WriteFloat64 writes values from provided slice into the buffer.
-func WriteFloat64(s Floating, buf []float64) Floating {
-	length := min(s.Cap()-s.Len(), len(buf))
+func ReadFloat64(src Floating, dst []float64) {
+	length := min(src.Len(), len(dst))
 	for pos := 0; pos < length; pos++ {
-		s = s.AppendSample(buf[pos])
+		dst[pos] = src.Sample(pos)
 	}
-	return s
+}
+
+func ReadStripedFloat64(src Floating, dst [][]float64) {
+	mustSameChannels(src.Channels(), len(dst))
+	for channel := 0; channel < src.Channels(); channel++ {
+		for pos := 0; pos < src.Length() && pos < len(dst[channel]); pos++ {
+			dst[channel][pos] = src.Sample(src.ChannelPos(channel, pos))
+		}
+	}
+}
+
+// WriteFloat64 writes values from provided slice into the buffer.
+func WriteFloat64(src []float64, dst Floating) Floating {
+	length := min(dst.Cap()-dst.Len(), len(src))
+	for pos := 0; pos < length; pos++ {
+		dst = dst.AppendSample(src[pos])
+	}
+	return dst
 }
 
 // WriteStripedFloat64 writes values from provided slice into the buffer.
@@ -89,39 +105,23 @@ func WriteFloat64(s Floating, buf []float64) Floating {
 // The length of enclosing slice must be equal to the number of channels,
 // otherwise function will panic. Length is set to the longest
 // nested slice length.
-func WriteStripedFloat64(s Floating, buf [][]float64) Floating {
-	mustSameChannels(s.Channels(), len(buf))
+func WriteStripedFloat64(src [][]float64, dst Floating) Floating {
+	mustSameChannels(dst.Channels(), len(src))
 	var length int
-	for i := range buf {
-		if len(buf[i]) > length {
-			length = len(buf[i])
+	for i := range src {
+		if len(src[i]) > length {
+			length = len(src[i])
 		}
 	}
-	length = min(length, s.Capacity()-s.Length())
+	length = min(length, dst.Capacity()-dst.Length())
 	for pos := 0; pos < length; pos++ {
-		for channel := 0; channel < s.Channels(); channel++ {
-			if pos < len(buf[channel]) {
-				s = s.AppendSample(buf[channel][pos])
+		for channel := 0; channel < dst.Channels(); channel++ {
+			if pos < len(src[channel]) {
+				dst = dst.AppendSample(src[channel][pos])
 			} else {
-				s = s.AppendSample(0)
+				dst = dst.AppendSample(0)
 			}
 		}
 	}
-	return s
-}
-
-func ReadFloat64(s Floating, buf []float64) {
-	length := min(s.Len(), len(buf))
-	for pos := 0; pos < length; pos++ {
-		buf[pos] = s.Sample(pos)
-	}
-}
-
-func ReadStripedFloat64(s Floating, buf [][]float64) {
-	mustSameChannels(s.Channels(), len(buf))
-	for channel := 0; channel < s.Channels(); channel++ {
-		for pos := 0; pos < min(s.Length(), len(buf[channel])); pos++ {
-			buf[channel][pos] = s.Sample(s.ChannelPos(channel, pos))
-		}
-	}
+	return dst
 }
