@@ -87,11 +87,18 @@ func (s Uint64) Append(src Unsigned) Unsigned {
 	return result
 }
 
-func ReadStripedUint64(s Unsigned, buf [][]uint64) {
-	mustSameChannels(s.Channels(), len(buf))
-	for channel := 0; channel < s.Channels(); channel++ {
-		for pos := 0; pos < s.Length() && pos < len(buf[channel]); pos++ {
-			buf[channel][pos] = s.Sample(s.ChannelPos(channel, pos))
+func ReadUint64(src Unsigned, dst []uint64) {
+	length := min(src.Len(), len(dst))
+	for pos := 0; pos < length; pos++ {
+		dst[pos] = src.Sample(pos)
+	}
+}
+
+func ReadStripedUint64(src Unsigned, dst [][]uint64) {
+	mustSameChannels(src.Channels(), len(dst))
+	for channel := 0; channel < src.Channels(); channel++ {
+		for pos := 0; pos < src.Length() && pos < len(dst[channel]); pos++ {
+			dst[channel][pos] = src.Sample(src.ChannelPos(channel, pos))
 		}
 	}
 }
@@ -99,12 +106,12 @@ func ReadStripedUint64(s Unsigned, buf [][]uint64) {
 // WriteUint64 writes values from provided slice into the buffer.
 // If the buffer already contains any data, it will be overwritten.
 // Sample values are capped by maximum value of the buffer bit depth.
-func WriteUint64(s Unsigned, buf []uint64) Unsigned {
-	length := min(s.Cap()-s.Len(), len(buf))
+func WriteUint64(src []uint64, dst Unsigned) Unsigned {
+	length := min(dst.Cap()-dst.Len(), len(src))
 	for pos := 0; pos < length; pos++ {
-		s = s.AppendSample(buf[pos])
+		dst = dst.AppendSample(src[pos])
 	}
-	return s
+	return dst
 }
 
 // WriteStripedUint64 writes values from provided slice into the buffer.
@@ -113,23 +120,23 @@ func WriteUint64(s Unsigned, buf []uint64) Unsigned {
 // otherwise function will panic. Length is set to the longest
 // nested slice length. Sample values are capped by maximum value of
 // the buffer bit depth.
-func WriteStripedUint64(s Unsigned, buf [][]uint64) Unsigned {
-	mustSameChannels(s.Channels(), len(buf))
+func WriteStripedUint64(src [][]uint64, dst Unsigned) Unsigned {
+	mustSameChannels(dst.Channels(), len(src))
 	var length int
-	for i := range buf {
-		if len(buf[i]) > length {
-			length = len(buf[i])
+	for i := range src {
+		if len(src[i]) > length {
+			length = len(src[i])
 		}
 	}
-	length = min(length, s.Capacity()-s.Length())
+	length = min(length, dst.Capacity()-dst.Length())
 	for pos := 0; pos < length; pos++ {
-		for channel := 0; channel < s.Channels(); channel++ {
-			if pos < len(buf[channel]) {
-				s = s.AppendSample(buf[channel][pos])
+		for channel := 0; channel < dst.Channels(); channel++ {
+			if pos < len(src[channel]) {
+				dst = dst.AppendSample(src[channel][pos])
 			} else {
-				s = s.AppendSample(0)
+				dst = dst.AppendSample(0)
 			}
 		}
 	}
-	return s
+	return dst
 }

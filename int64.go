@@ -90,12 +90,12 @@ func (s Int64) Append(src Signed) Signed {
 // WriteInt64 writes values from provided slice into the buffer.
 // If the buffer already contains any data, it will be overwritten.
 // Sample values are capped by maximum value of the buffer bit depth.
-func WriteInt64(s Signed, buf []int64) Signed {
-	length := min(s.Cap()-s.Len(), len(buf))
+func WriteInt64(src []int64, dst Signed) Signed {
+	length := min(dst.Cap()-dst.Len(), len(src))
 	for pos := 0; pos < length; pos++ {
-		s = s.AppendSample(buf[pos])
+		dst = dst.AppendSample(src[pos])
 	}
-	return s
+	return dst
 }
 
 // WriteStripedInt64 writes values from provided slice into the buffer.
@@ -104,39 +104,39 @@ func WriteInt64(s Signed, buf []int64) Signed {
 // otherwise function will panic. Length is set to the longest
 // nested slice length. Sample values are capped by maximum value of
 // the buffer bit depth.
-func WriteStripedInt64(s Signed, buf [][]int64) Signed {
-	mustSameChannels(s.Channels(), len(buf))
+func WriteStripedInt64(src [][]int64, dst Signed) Signed {
+	mustSameChannels(dst.Channels(), len(src))
 	var length int
-	for i := range buf {
-		if len(buf[i]) > length {
-			length = len(buf[i])
+	for i := range src {
+		if len(src[i]) > length {
+			length = len(src[i])
 		}
 	}
-	length = min(length, s.Capacity()-s.Length())
+	length = min(length, dst.Capacity()-dst.Length())
 	for pos := 0; pos < length; pos++ {
-		for channel := 0; channel < s.Channels(); channel++ {
-			if pos < len(buf[channel]) {
-				s = s.AppendSample(buf[channel][pos])
+		for channel := 0; channel < dst.Channels(); channel++ {
+			if pos < len(src[channel]) {
+				dst = dst.AppendSample(int64(src[channel][pos]))
 			} else {
-				s = s.AppendSample(0)
+				dst = dst.AppendSample(0)
 			}
 		}
 	}
-	return s
+	return dst
 }
 
-func ReadInt64(s Signed, buf []int64) {
-	length := min(s.Len(), len(buf))
+func ReadInt64(src Signed, dst []int64) {
+	length := min(src.Len(), len(dst))
 	for pos := 0; pos < length; pos++ {
-		buf[pos] = s.Sample(pos)
+		dst[pos] = src.Sample(pos)
 	}
 }
 
-func ReadStripedInt64(s Signed, buf [][]int64) {
-	mustSameChannels(s.Channels(), len(buf))
-	for channel := 0; channel < s.Channels(); channel++ {
-		for pos := 0; pos < s.Length() && pos < len(buf[channel]); pos++ {
-			buf[channel][pos] = s.Sample(s.ChannelPos(channel, pos))
+func ReadStripedInt64(src Signed, dst [][]int64) {
+	mustSameChannels(src.Channels(), len(dst))
+	for channel := 0; channel < src.Channels(); channel++ {
+		for pos := 0; pos < src.Length() && pos < len(dst[channel]); pos++ {
+			dst[channel][pos] = src.Sample(src.ChannelPos(channel, pos))
 		}
 	}
 }

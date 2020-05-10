@@ -294,12 +294,12 @@ func mustSameBitDepth(bd1, bd2 BitDepth) {
 // WriteInt writes values from provided slice into the buffer.
 // If the buffer already contains any data, it will be overwritten.
 // Sample values are capped by maximum value of the buffer bit depth.
-func WriteInt(s Signed, buf []int) Signed {
-	length := min(s.Cap()-s.Len(), len(buf))
+func WriteInt(src []int, dst Signed) Signed {
+	length := min(dst.Cap()-dst.Len(), len(src))
 	for pos := 0; pos < length; pos++ {
-		s = s.AppendSample(int64(buf[pos]))
+		dst = dst.AppendSample(int64(src[pos]))
 	}
-	return s
+	return dst
 }
 
 // WriteStripedInt writes values from provided slice into the buffer.
@@ -308,32 +308,39 @@ func WriteInt(s Signed, buf []int) Signed {
 // otherwise function will panic. Length is set to the longest
 // nested slice length. Sample values are capped by maximum value of
 // the buffer bit depth.
-func WriteStripedInt(s Signed, buf [][]int) Signed {
-	mustSameChannels(s.Channels(), len(buf))
+func WriteStripedInt(src [][]int, dst Signed) Signed {
+	mustSameChannels(dst.Channels(), len(src))
 	var length int
-	for i := range buf {
-		if len(buf[i]) > length {
-			length = len(buf[i])
+	for i := range src {
+		if len(src[i]) > length {
+			length = len(src[i])
 		}
 	}
-	length = min(length, s.Capacity()-s.Length())
+	length = min(length, dst.Capacity()-dst.Length())
 	for pos := 0; pos < length; pos++ {
-		for channel := 0; channel < s.Channels(); channel++ {
-			if pos < len(buf[channel]) {
-				s = s.AppendSample(int64(buf[channel][pos]))
+		for channel := 0; channel < dst.Channels(); channel++ {
+			if pos < len(src[channel]) {
+				dst = dst.AppendSample(int64(src[channel][pos]))
 			} else {
-				s = s.AppendSample(0)
+				dst = dst.AppendSample(0)
 			}
 		}
 	}
-	return s
+	return dst
 }
 
-func ReadStripedInt(s Signed, buf [][]int) {
-	mustSameChannels(s.Channels(), len(buf))
-	for channel := 0; channel < s.Channels(); channel++ {
-		for pos := 0; pos < s.Length() && pos < len(buf[channel]); pos++ {
-			buf[channel][pos] = int(s.Sample(s.ChannelPos(channel, pos)))
+func ReadInt(src Signed, dst []int) {
+	length := min(src.Len(), len(dst))
+	for pos := 0; pos < length; pos++ {
+		dst[pos] = int(src.Sample(pos))
+	}
+}
+
+func ReadStripedInt(src Signed, dst [][]int) {
+	mustSameChannels(src.Channels(), len(dst))
+	for channel := 0; channel < src.Channels(); channel++ {
+		for pos := 0; pos < src.Length() && pos < len(dst[channel]); pos++ {
+			dst[channel][pos] = int(src.Sample(src.ChannelPos(channel, pos)))
 		}
 	}
 }
