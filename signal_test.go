@@ -130,6 +130,93 @@ func TestSignedAsFloating(t *testing.T) {
 	))
 }
 
+func TestFloatingAsSigned(t *testing.T) {
+	t.Run("8 bits", testOk(
+		signal.FloatingAsSigned(
+			signal.WriteStripedFloat64(
+				signal.Allocator{
+					Channels: 1,
+					Capacity: 3,
+				}.Float64(),
+				[][]float64{{
+					1,
+					0,
+					-1,
+				}}),
+			signal.Allocator{
+				Channels: 1,
+				Capacity: 3,
+			}.Int64(signal.MaxBitDepth),
+		),
+		expected{
+			length:   3,
+			capacity: 3,
+			data: [][]int64{{
+				math.MaxInt64,
+				0,
+				math.MinInt64,
+			}},
+		},
+	))
+}
+
+func TestFloatingAsUnsigned(t *testing.T) {
+	t.Run("8 bits", testOk(
+		signal.FloatingAsUnsigned(
+			signal.WriteStripedFloat64(
+				signal.Allocator{
+					Channels: 1,
+					Capacity: 3,
+				}.Float64(),
+				[][]float64{{
+					-1,
+					0,
+					1,
+				}}),
+			signal.Allocator{
+				Channels: 1,
+				Capacity: 3,
+			}.Uint64(signal.BitDepth8),
+		),
+		expected{
+			length:   3,
+			capacity: 3,
+			data: [][]uint64{{
+				0,
+				1 << 7,
+				1<<8 - 1,
+			}},
+		},
+	))
+	t.Run("64 bits", testOk(
+		signal.FloatingAsUnsigned(
+			signal.WriteStripedFloat64(
+				signal.Allocator{
+					Channels: 1,
+					Capacity: 3,
+				}.Float64(),
+				[][]float64{{
+					-1,
+					0,
+					1,
+				}}),
+			signal.Allocator{
+				Channels: 1,
+				Capacity: 3,
+			}.Uint64(signal.BitDepth64),
+		),
+		expected{
+			length:   3,
+			capacity: 3,
+			data: [][]uint64{{
+				0,
+				1 << 63,
+				1<<64 - 1,
+			}},
+		},
+	))
+}
+
 func TestWrite(t *testing.T) {
 	testFloatingOk := func(s signal.Floating, ex expected) func(t *testing.T) {
 		return func(t *testing.T) {
@@ -153,8 +240,8 @@ func TestWrite(t *testing.T) {
 			length:   1,
 			capacity: 1,
 			data: [][]int64{
-				{127},
-				{-128},
+				{math.MaxInt8},
+				{math.MinInt8},
 			},
 		},
 	))
@@ -812,7 +899,12 @@ func result(sig signal.Signal) interface{} {
 		signal.ReadStripedInt64(s, result)
 		return result
 	case signal.Unsigned:
-		return nil
+		result := make([][]uint64, s.Channels())
+		for i := range result {
+			result[i] = make([]uint64, s.Length())
+		}
+		signal.ReadStripedUint64(s, result)
+		return result
 	case signal.Floating:
 		result := make([][]float64, s.Channels())
 		for i := range result {

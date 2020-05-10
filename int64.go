@@ -45,7 +45,7 @@ func (s Int64) AppendSample(value int64) Signed {
 	if len(s.buffer) == cap(s.buffer) {
 		return s
 	}
-	s.buffer = append(s.buffer, value)
+	s.buffer = append(s.buffer, s.BitDepth().SignedValue(value))
 	return s
 }
 
@@ -55,7 +55,7 @@ func (s Int64) Sample(pos int) int64 {
 }
 
 func (s Int64) SetSample(pos int, value int64) {
-	s.buffer[pos] = value
+	s.buffer[pos] = s.BitDepth().SignedValue(value)
 }
 
 func (s Int64) Slice(start, end int) Signed {
