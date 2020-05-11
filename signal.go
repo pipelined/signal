@@ -93,26 +93,12 @@ const (
 	MaxBitDepth BitDepth = BitDepth64
 )
 
-var (
-	maximum [65]uint64
-	minimum [64]int64
-)
-
-func init() {
-	for i := range maximum {
-		maximum[i] = (1 << i) - 1
-	}
-	for i := range minimum {
-		minimum[i] = (-1) << i
-	}
-}
-
 // MaxSignedValue returns the maximum signed value for a bit depth.
 func (b BitDepth) MaxSignedValue() int64 {
 	if b == 0 {
 		return 0
 	}
-	return int64(maximum[b-1])
+	return 1<<(b-1) - 1
 }
 
 // MaxUnsignedValue returns the maximum unsigned value for a bit depth.
@@ -120,7 +106,7 @@ func (b BitDepth) MaxUnsignedValue() uint64 {
 	if b == 0 {
 		return 0
 	}
-	return maximum[b]
+	return 1<<b - 1
 }
 
 // MinSignedValue returns the minimum signed value for a bit depth.
@@ -128,7 +114,7 @@ func (b BitDepth) MinSignedValue() int64 {
 	if b == 0 {
 		return 0
 	}
-	return minimum[b-1]
+	return -1 << (b - 1)
 }
 
 // UnsignedValue limits the unsigned signal value for a given bit depth.
@@ -275,7 +261,6 @@ func UnsignedAsFloating(src Unsigned, dst Floating) Floating {
 //TODO:
 // SignedAsUnsigned
 // SignedAsSigned
-// UnsingedAsFloating
 // UnsignedAsSigned
 // UnsignedAsUnsigned
 
