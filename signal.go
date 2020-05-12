@@ -142,6 +142,28 @@ func (b BitDepth) SignedValue(val int64) int64 {
 	}
 }
 
+func Float32Value(val float64) float64 {
+	switch {
+	case val < math.SmallestNonzeroFloat32:
+		return math.SmallestNonzeroFloat32
+	case val > math.MaxFloat32:
+		return math.MaxFloat32
+	default:
+		return val
+	}
+}
+
+func Float64Value(val float64) float64 {
+	switch {
+	case val < math.SmallestNonzeroFloat64:
+		return math.SmallestNonzeroFloat64
+	case val > math.MaxFloat64:
+		return math.MaxFloat64
+	default:
+		return val
+	}
+}
+
 // cap limits bit depth value to max and returns max if it's value is 0.
 func (b BitDepth) cap(max BitDepth) bitDepth {
 	if b == 0 || b > max {
