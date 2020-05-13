@@ -12,7 +12,7 @@ func (a Allocator) Int64(bd BitDepth) Int64 {
 	return Int64{
 		buffer:   make([]int64, 0, a.Capacity*a.Channels),
 		channels: channels(a.Channels),
-		bitDepth: bd.cap(BitDepth64),
+		bitDepth: defaultBitDepth(bd, BitDepth64),
 	}
 }
 

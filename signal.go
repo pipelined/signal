@@ -140,15 +140,13 @@ func (b BitDepth) SignedValue(val int64) int64 {
 	return val
 }
 
-func (b BitDepth) Scale(dst BitDepth) float64 {
-	if b == dst {
-		return 1
-	}
-	return float64(b.MaxSignedValue()) / float64(dst.MaxSignedValue())
+// Scale returns scale for bit depth requantization.
+func Scale(high, low BitDepth) int64 {
+	return int64(1 << (high - low))
 }
 
-// cap limits bit depth value to max and returns max if it's value is 0.
-func (b BitDepth) cap(max BitDepth) bitDepth {
+// defaultBitDepth limits bit depth value to max and returns max if it is 0.
+func defaultBitDepth(b, max BitDepth) bitDepth {
 	if b == 0 || b > max {
 		return bitDepth(max)
 	}
@@ -251,12 +249,23 @@ func SignedAsSigned(src Signed, dst Signed) Signed {
 	if length == 0 {
 		return dst
 	}
-	scale := src.BitDepth().Scale(dst.BitDepth())
+
+	// downscale
+	if src.BitDepth() >= dst.BitDepth() {
+		scale := Scale(src.BitDepth(), dst.BitDepth())
+		for pos := 0; pos < length; pos++ {
+			dst = dst.AppendSample(src.Sample(pos) / scale)
+		}
+		return dst
+	}
+
+	// upscale
+	scale := Scale(dst.BitDepth(), src.BitDepth())
 	for pos := 0; pos < length; pos++ {
-		if sample := float64(src.Sample(pos)) / scale; sample < math.MaxInt64 {
-			dst = dst.AppendSample(int64(sample))
+		if sample := src.Sample(pos); sample > 0 {
+			dst = dst.AppendSample((src.Sample(pos) + 1) * scale)
 		} else {
-			dst = dst.AppendSample(math.MaxInt64)
+			dst = dst.AppendSample(src.Sample(pos) * scale)
 		}
 	}
 	return dst
