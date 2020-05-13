@@ -38,7 +38,7 @@ func (s Float64) AppendSample(value float64) Floating {
 	if len(s.buffer) == cap(s.buffer) {
 		return s
 	}
-	s.buffer = append(s.buffer, Float64Value(value))
+	s.buffer = append(s.buffer, value)
 	return s
 }
 
@@ -48,7 +48,7 @@ func (s Float64) Sample(pos int) float64 {
 }
 
 func (s Float64) SetSample(pos int, value float64) {
-	s.buffer[pos] = Float64Value(value)
+	s.buffer[pos] = value
 }
 
 func (s Float64) Slice(start, end int) Floating {
