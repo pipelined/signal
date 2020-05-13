@@ -123,9 +123,8 @@ func (b BitDepth) UnsignedValue(val uint64) uint64 {
 	switch {
 	case val > max:
 		return max
-	default:
-		return val
 	}
+	return val
 }
 
 // SignedValue limits the signed signal value for a given bit depth.
@@ -137,31 +136,15 @@ func (b BitDepth) SignedValue(val int64) int64 {
 		return min
 	case val > max:
 		return max
-	default:
-		return val
 	}
+	return val
 }
 
-func Float32Value(val float64) float64 {
-	switch {
-	case val < math.SmallestNonzeroFloat32:
-		return math.SmallestNonzeroFloat32
-	case val > math.MaxFloat32:
-		return math.MaxFloat32
-	default:
-		return val
+func (b BitDepth) Scale(dst BitDepth) float64 {
+	if b == dst {
+		return 1
 	}
-}
-
-func Float64Value(val float64) float64 {
-	switch {
-	case val < math.SmallestNonzeroFloat64:
-		return math.SmallestNonzeroFloat64
-	case val > math.MaxFloat64:
-		return math.MaxFloat64
-	default:
-		return val
-	}
+	return float64(b.MaxSignedValue()) / float64(dst.MaxSignedValue())
 }
 
 // cap limits bit depth value to max and returns max if it's value is 0.
@@ -260,6 +243,25 @@ func SignedAsFloating(src Signed, dst Floating) Floating {
 	return dst
 }
 
+// SignedAsSigned converts signed fixed-point signal into signed fixed-point.
+func SignedAsSigned(src Signed, dst Signed) Signed {
+	mustSameChannels(src.Channels(), dst.Channels())
+	// cap length to destination capacity.
+	length := min(src.Len(), dst.Cap()-dst.Len())
+	if length == 0 {
+		return dst
+	}
+	scale := src.BitDepth().Scale(dst.BitDepth())
+	for pos := 0; pos < length; pos++ {
+		if sample := float64(src.Sample(pos)) / scale; sample < math.MaxInt64 {
+			dst = dst.AppendSample(int64(sample))
+		} else {
+			dst = dst.AppendSample(math.MaxInt64)
+		}
+	}
+	return dst
+}
+
 // UnsignedAsFloating converts unsigned fixed-point signal into floating-point.
 func UnsignedAsFloating(src Unsigned, dst Floating) Floating {
 	mustSameChannels(src.Channels(), dst.Channels())
@@ -282,7 +284,6 @@ func UnsignedAsFloating(src Unsigned, dst Floating) Floating {
 
 //TODO:
 // SignedAsUnsigned
-// SignedAsSigned
 // UnsignedAsSigned
 // UnsignedAsUnsigned
 
