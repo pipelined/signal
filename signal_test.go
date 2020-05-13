@@ -225,34 +225,34 @@ func TestSignedAsSigned(t *testing.T) {
 			}},
 		},
 	))
-	// t.Run("8 bits to 64 bits", testOk(
-	// 	signal.SignedAsSigned(
-	// 		signal.WriteStripedInt64(
-	// 			[][]int64{{
-	// 				math.MaxInt8,
-	// 				0,
-	// 				math.MinInt8,
-	// 			}},
-	// 			signal.Allocator{
-	// 				Channels: 1,
-	// 				Capacity: 3,
-	// 			}.Int64(signal.BitDepth8),
-	// 		),
-	// 		signal.Allocator{
-	// 			Channels: 1,
-	// 			Capacity: 3,
-	// 		}.Int64(signal.BitDepth64),
-	// 	),
-	// 	expected{
-	// 		length:   3,
-	// 		capacity: 3,
-	// 		data: [][]int64{{
-	// 			math.MaxInt64,
-	// 			0,
-	// 			math.MinInt64,
-	// 		}},
-	// 	},
-	// ))
+	t.Run("8 bits to 64 bits", testOk(
+		signal.SignedAsSigned(
+			signal.WriteStripedInt64(
+				[][]int64{{
+					math.MaxInt8,
+					0,
+					math.MinInt8,
+				}},
+				signal.Allocator{
+					Channels: 1,
+					Capacity: 3,
+				}.Int64(signal.BitDepth8),
+			),
+			signal.Allocator{
+				Channels: 1,
+				Capacity: 3,
+			}.Int64(signal.BitDepth64),
+		),
+		expected{
+			length:   3,
+			capacity: 3,
+			data: [][]int64{{
+				math.MaxInt64,
+				0,
+				math.MinInt64,
+			}},
+		},
+	))
 	t.Run("8 bits to 16 bits", testOk(
 		signal.SignedAsSigned(
 			signal.WriteStripedInt64(
@@ -278,6 +278,121 @@ func TestSignedAsSigned(t *testing.T) {
 				math.MaxInt16,
 				0,
 				math.MinInt16,
+			}},
+		},
+	))
+}
+
+func TestSignedAsUnsigned(t *testing.T) {
+	t.Run("64 bits", testOk(
+		signal.SignedAsUnsigned(
+			signal.WriteStripedInt64(
+				[][]int64{{
+					math.MaxInt64,
+					0,
+					math.MinInt64,
+				}},
+				signal.Allocator{
+					Channels: 1,
+					Capacity: 3,
+				}.Int64(signal.BitDepth64),
+			),
+			signal.Allocator{
+				Channels: 1,
+				Capacity: 3,
+			}.Uint64(signal.BitDepth64),
+		),
+		expected{
+			length:   3,
+			capacity: 3,
+			data: [][]uint64{{
+				math.MaxUint64,
+				math.MaxInt64 + 1,
+				0,
+			}},
+		},
+	))
+	t.Run("64 bits to 8 bits", testOk(
+		signal.SignedAsUnsigned(
+			signal.WriteStripedInt64(
+				[][]int64{{
+					math.MaxInt64,
+					0,
+					math.MinInt64,
+				}},
+				signal.Allocator{
+					Channels: 1,
+					Capacity: 3,
+				}.Int64(signal.BitDepth64),
+			),
+			signal.Allocator{
+				Channels: 1,
+				Capacity: 3,
+			}.Uint64(signal.BitDepth8),
+		),
+		expected{
+			length:   3,
+			capacity: 3,
+			data: [][]uint64{{
+				math.MaxUint8,
+				math.MaxInt8 + 1,
+				0,
+			}},
+		},
+	))
+	t.Run("8 bits to 64 bits", testOk(
+		signal.SignedAsUnsigned(
+			signal.WriteStripedInt64(
+				[][]int64{{
+					math.MaxInt8,
+					0,
+					math.MinInt8,
+				}},
+				signal.Allocator{
+					Channels: 1,
+					Capacity: 3,
+				}.Int64(signal.BitDepth8),
+			),
+			signal.Allocator{
+				Channels: 1,
+				Capacity: 3,
+			}.Uint64(signal.BitDepth64),
+		),
+		expected{
+			length:   3,
+			capacity: 3,
+			data: [][]uint64{{
+				math.MaxUint64,
+				math.MaxInt64 + 1,
+				0,
+			}},
+		},
+	))
+	t.Run("8 bits to 16 bits", testOk(
+		signal.SignedAsUnsigned(
+			signal.WriteStripedInt64(
+				[][]int64{{
+					math.MaxInt32,
+					0,
+					math.MinInt32,
+				}},
+				signal.Allocator{
+					Channels: 1,
+					Capacity: 3,
+				}.Int64(signal.BitDepth8),
+			),
+			signal.Allocator{
+				Channels: 1,
+				Capacity: 3,
+			}.Uint64(signal.BitDepth16),
+		),
+		expected{
+			length:   3,
+			capacity: 3,
+			data: [][]uint64{{
+				math.MaxUint16,
+				math.MaxInt16 + 1,
+				0,
 			}},
 		},
 	))
