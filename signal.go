@@ -263,9 +263,39 @@ func SignedAsSigned(src Signed, dst Signed) Signed {
 	scale := Scale(dst.BitDepth(), src.BitDepth())
 	for pos := 0; pos < length; pos++ {
 		if sample := src.Sample(pos); sample > 0 {
-			dst = dst.AppendSample((src.Sample(pos) + 1) * scale)
+			dst = dst.AppendSample((src.Sample(pos)+1)*scale - 1)
 		} else {
 			dst = dst.AppendSample(src.Sample(pos) * scale)
+		}
+	}
+	return dst
+}
+
+func SignedAsUnsigned(src Signed, dst Unsigned) Unsigned {
+	mustSameChannels(src.Channels(), dst.Channels())
+	// cap length to destination capacity.
+	length := min(src.Len(), dst.Cap()-dst.Len())
+	if length == 0 {
+		return dst
+	}
+
+	msv := uint64(dst.BitDepth().MaxSignedValue())
+	// downscale
+	if src.BitDepth() >= dst.BitDepth() {
+		scale := Scale(src.BitDepth(), dst.BitDepth())
+		for pos := 0; pos < length; pos++ {
+			dst = dst.AppendSample(uint64(src.Sample(pos)/scale) + msv + 1)
+		}
+		return dst
+	}
+
+	// upscale
+	scale := Scale(dst.BitDepth(), src.BitDepth())
+	for pos := 0; pos < length; pos++ {
+		if sample := src.Sample(pos); sample > 0 {
+			dst = dst.AppendSample(uint64((src.Sample(pos)+1)*scale) + msv)
+		} else {
+			dst = dst.AppendSample(uint64(src.Sample(pos)*scale) + msv + 1)
 		}
 	}
 	return dst
@@ -292,7 +322,6 @@ func UnsignedAsFloating(src Unsigned, dst Floating) Floating {
 }
 
 //TODO:
-// SignedAsUnsigned
 // UnsignedAsSigned
 // UnsignedAsUnsigned
 
