@@ -225,13 +225,41 @@ func TestSignedAsSigned(t *testing.T) {
 			}},
 		},
 	))
-	t.Run("8 bits to 64 bits", testOk(
+	// t.Run("8 bits to 64 bits", testOk(
+	// 	signal.SignedAsSigned(
+	// 		signal.WriteStripedInt64(
+	// 			[][]int64{{
+	// 				math.MaxInt8,
+	// 				0,
+	// 				math.MinInt8,
+	// 			}},
+	// 			signal.Allocator{
+	// 				Channels: 1,
+	// 				Capacity: 3,
+	// 			}.Int64(signal.BitDepth8),
+	// 		),
+	// 		signal.Allocator{
+	// 			Channels: 1,
+	// 			Capacity: 3,
+	// 		}.Int64(signal.BitDepth64),
+	// 	),
+	// 	expected{
+	// 		length:   3,
+	// 		capacity: 3,
+	// 		data: [][]int64{{
+	// 			math.MaxInt64,
+	// 			0,
+	// 			math.MinInt64,
+	// 		}},
+	// 	},
+	// ))
+	t.Run("8 bits to 16 bits", testOk(
 		signal.SignedAsSigned(
 			signal.WriteStripedInt64(
 				[][]int64{{
-					math.MaxInt8,
+					math.MaxInt32,
 					0,
-					math.MinInt8,
+					math.MinInt32,
 				}},
 				signal.Allocator{
 					Channels: 1,
@@ -241,15 +269,15 @@ func TestSignedAsSigned(t *testing.T) {
 			signal.Allocator{
 				Channels: 1,
 				Capacity: 3,
-			}.Int64(signal.BitDepth64),
+			}.Int64(signal.BitDepth16),
 		),
 		expected{
 			length:   3,
 			capacity: 3,
 			data: [][]int64{{
-				math.MaxInt64,
+				math.MaxInt16,
 				0,
-				math.MinInt64,
+				math.MinInt16,
 			}},
 		},
 	))
