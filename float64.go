@@ -14,26 +14,28 @@ func (a Allocator) Float64() Float64 {
 	}
 }
 
+// Capacity returns capacity of a single channel.
 func (s Float64) Capacity() int {
 	return cap(s.buffer) / int(s.channels)
 }
 
+// Length returns length of a single channel.
 func (s Float64) Length() int {
 	return len(s.buffer) / int(s.channels)
 }
 
+// Cap returns capacity of whole buffer.
 func (s Float64) Cap() int {
 	return cap(s.buffer)
 }
 
+// Len returns length of whole buffer.
 func (s Float64) Len() int {
 	return len(s.buffer)
 }
 
-func (s Float64) Reset() Floating {
-	return s.Slice(0, 0)
-}
-
+// AppendSample appends sample at the end of the buffer.
+// Sample is not appended if buffer capacity is reached.
 func (s Float64) AppendSample(value float64) Floating {
 	if len(s.buffer) == cap(s.buffer) {
 		return s
@@ -47,15 +49,22 @@ func (s Float64) Sample(pos int) float64 {
 	return s.buffer[pos]
 }
 
+// SetSample sets sample value for provided position.
 func (s Float64) SetSample(pos int, value float64) {
 	s.buffer[pos] = value
 }
 
+// Slice slices buffer with respect to channels.
 func (s Float64) Slice(start, end int) Floating {
 	start = s.ChannelPos(0, start)
 	end = s.ChannelPos(0, end)
 	s.buffer = s.buffer[start:end]
 	return s
+}
+
+// Reset sets length of the buffer to zero.
+func (s Float64) Reset() Floating {
+	return s.Slice(0, 0)
 }
 
 // Append appends data from src buffer to the end of the buffer.
@@ -75,6 +84,7 @@ func (s Float64) Append(src Floating) Floating {
 	return result
 }
 
+// ReadFloat64 reads values from the buffer into provided slice.
 func ReadFloat64(src Floating, dst []float64) {
 	length := min(src.Len(), len(dst))
 	for pos := 0; pos < length; pos++ {
@@ -82,6 +92,10 @@ func ReadFloat64(src Floating, dst []float64) {
 	}
 }
 
+// ReadStripedFloat64 reads values from the buffer into provided slice.
+// The length of provided slice must be equal to the number of channels,
+// otherwise function will panic. Nested slices can be nil, no values for
+// that channel will be appended.
 func ReadStripedFloat64(src Floating, dst [][]float64) {
 	mustSameChannels(src.Channels(), len(dst))
 	for channel := 0; channel < src.Channels(); channel++ {
