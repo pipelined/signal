@@ -416,8 +416,7 @@ func mustSameBitDepth(bd1, bd2 BitDepth) {
 	}
 }
 
-// WriteInt writes values from provided slice into the buffer.
-// If the buffer already contains any data, it will be overwritten.
+// WriteInt appends values from provided slice into the buffer.
 // Sample values are capped by maximum value of the buffer bit depth.
 func WriteInt(src []int, dst Signed) Signed {
 	length := min(dst.Cap()-dst.Len(), len(src))
@@ -427,12 +426,11 @@ func WriteInt(src []int, dst Signed) Signed {
 	return dst
 }
 
-// WriteStripedInt writes values from provided slice into the buffer.
-// If the buffer already contains any data, it will be overwritten.
+// WriteStripedInt appends values from provided slice into the buffer.
 // The length of provided slice must be equal to the number of channels,
-// otherwise function will panic. Length is set to the longest
-// nested slice length. Sample values are capped by maximum value of
-// the buffer bit depth.
+// otherwise function will panic. Nested slices can be nil, zero values for
+// that channel will be appended. Sample values are capped by maximum value
+// of the buffer bit depth.
 func WriteStripedInt(src [][]int, dst Signed) Signed {
 	mustSameChannels(dst.Channels(), len(src))
 	var length int
@@ -454,6 +452,7 @@ func WriteStripedInt(src [][]int, dst Signed) Signed {
 	return dst
 }
 
+// ReadInt reads values from the buffer into provided slice.
 func ReadInt(src Signed, dst []int) {
 	length := min(src.Len(), len(dst))
 	for pos := 0; pos < length; pos++ {
@@ -461,6 +460,10 @@ func ReadInt(src Signed, dst []int) {
 	}
 }
 
+// ReadStripedInt reads values from the buffer into provided slice.
+// The length of provided slice must be equal to the number of channels,
+// otherwise function will panic. Nested slices can be nil, no values for
+// that channel will be appended.
 func ReadStripedInt(src Signed, dst [][]int) {
 	mustSameChannels(src.Channels(), len(dst))
 	for channel := 0; channel < src.Channels(); channel++ {
