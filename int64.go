@@ -21,26 +21,28 @@ func (s Int64) MaxBitDepth() BitDepth {
 	return BitDepth64
 }
 
+// Capacity returns capacity of a single channel.
 func (s Int64) Capacity() int {
 	return cap(s.buffer) / int(s.channels)
 }
 
+// Length returns length of a single channel.
 func (s Int64) Length() int {
 	return len(s.buffer) / int(s.channels)
 }
 
+// Cap returns capacity of whole buffer.
 func (s Int64) Cap() int {
 	return cap(s.buffer)
 }
 
+// Len returns length of whole buffer.
 func (s Int64) Len() int {
 	return len(s.buffer)
 }
 
-func (s Int64) Reset() Signed {
-	return s.Slice(0, 0)
-}
-
+// AppendSample appends sample at the end of the buffer.
+// Sample is not appended if buffer capacity is reached.
 func (s Int64) AppendSample(value int64) Signed {
 	if len(s.buffer) == cap(s.buffer) {
 		return s
@@ -54,15 +56,22 @@ func (s Int64) Sample(pos int) int64 {
 	return s.buffer[pos]
 }
 
+// SetSample sets sample value for provided position.
 func (s Int64) SetSample(pos int, value int64) {
 	s.buffer[pos] = s.BitDepth().SignedValue(value)
 }
 
+// Slice slices buffer with respect to channels.
 func (s Int64) Slice(start, end int) Signed {
 	start = s.ChannelPos(0, start)
 	end = s.ChannelPos(0, end)
 	s.buffer = s.buffer[start:end]
 	return s
+}
+
+// Reset sets length of the buffer to zero.
+func (s Int64) Reset() Signed {
+	return s.Slice(0, 0)
 }
 
 // Append appends [0:Length] data from src to current buffer and returns new
@@ -87,6 +96,27 @@ func (s Int64) Append(src Signed) Signed {
 	return result
 }
 
+// ReadInt64 reads values from the buffer into provided slice.
+func ReadInt64(src Signed, dst []int64) {
+	length := min(src.Len(), len(dst))
+	for pos := 0; pos < length; pos++ {
+		dst[pos] = src.Sample(pos)
+	}
+}
+
+// ReadStripedInt64 reads values from the buffer into provided slice.
+// The length of provided slice must be equal to the number of channels,
+// otherwise function will panic. Nested slices can be nil, no values for
+// that channel will be appended.
+func ReadStripedInt64(src Signed, dst [][]int64) {
+	mustSameChannels(src.Channels(), len(dst))
+	for channel := 0; channel < src.Channels(); channel++ {
+		for pos := 0; pos < src.Length() && pos < len(dst[channel]); pos++ {
+			dst[channel][pos] = src.Sample(src.ChannelPos(channel, pos))
+		}
+	}
+}
+
 // WriteInt64 writes values from provided slice into the buffer.
 // If the buffer already contains any data, it will be overwritten.
 // Sample values are capped by maximum value of the buffer bit depth.
@@ -98,12 +128,11 @@ func WriteInt64(src []int64, dst Signed) Signed {
 	return dst
 }
 
-// WriteStripedInt64 writes values from provided slice into the buffer.
-// If the buffer already contains any data, it will be overwritten.
+// WriteStripedInt64 appends values from provided slice into the buffer.
 // The length of provided slice must be equal to the number of channels,
-// otherwise function will panic. Length is set to the longest
-// nested slice length. Sample values are capped by maximum value of
-// the buffer bit depth.
+// otherwise function will panic. Nested slices can be nil, zero values for
+// that channel will be appended. Sample values are capped by maximum value
+// of the buffer bit depth.
 func WriteStripedInt64(src [][]int64, dst Signed) Signed {
 	mustSameChannels(dst.Channels(), len(src))
 	var length int
@@ -123,20 +152,4 @@ func WriteStripedInt64(src [][]int64, dst Signed) Signed {
 		}
 	}
 	return dst
-}
-
-func ReadInt64(src Signed, dst []int64) {
-	length := min(src.Len(), len(dst))
-	for pos := 0; pos < length; pos++ {
-		dst[pos] = src.Sample(pos)
-	}
-}
-
-func ReadStripedInt64(src Signed, dst [][]int64) {
-	mustSameChannels(src.Channels(), len(dst))
-	for channel := 0; channel < src.Channels(); channel++ {
-		for pos := 0; pos < src.Length() && pos < len(dst[channel]); pos++ {
-			dst[channel][pos] = src.Sample(src.ChannelPos(channel, pos))
-		}
-	}
 }

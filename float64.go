@@ -114,11 +114,10 @@ func WriteFloat64(src []float64, dst Floating) Floating {
 	return dst
 }
 
-// WriteStripedFloat64 writes values from provided slice into the buffer.
-// If the buffer already contains any data, it will be overwritten.
-// The length of enclosing slice must be equal to the number of channels,
-// otherwise function will panic. Length is set to the longest
-// nested slice length.
+// WriteStripedFloat64 appends values from provided slice into the buffer.
+// The length of provided slice must be equal to the number of channels,
+// otherwise function will panic. Nested slices can be nil, zero values for
+// that channel will be appended.
 func WriteStripedFloat64(src [][]float64, dst Floating) Floating {
 	mustSameChannels(dst.Channels(), len(src))
 	var length int
