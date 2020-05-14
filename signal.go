@@ -352,8 +352,37 @@ func UnsignedAsSigned(src Unsigned, dst Signed) Signed {
 	return dst
 }
 
-//TODO:
-// UnsignedAsUnsigned
+// UnsignedAsUnsigned converts unsigned fixed-point signal into unsigned fixed-point.
+func UnsignedAsUnsigned(src, dst Unsigned) Unsigned {
+	mustSameChannels(src.Channels(), dst.Channels())
+	// cap length to destination capacity.
+	length := min(src.Len(), dst.Cap()-dst.Len())
+	if length == 0 {
+		return dst
+	}
+
+	// downscale
+	if src.BitDepth() >= dst.BitDepth() {
+		scale := uint64(Scale(src.BitDepth(), dst.BitDepth()))
+		for pos := 0; pos < length; pos++ {
+			dst = dst.AppendSample(src.Sample(pos) / scale)
+		}
+		return dst
+	}
+
+	// upscale
+	scale := uint64(Scale(dst.BitDepth(), src.BitDepth()))
+	msv := uint64(src.BitDepth().MaxSignedValue())
+	for pos := 0; pos < length; pos++ {
+		var sample uint64
+		if sample = src.Sample(pos); sample > msv+1 {
+			dst = dst.AppendSample((sample+1)*scale - 1)
+		} else {
+			dst = dst.AppendSample(sample * scale)
+		}
+	}
+	return dst
+}
 
 func (bd bitDepth) BitDepth() BitDepth {
 	return BitDepth(bd)
