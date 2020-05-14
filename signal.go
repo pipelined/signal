@@ -271,6 +271,7 @@ func SignedAsSigned(src Signed, dst Signed) Signed {
 	return dst
 }
 
+// SignedAsUnsigned converts signed fixed-point signal into unsigned fixed-point.
 func SignedAsUnsigned(src Signed, dst Unsigned) Unsigned {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
@@ -321,8 +322,37 @@ func UnsignedAsFloating(src Unsigned, dst Floating) Floating {
 	return dst
 }
 
+// UnsignedAsSigned converts unsigned fixed-point signal into signed fixed-point.
+func UnsignedAsSigned(src Unsigned, dst Signed) Signed {
+	mustSameChannels(src.Channels(), dst.Channels())
+	// cap length to destination capacity.
+	length := min(src.Len(), dst.Cap()-dst.Len())
+	if length == 0 {
+		return dst
+	}
+	msv := uint64(src.BitDepth().MaxSignedValue())
+	// downscale
+	if src.BitDepth() >= dst.BitDepth() {
+		scale := Scale(src.BitDepth(), dst.BitDepth())
+		for pos := 0; pos < length; pos++ {
+			dst = dst.AppendSample(int64(src.Sample(pos)-(msv+1)) / scale)
+		}
+		return dst
+	}
+
+	// upscale
+	scale := Scale(dst.BitDepth(), src.BitDepth())
+	for pos := 0; pos < length; pos++ {
+		if sample := int64(src.Sample(pos) - (msv + 1)); sample > 0 {
+			dst = dst.AppendSample((sample+1)*scale - 1)
+		} else {
+			dst = dst.AppendSample(sample * scale)
+		}
+	}
+	return dst
+}
+
 //TODO:
-// UnsignedAsSigned
 // UnsignedAsUnsigned
 
 func (bd bitDepth) BitDepth() BitDepth {
