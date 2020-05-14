@@ -631,6 +631,121 @@ func TestUnsignedAsSigned(t *testing.T) {
 	))
 }
 
+func TestUnsignedAsUnsigned(t *testing.T) {
+	t.Run("64 bits", testOk(
+		signal.UnsignedAsUnsigned(
+			signal.WriteStripedUint64(
+				[][]uint64{{
+					math.MaxUint64,
+					math.MaxInt64 + 1,
+					0,
+				}},
+				signal.Allocator{
+					Channels: 1,
+					Capacity: 3,
+				}.Uint64(signal.BitDepth64),
+			),
+			signal.Allocator{
+				Channels: 1,
+				Capacity: 3,
+			}.Uint64(signal.BitDepth64),
+		),
+		expected{
+			length:   3,
+			capacity: 3,
+			data: [][]uint64{{
+				math.MaxUint64,
+				math.MaxInt64 + 1,
+				0,
+			}},
+		},
+	))
+	t.Run("64 bits to 8 bits", testOk(
+		signal.UnsignedAsUnsigned(
+			signal.WriteStripedUint64(
+				[][]uint64{{
+					math.MaxUint64,
+					math.MaxInt64 + 1,
+					0,
+				}},
+				signal.Allocator{
+					Channels: 1,
+					Capacity: 3,
+				}.Uint64(signal.BitDepth64),
+			),
+			signal.Allocator{
+				Channels: 1,
+				Capacity: 3,
+			}.Uint64(signal.BitDepth8),
+		),
+		expected{
+			length:   3,
+			capacity: 3,
+			data: [][]uint64{{
+				math.MaxUint8,
+				math.MaxInt8 + 1,
+				0,
+			}},
+		},
+	))
+	t.Run("8 bits to 64 bits", testOk(
+		signal.UnsignedAsUnsigned(
+			signal.WriteStripedUint64(
+				[][]uint64{{
+					math.MaxUint8,
+					math.MaxInt8 + 1,
+					0,
+				}},
+				signal.Allocator{
+					Channels: 1,
+					Capacity: 3,
+				}.Uint64(signal.BitDepth8),
+			),
+			signal.Allocator{
+				Channels: 1,
+				Capacity: 3,
+			}.Uint64(signal.BitDepth64),
+		),
+		expected{
+			length:   3,
+			capacity: 3,
+			data: [][]uint64{{
+				math.MaxUint64,
+				math.MaxInt64 + 1,
+				0,
+			}},
+		},
+	))
+	t.Run("8 bits to 16 bits", testOk(
+		signal.UnsignedAsUnsigned(
+			signal.WriteStripedUint64(
+				[][]uint64{{
+					math.MaxUint8,
+					math.MaxInt8 + 1,
+					0,
+				}},
+				signal.Allocator{
+					Channels: 1,
+					Capacity: 3,
+				}.Uint64(signal.BitDepth8),
+			),
+			signal.Allocator{
+				Channels: 1,
+				Capacity: 3,
+			}.Uint64(signal.BitDepth16),
+		),
+		expected{
+			length:   3,
+			capacity: 3,
+			data: [][]uint64{{
+				math.MaxUint16,
+				math.MaxInt16 + 1,
+				0,
+			}},
+		},
+	))
+}
+
 func TestWrite(t *testing.T) {
 	testFloatingOk := func(s signal.Floating, ex expected) func(t *testing.T) {
 		return func(t *testing.T) {
