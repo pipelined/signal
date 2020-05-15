@@ -7,7 +7,7 @@ type Float64 struct {
 }
 
 // Float64 allocates new sequential float64 signal buffer.
-func (a Allocator) Float64() Float64 {
+func (a Allocator) Float64() Floating {
 	return Float64{
 		buffer:   make([]float64, 0, a.Channels*a.Capacity),
 		channels: channels(a.Channels),
