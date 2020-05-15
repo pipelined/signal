@@ -8,7 +8,7 @@ type Int64 struct {
 }
 
 // Int64 allocates new sequential int64 signal buffer.
-func (a Allocator) Int64(bd BitDepth) Int64 {
+func (a Allocator) Int64(bd BitDepth) Signed {
 	return Int64{
 		buffer:   make([]int64, 0, a.Capacity*a.Channels),
 		channels: channels(a.Channels),

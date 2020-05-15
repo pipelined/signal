@@ -8,7 +8,7 @@ type Uint64 struct {
 }
 
 // Uint64 allocates new sequential uint64 signal buffer.
-func (a Allocator) Uint64(bd BitDepth) Uint64 {
+func (a Allocator) Uint64(bd BitDepth) Unsigned {
 	return Uint64{
 		buffer:   make([]uint64, 0, a.Capacity*a.Channels),
 		channels: channels(a.Channels),
