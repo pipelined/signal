@@ -452,6 +452,42 @@ func WriteStripedInt(src [][]int, dst Signed) Signed {
 	return dst
 }
 
+// WriteUint appends values from provided slice into the buffer.
+// Sample values are capped by maximum value of the buffer bit depth.
+func WriteUint(src []uint, dst Unsigned) Unsigned {
+	length := min(dst.Cap()-dst.Len(), len(src))
+	for pos := 0; pos < length; pos++ {
+		dst = dst.AppendSample(uint64(src[pos]))
+	}
+	return dst
+}
+
+// WriteStripedUint appends values from provided slice into the buffer.
+// The length of provided slice must be equal to the number of channels,
+// otherwise function will panic. Nested slices can be nil, zero values for
+// that channel will be appended. Sample values are capped by maximum value
+// of the buffer bit depth.
+func WriteStripedUint(src [][]uint, dst Unsigned) Unsigned {
+	mustSameChannels(dst.Channels(), len(src))
+	var length int
+	for i := range src {
+		if len(src[i]) > length {
+			length = len(src[i])
+		}
+	}
+	length = min(length, dst.Capacity()-dst.Length())
+	for pos := 0; pos < length; pos++ {
+		for channel := 0; channel < dst.Channels(); channel++ {
+			if pos < len(src[channel]) {
+				dst = dst.AppendSample(uint64(src[channel][pos]))
+			} else {
+				dst = dst.AppendSample(0)
+			}
+		}
+	}
+	return dst
+}
+
 // ReadInt reads values from the buffer into provided slice.
 func ReadInt(src Signed, dst []int) {
 	length := min(src.Len(), len(dst))
@@ -469,6 +505,27 @@ func ReadStripedInt(src Signed, dst [][]int) {
 	for channel := 0; channel < src.Channels(); channel++ {
 		for pos := 0; pos < src.Length() && pos < len(dst[channel]); pos++ {
 			dst[channel][pos] = int(src.Sample(src.ChannelPos(channel, pos)))
+		}
+	}
+}
+
+// ReadUint reads values from the buffer into provided slice.
+func ReadUint(src Unsigned, dst []uint) {
+	length := min(src.Len(), len(dst))
+	for pos := 0; pos < length; pos++ {
+		dst[pos] = uint(src.Sample(pos))
+	}
+}
+
+// ReadStripedUint reads values from the buffer into provided slice.
+// The length of provided slice must be equal to the number of channels,
+// otherwise function will panic. Nested slices can be nil, no values for
+// that channel will be appended.
+func ReadStripedUint(src Unsigned, dst [][]uint) {
+	mustSameChannels(src.Channels(), len(dst))
+	for channel := 0; channel < src.Channels(); channel++ {
+		for pos := 0; pos < src.Length() && pos < len(dst[channel]); pos++ {
+			dst[channel][pos] = uint(src.Sample(src.ChannelPos(channel, pos)))
 		}
 	}
 }
