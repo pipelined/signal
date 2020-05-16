@@ -1,4 +1,4 @@
-// Package signal provides functionality for manipulate digital signals and its attributes.
+// Package signal provides functionality to manipulate digital signals and its attributes.
 package signal
 
 import (
