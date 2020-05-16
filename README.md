@@ -5,4 +5,19 @@
 [![Build Status](https://travis-ci.org/pipelined/signal.svg?branch=master)](https://travis-ci.org/pipelined/signal)
 [![codecov](https://codecov.io/gh/pipelined/signal/branch/master/graph/badge.svg)](https://codecov.io/gh/pipelined/signal)
 
-Manipulate digital signal with ease. Check godoc for more information.
+This package provides functionality to manipulate digital signals and its
+attributes.
+
+It provides structures for various signal types and allows
+conversions from one to another:
+
+* Fixed-point signed
+* Fixed-point unsigned
+* Floating-point
+
+Signal types have semantics of golang slices - they can be appended or
+sliced with respect to channels layout.
+
+On top of that, signal types are desinged to simplify control on
+allocations. Package `signal/pool` provides a pool to utilize `sync.Pool`
+for memory reuse.
