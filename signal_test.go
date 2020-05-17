@@ -10,8 +10,17 @@ import (
 )
 
 var (
-	_ signal.Signed   = signal.Allocator{}.Int64(signal.MaxBitDepth)
+	_ signal.Signed = signal.Allocator{}.Int8(signal.MaxBitDepth)
+	_ signal.Signed = signal.Allocator{}.Int16(signal.MaxBitDepth)
+	_ signal.Signed = signal.Allocator{}.Int32(signal.MaxBitDepth)
+	_ signal.Signed = signal.Allocator{}.Int64(signal.MaxBitDepth)
+
+	_ signal.Unsigned = signal.Allocator{}.Uint8(signal.MaxBitDepth)
+	_ signal.Unsigned = signal.Allocator{}.Uint16(signal.MaxBitDepth)
+	_ signal.Unsigned = signal.Allocator{}.Uint32(signal.MaxBitDepth)
 	_ signal.Unsigned = signal.Allocator{}.Uint64(signal.MaxBitDepth)
+
+	_ signal.Floating = signal.Allocator{}.Float32()
 	_ signal.Floating = signal.Allocator{}.Float64()
 )
 
