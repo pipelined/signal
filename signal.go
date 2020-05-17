@@ -1,6 +1,8 @@
 // Package signal provides functionality to manipulate digital signals and its attributes.
 package signal
 
+//go:generate go run gen.go
+
 import (
 	"math"
 	"time"
@@ -24,7 +26,6 @@ type (
 	Fixed interface {
 		Signal
 		BitDepth() BitDepth
-		MaxBitDepth() BitDepth
 	}
 
 	// Signed is a digital signal represented with signed fixed-point values.
