@@ -33,8 +33,12 @@ type expected struct {
 func testOk(r signal.Signal, ex expected) func(t *testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
-		assertEqual(t, "capacity", r.Capacity(), ex.capacity)
-		assertEqual(t, "length", r.Length(), ex.length)
+		if ex.capacity != 0 {
+			assertEqual(t, "capacity", r.Capacity(), ex.capacity)
+		}
+		if ex.length != 0 {
+			assertEqual(t, "length", r.Length(), ex.length)
+		}
 		assertEqual(t, "slices", result(r), ex.data)
 	}
 }
@@ -1267,13 +1271,18 @@ func TestAppend(t *testing.T) {
 		return func(t *testing.T) {
 			t.Helper()
 			switch a := appender.(type) {
-			case signal.Signed:
-				d := data.(signal.Int64)
+			case signal.Floating:
+				d := data.(signal.Floating)
 				assertPanic(t, func() {
 					a.Append(d)
 				})
-			case signal.Floating:
-				d := data.(signal.Float64)
+			case signal.Signed:
+				d := data.(signal.Signed)
+				assertPanic(t, func() {
+					a.Append(d)
+				})
+			case signal.Unsigned:
+				d := data.(signal.Unsigned)
 				assertPanic(t, func() {
 					a.Append(d)
 				})
@@ -1469,7 +1478,28 @@ func assertPanic(t *testing.T, fn func()) {
 
 func result(sig signal.Signal) interface{} {
 	switch src := sig.(type) {
-	case signal.Signed:
+	case signal.Int8:
+		result := make([][]int8, src.Channels())
+		for i := range result {
+			result[i] = make([]int8, src.Length())
+		}
+		signal.ReadStripedInt8(src, result)
+		return result
+	case signal.Int16:
+		result := make([][]int16, src.Channels())
+		for i := range result {
+			result[i] = make([]int16, src.Length())
+		}
+		signal.ReadStripedInt16(src, result)
+		return result
+	case signal.Int32:
+		result := make([][]int32, src.Channels())
+		for i := range result {
+			result[i] = make([]int32, src.Length())
+		}
+		signal.ReadStripedInt32(src, result)
+		return result
+	case signal.Int64:
 		result := make([][]int64, src.Channels())
 		for i := range result {
 			result[i] = make([]int64, src.Length())
