@@ -1534,7 +1534,14 @@ func result(sig signal.Signal) interface{} {
 		}
 		signal.ReadStripedUint64(src, result)
 		return result
-	case signal.Floating:
+	case signal.Float32:
+		result := make([][]float32, src.Channels())
+		for i := range result {
+			result[i] = make([]float32, src.Length())
+		}
+		signal.ReadStripedFloat32(src, result)
+		return result
+	case signal.Float64:
 		result := make([][]float64, src.Channels())
 		for i := range result {
 			result[i] = make([]float64, src.Length())
