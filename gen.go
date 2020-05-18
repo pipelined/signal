@@ -18,55 +18,55 @@ type typeGenerator struct {
 }
 
 func main() {
-	types := map[typeGenerator]*template.Template{
+	types := map[typeGenerator]templates{
 		{
 			Builtin:     "int8",
 			Name:        "Int8",
 			MaxBitDepth: "BitDepth8",
-		}: signedTemplate,
+		}: signedTemplates,
 		{
 			Builtin:     "int16",
 			Name:        "Int16",
 			MaxBitDepth: "BitDepth16",
-		}: signedTemplate,
+		}: signedTemplates,
 		{
 			Builtin:     "int32",
 			Name:        "Int32",
 			MaxBitDepth: "BitDepth32",
-		}: signedTemplate,
+		}: signedTemplates,
 		{
 			Builtin:     "int64",
 			Name:        "Int64",
 			MaxBitDepth: "BitDepth64",
-		}: signedTemplate,
+		}: signedTemplates,
 		{
 			Builtin:     "uint8",
 			Name:        "Uint8",
 			MaxBitDepth: "BitDepth8",
-		}: unsignedTemplate,
+		}: unsignedTemplates,
 		{
 			Builtin:     "uint16",
 			Name:        "Uint16",
 			MaxBitDepth: "BitDepth16",
-		}: unsignedTemplate,
+		}: unsignedTemplates,
 		{
 			Builtin:     "uint32",
 			Name:        "Uint32",
 			MaxBitDepth: "BitDepth32",
-		}: unsignedTemplate,
+		}: unsignedTemplates,
 		{
 			Builtin:     "uint64",
 			Name:        "Uint64",
 			MaxBitDepth: "BitDepth64",
-		}: unsignedTemplate,
+		}: unsignedTemplates,
 		{
 			Builtin: "float32",
 			Name:    "Float32",
-		}: floatingTemplate,
+		}: floatingTemplates,
 		{
 			Builtin: "float64",
 			Name:    "Float64",
-		}: floatingTemplate,
+		}: floatingTemplates,
 	}
 
 	for gen, template := range types {
@@ -74,13 +74,24 @@ func main() {
 	}
 }
 
-func generate(gen typeGenerator, t *template.Template) {
-	fileName := fmt.Sprintf("%s.go", gen.Builtin)
+func generate(gen typeGenerator, t templates) {
+	gen.Timestamp = time.Now()
+
+	generateFile(fmt.Sprintf("%s.go", gen.Builtin), gen, t.types)
+	generateFile(fmt.Sprintf("%s_test.go", gen.Builtin), gen, t.tests)
+
+	// err = t.tests.Execute(f, gen)
+	// die(fmt.Sprintf("execute %s tests template for %s type", t.tests.Name(), gen.Name), err)
+}
+
+func generateFile(fileName string, gen typeGenerator, t *template.Template) {
+	if t == nil {
+		return
+	}
 	f, err := os.Create(fileName)
 	die(fmt.Sprintf("create %s file", fileName), err)
 	defer f.Close()
 
-	gen.Timestamp = time.Now()
 	err = t.Execute(f, gen)
 	die(fmt.Sprintf("execute %s template for %s type", t.Name(), gen.Name), err)
 }
@@ -91,10 +102,24 @@ func die(reason string, err error) {
 	}
 }
 
+type templates struct {
+	types *template.Template
+	tests *template.Template
+}
+
 var (
-	floatingTemplate = template.Must(template.New("floating").Parse(floating))
-	signedTemplate   = template.Must(template.New("signed").Parse(signed))
-	unsignedTemplate = template.Must(template.New("unsigned").Parse(unsigned))
+	floatingTemplates = templates{
+		types: template.Must(template.New("floating").Parse(floating)),
+		tests: nil,
+	}
+	signedTemplates = templates{
+		types: template.Must(template.New("signed").Parse(signed)),
+		tests: template.Must(template.New("signed tests").Parse(signedTests)),
+	}
+	unsignedTemplates = templates{
+		types: template.Must(template.New("unsigned").Parse(unsigned)),
+		tests: nil,
+	}
 )
 
 const (
@@ -174,11 +199,8 @@ func (s {{ .Name }}) Reset() Floating {
 func (s {{ .Name }}) Append(src Floating) Floating {
 	mustSameChannels(s.Channels(), src.Channels())
 	if s.Cap() < s.Len()+src.Len() {
-		// if capacity is not enough, then:
-		// * extend buffer to cap;
-		// * allocate and append buffer with length of source capacity;
-		// * slice it to current data length;
-		s.buffer = append(s.buffer[:s.Cap()], make([]{{ .Builtin }}, src.Cap())...)[:s.Len()]
+		// allocate and append buffer with cap of both sources capacity;
+		s.buffer = append(make([]{{ .Builtin }}, 0, s.Cap()+src.Cap()), s.buffer...)
 	}
 	result := Floating(s)
 	for pos := 0; pos < src.Len(); pos++ {
@@ -319,17 +341,13 @@ func (s {{ .Name }}) Reset() Signed {
 // Append appends [0:Length] data from src to current buffer and returns new
 // Signed buffer. Both buffers must have same number of channels and bit depth,
 // otherwise function will panic. If current buffer doesn't have enough capacity,
-// additional memory will be allocated and result buffer will have capacity and
-// length equal to sum of lengths.
+// new buffer will be allocated with capacity of both sources.
 func (s {{ .Name }}) Append(src Signed) Signed {
 	mustSameChannels(s.Channels(), src.Channels())
 	mustSameBitDepth(s.BitDepth(), src.BitDepth())
 	if s.Cap() < s.Len()+src.Len() {
-		// if capacity is not enough, then:
-		// * extend buffer to cap;
-		// * allocate and append buffer with length of source capacity;
-		// * slice it to current data length;
-		s.buffer = append(s.buffer[:s.Cap()], make([]{{ .Builtin }}, src.Cap())...)[:s.Len()]
+		// allocate and append buffer with sources cap
+		s.buffer = append(make([]{{ .Builtin }}, 0, s.Cap()+src.Cap()), s.buffer...)
 	}
 	result := Signed(s)
 	for pos := 0; pos < src.Len(); pos++ {
@@ -395,6 +413,48 @@ func WriteStriped{{ .Name }}(src [][]{{ .Builtin }}, dst Signed) Signed {
 	}
 	return dst
 }`
+
+	signedTests = `// Code generated by go generate; DO NOT EDIT.
+// This file was generated by robots at
+// {{ .Timestamp }}
+package signal_test
+
+import (
+	"testing"
+
+	"pipelined.dev/signal"
+)
+
+func Test{{ .Name }}(t *testing.T) {
+	t.Run("{{ .Builtin }} append", testOk(
+		signal.Allocator{
+			Channels: 3,
+			Capacity: 2,
+		}.{{ .Name }}(signal.{{ .MaxBitDepth }}).
+			Append(signal.WriteStriped{{ .Name }}(
+				[][]{{ .Builtin }}{
+					{},
+					{1, 2, 3},
+					{11, 12, 13, 14},
+				},
+				signal.Allocator{
+					Channels: 3,
+					Capacity: 3,
+				}.{{ .Name }}(signal.{{ .MaxBitDepth }})),
+			).
+			Slice(1, 3),
+		expected{
+			length:   2,
+			capacity: 4,
+			data: [][]{{ .Builtin }}{
+				{0, 0},
+				{2, 3},
+				{12, 13},
+			},
+		},
+	))
+}
+`
 
 	unsigned = `// Code generated by go generate; DO NOT EDIT.
 // This file was generated by robots at
@@ -472,18 +532,14 @@ func (s {{ .Name }}) Reset() Unsigned {
 
 // Append appends data from src to current buffer and returns new
 // Unsigned buffer. Both buffers must have same number of channels and bit depth,
-// otherwise function will panic. If current buffer doesn't have enough capacity,
-// additional memory will be allocated and result buffer will have capacity and
-// length equal to sum of lengths.
+// otherwise function will panic.  If current buffer doesn't have enough capacity,
+// new buffer will be allocated with capacity of both sources.
 func (s {{ .Name }}) Append(src Unsigned) Unsigned {
 	mustSameChannels(s.Channels(), src.Channels())
 	mustSameBitDepth(s.BitDepth(), src.BitDepth())
 	if s.Cap() < s.Len()+src.Len() {
-		// if capacity is not enough, then:
-		// * extend buffer to cap;
-		// * allocate and append buffer with length of source capacity;
-		// * slice it to current data length;
-		s.buffer = append(s.buffer[:s.Cap()], make([]{{ .Builtin }}, src.Cap())...)[:s.Len()]
+		// allocate and append buffer with sources cap
+		s.buffer = append(make([]{{ .Builtin }}, 0, s.Cap()+src.Cap()), s.buffer...)
 	}
 	result := Unsigned(s)
 	for pos := 0; pos < src.Len(); pos++ {
