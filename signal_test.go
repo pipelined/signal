@@ -1506,7 +1506,28 @@ func result(sig signal.Signal) interface{} {
 		}
 		signal.ReadStripedInt64(src, result)
 		return result
-	case signal.Unsigned:
+	case signal.Uint8:
+		result := make([][]uint8, src.Channels())
+		for i := range result {
+			result[i] = make([]uint8, src.Length())
+		}
+		signal.ReadStripedUint8(src, result)
+		return result
+	case signal.Uint16:
+		result := make([][]uint16, src.Channels())
+		for i := range result {
+			result[i] = make([]uint16, src.Length())
+		}
+		signal.ReadStripedUint16(src, result)
+		return result
+	case signal.Uint32:
+		result := make([][]uint32, src.Channels())
+		for i := range result {
+			result[i] = make([]uint32, src.Length())
+		}
+		signal.ReadStripedUint32(src, result)
+		return result
+	case signal.Uint64:
 		result := make([][]uint64, src.Channels())
 		for i := range result {
 			result[i] = make([]uint64, src.Length())
