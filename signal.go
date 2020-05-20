@@ -167,7 +167,9 @@ func (rate SampleRate) SamplesIn(d time.Duration) int {
 	return int(math.Round(float64(rate) / float64(time.Second) * float64(d)))
 }
 
-// FloatingAsFloating converts floating-point signal into floating-point.
+// FloatingAsFloating appends floating-point samples to the floating-point
+// destination buffer. Both buffers must have the same number of channels,
+// otherwise function will panic.
 func FloatingAsFloating(src Floating, dst Floating) Floating {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
@@ -182,7 +184,11 @@ func FloatingAsFloating(src Floating, dst Floating) Floating {
 	return dst
 }
 
-// FloatingAsSigned converts floating-point signal into signed fixed-point.
+// FloatingAsSigned converts floating-point samples into signed fixed-point
+// and appends them to the destination buffer. The floating sample range
+// [-1,1] is mapped to signed [-2^(bitDepth-1), 2^(bitDepth-1)-1]. Floating
+// values beyond the range will be clipped. Buffers must have the same
+// number of channels, otherwise function will panic.
 func FloatingAsSigned(src Floating, dst Signed) Signed {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
@@ -193,7 +199,7 @@ func FloatingAsSigned(src Floating, dst Signed) Signed {
 	// determine the multiplier for bit depth conversion
 	msv := dst.BitDepth().MaxSignedValue()
 	for pos := 0; pos < length; pos++ {
-		if sample := src.Sample(pos); sample > 0 {
+		if sample := capFloat(src.Sample(pos)); sample > 0 {
 			dst = dst.AppendSample(int64(sample) * msv)
 		} else {
 			dst = dst.AppendSample(int64(sample) * (msv + 1))
@@ -202,7 +208,11 @@ func FloatingAsSigned(src Floating, dst Signed) Signed {
 	return dst
 }
 
-// FloatingAsUnsigned converts floating-point signal into unsigned fixed-point.
+// FloatingAsUnsigned converts floating-point samples into unsigned
+// fixed-point and appends them to the destination buffer. The floating
+// sample range [-1,1] is mapped to unsigned [0, 2^bitDepth-1]. Floating
+// values beyond the range will be clipped. Buffers must have the same
+// number of channels, otherwise function will panic.
 func FloatingAsUnsigned(src Floating, dst Unsigned) Unsigned {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
@@ -213,7 +223,7 @@ func FloatingAsUnsigned(src Floating, dst Unsigned) Unsigned {
 	// determine the multiplier for bit depth conversion
 	msv := uint64(dst.BitDepth().MaxSignedValue())
 	for pos := 0; pos < length; pos++ {
-		if sample := src.Sample(pos); sample > 0 {
+		if sample := capFloat(src.Sample(pos)); sample > 0 {
 			dst = dst.AppendSample(uint64(sample)*msv + (msv + 1))
 		} else {
 			dst = dst.AppendSample(uint64(sample)*(msv+1) + (msv + 1))
@@ -222,7 +232,11 @@ func FloatingAsUnsigned(src Floating, dst Unsigned) Unsigned {
 	return dst
 }
 
-// SignedAsFloating converts signed fixed-point signal into floating-point.
+// SignedAsFloating converts signed fixed-point samples into floating-point
+// and appends them to the destination buffer. The signed sample range
+// [-2^(bitDepth-1), 2^(bitDepth-1)-1] is mapped to floating [-1,1].
+// Buffers must have the same number of channels, otherwise function will
+// panic.
 func SignedAsFloating(src Signed, dst Floating) Floating {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
@@ -242,7 +256,10 @@ func SignedAsFloating(src Signed, dst Floating) Floating {
 	return dst
 }
 
-// SignedAsSigned converts signed fixed-point signal into signed fixed-point.
+// SignedAsSigned appends signed fixed-point samples to the signed
+// fixed-point destination buffer. The samples are quantized to the
+// destination bit depth. Buffers must have the same number of channels,
+// otherwise function will panic.
 func SignedAsSigned(src Signed, dst Signed) Signed {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
@@ -272,7 +289,12 @@ func SignedAsSigned(src Signed, dst Signed) Signed {
 	return dst
 }
 
-// SignedAsUnsigned converts signed fixed-point signal into unsigned fixed-point.
+// SignedAsUnsigned converts signed fixed-point samples into unsigned
+// fixed-point and appends them to the destination buffer. The samples are
+// quantized to the destination bit depth. The signed sample range
+// [-2^(bitDepth-1), 2^(bitDepth-1)-1] is mapped to unsigned [0,
+// 2^bitDepth-1]. Buffers must have the same number of channels, otherwise
+// function will panic.
 func SignedAsUnsigned(src Signed, dst Unsigned) Unsigned {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
@@ -303,7 +325,10 @@ func SignedAsUnsigned(src Signed, dst Unsigned) Unsigned {
 	return dst
 }
 
-// UnsignedAsFloating converts unsigned fixed-point signal into floating-point.
+// UnsignedAsFloating converts unsigned fixed-point samples into
+// floating-point and appends them to the destination buffer. The unsigned
+// sample range [0, 2^bitDepth-1] is mapped to floating [-1,1]. Buffers
+// must have the same number of channels, otherwise function will panic.
 func UnsignedAsFloating(src Unsigned, dst Floating) Floating {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
@@ -323,7 +348,12 @@ func UnsignedAsFloating(src Unsigned, dst Floating) Floating {
 	return dst
 }
 
-// UnsignedAsSigned converts unsigned fixed-point signal into signed fixed-point.
+// UnsignedAsSigned converts unsigned fixed-point samples into signed
+// fixed-point and appends them to the destination buffer. The samples are
+// quantized to the destination bit depth. The unsigned sample range [0,
+// 2^bitDepth-1] is mapped to signed [-2^(bitDepth-1), 2^(bitDepth-1)-1].
+// Buffers must have the same number of channels, otherwise function will
+// panic.
 func UnsignedAsSigned(src Unsigned, dst Signed) Signed {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
@@ -353,7 +383,10 @@ func UnsignedAsSigned(src Unsigned, dst Signed) Signed {
 	return dst
 }
 
-// UnsignedAsUnsigned converts unsigned fixed-point signal into unsigned fixed-point.
+// UnsignedAsUnsigned appends unsigned fixed-point samples to the unsigned
+// fixed-point destination buffer. The samples are quantized to the
+// destination bit depth. Buffers must have the same number of channels,
+// otherwise function will panic.
 func UnsignedAsUnsigned(src, dst Unsigned) Unsigned {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
@@ -396,6 +429,16 @@ func (c channels) Channels() int {
 
 func (c channels) ChannelPos(channel, pos int) int {
 	return int(c)*pos + channel
+}
+
+func capFloat(v float64) float64 {
+	if v > 1 {
+		return 1
+	}
+	if v < -1 {
+		return -1
+	}
+	return v
 }
 
 func min(v1, v2 int) int {
