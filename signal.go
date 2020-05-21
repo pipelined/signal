@@ -94,7 +94,7 @@ const (
 	MaxBitDepth BitDepth = BitDepth64
 )
 
-// MaxSignedValue returns the maximum signed value for a bit depth.
+// MaxSignedValue returns the maximum signed value for the bit depth.
 func (b BitDepth) MaxSignedValue() int64 {
 	if b == 0 {
 		return 0
@@ -102,7 +102,7 @@ func (b BitDepth) MaxSignedValue() int64 {
 	return 1<<(b-1) - 1
 }
 
-// MaxUnsignedValue returns the maximum unsigned value for a bit depth.
+// MaxUnsignedValue returns the maximum unsigned value for the bit depth.
 func (b BitDepth) MaxUnsignedValue() uint64 {
 	if b == 0 {
 		return 0
@@ -110,7 +110,7 @@ func (b BitDepth) MaxUnsignedValue() uint64 {
 	return 1<<b - 1
 }
 
-// MinSignedValue returns the minimum signed value for a bit depth.
+// MinSignedValue returns the minimum signed value for the bit depth.
 func (b BitDepth) MinSignedValue() int64 {
 	if b == 0 {
 		return 0
@@ -118,7 +118,8 @@ func (b BitDepth) MinSignedValue() int64 {
 	return -1 << (b - 1)
 }
 
-// UnsignedValue limits the unsigned signal value for a given bit depth.
+// UnsignedValue clips the unsigned signal value to the given bit depth
+// range.
 func (b BitDepth) UnsignedValue(val uint64) uint64 {
 	max := b.MaxUnsignedValue()
 	switch {
@@ -128,7 +129,7 @@ func (b BitDepth) UnsignedValue(val uint64) uint64 {
 	return val
 }
 
-// SignedValue limits the signed signal value for a given bit depth.
+// SignedValue clips the signed signal value to the given bit depth range.
 func (b BitDepth) SignedValue(val int64) int64 {
 	max := b.MaxSignedValue()
 	min := b.MinSignedValue()
@@ -418,6 +419,7 @@ func UnsignedAsUnsigned(src, dst Unsigned) Unsigned {
 	return dst
 }
 
+// BitDepth returns bit depth of the buffer.
 func (bd bitDepth) BitDepth() BitDepth {
 	return BitDepth(bd)
 }
@@ -427,6 +429,8 @@ func (c channels) Channels() int {
 	return int(c)
 }
 
+// ChannelPos calculates sample position in the buffer based on channel and
+// postition in the channel.
 func (c channels) ChannelPos(channel, pos int) int {
 	return int(c)*pos + channel
 }
@@ -460,8 +464,8 @@ func mustSameBitDepth(bd1, bd2 BitDepth) {
 	}
 }
 
-// WriteInt appends values from provided slice into the buffer.
-// Sample values are capped by maximum value of the buffer bit depth.
+// WriteInt appends values from provided slice into the buffer. Sample
+// values are clipped by maximum value of the buffer bit depth.
 func WriteInt(src []int, dst Signed) Signed {
 	length := min(dst.Cap()-dst.Len(), len(src))
 	for pos := 0; pos < length; pos++ {
@@ -470,11 +474,11 @@ func WriteInt(src []int, dst Signed) Signed {
 	return dst
 }
 
-// WriteStripedInt appends values from provided slice into the buffer.
-// The length of provided slice must be equal to the number of channels,
+// WriteStripedInt appends values from provided slice into the buffer. The
+// length of provided slice must be equal to the number of channels,
 // otherwise function will panic. Nested slices can be nil, zero values for
-// that channel will be appended. Sample values are capped by maximum value
-// of the buffer bit depth.
+// that channel will be appended. Sample values are clipped by maximum
+// value of the buffer bit depth.
 func WriteStripedInt(src [][]int, dst Signed) Signed {
 	mustSameChannels(dst.Channels(), len(src))
 	var length int
@@ -496,8 +500,8 @@ func WriteStripedInt(src [][]int, dst Signed) Signed {
 	return dst
 }
 
-// WriteUint appends values from provided slice into the buffer.
-// Sample values are capped by maximum value of the buffer bit depth.
+// WriteUint appends values from provided slice into the buffer. Sample
+// values are clipped by maximum value of the buffer bit depth.
 func WriteUint(src []uint, dst Unsigned) Unsigned {
 	length := min(dst.Cap()-dst.Len(), len(src))
 	for pos := 0; pos < length; pos++ {
@@ -506,11 +510,11 @@ func WriteUint(src []uint, dst Unsigned) Unsigned {
 	return dst
 }
 
-// WriteStripedUint appends values from provided slice into the buffer.
-// The length of provided slice must be equal to the number of channels,
+// WriteStripedUint appends values from provided slice into the buffer. The
+// length of provided slice must be equal to the number of channels,
 // otherwise function will panic. Nested slices can be nil, zero values for
-// that channel will be appended. Sample values are capped by maximum value
-// of the buffer bit depth.
+// that channel will be appended. Sample values are clipped by maximum
+// value of the buffer bit depth.
 func WriteStripedUint(src [][]uint, dst Unsigned) Unsigned {
 	mustSameChannels(dst.Channels(), len(src))
 	var length int

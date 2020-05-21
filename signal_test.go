@@ -5,6 +5,7 @@ import (
 	"math"
 	"reflect"
 	"testing"
+	"time"
 
 	"pipelined.dev/signal"
 )
@@ -348,6 +349,48 @@ func ExampleUnsignedAsUnsigned() {
 	// Output:
 	// [255 128 0]
 	// [65535 32768 0]
+}
+
+func ExampleBitDepth_MaxSignedValue() {
+	fmt.Println(signal.BitDepth8.MaxSignedValue())
+	// Output:
+	// 127
+}
+
+func ExampleBitDepth_MinSignedValue() {
+	fmt.Println(signal.BitDepth8.MinSignedValue())
+	// Output:
+	// -128
+}
+
+func ExampleBitDepth_MaxUnsignedValue() {
+	fmt.Println(signal.BitDepth8.MaxUnsignedValue())
+	// Output:
+	// 255
+}
+
+func ExampleBitDepth_SignedValue() {
+	fmt.Println(signal.BitDepth8.SignedValue(math.MaxInt64))
+	// Output:
+	// 127
+}
+
+func ExampleBitDepth_UnsignedValue() {
+	fmt.Println(signal.BitDepth8.UnsignedValue(math.MaxUint64))
+	// Output:
+	// 255
+}
+
+func ExampleSampleRate_DurationOf() {
+	fmt.Println(signal.SampleRate(44100).DurationOf(88200))
+	// Output:
+	// 2s
+}
+
+func ExampleSampleRate_SamplesIn() {
+	fmt.Println(signal.SampleRate(44100).SamplesIn(time.Second * 2))
+	// Output:
+	// 88200
 }
 
 func TestWrite(t *testing.T) {
