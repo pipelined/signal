@@ -1,4 +1,3 @@
-// Package signal provides functionality to manipulate digital signals and its attributes.
 package signal
 
 //go:generate go run gen.go
