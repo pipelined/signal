@@ -139,6 +139,8 @@ const (
 // {{ .Timestamp }}
 package signal
 
+import "math"
+
 // {{ .Name }} is a sequential {{ .Builtin }} floating-point signal.
 type {{ .Name }} struct {
 	buffer []{{ .Builtin }}
@@ -190,7 +192,7 @@ func (s {{ .Name }}) Length() int {
 	if s.channels == 0 {
 		return 0
 	}
-	return len(s.buffer) / int(s.channels)
+	return int(math.Ceil(float64(len(s.buffer)) / float64(s.channels)))
 }
 
 // Cap returns capacity of whole buffer.
@@ -310,6 +312,8 @@ func WriteStriped{{ .Name }}(src [][]{{ .Builtin }}, dst Floating) Floating {
 // {{ .Timestamp }}
 package signal
 
+import "math"
+
 // {{ .Name }} is {{ .Builtin }} signed fixed signal.
 type {{ .Name }} struct {
 	buffer []{{ .Builtin }}
@@ -367,7 +371,7 @@ func (s {{ .Name }}) Length() int {
 	if s.channels == 0 {
 		return 0
 	}
-	return len(s.buffer) / int(s.channels)
+	return int(math.Ceil(float64(len(s.buffer)) / float64(s.channels)))
 }
 
 // Cap returns capacity of whole buffer.
@@ -495,6 +499,8 @@ func WriteStriped{{ .Name }}(src [][]{{ .Builtin }}, dst Signed) Signed {
 // {{ .Timestamp }}
 package signal
 
+import "math"
+
 // {{ .Name }} is {{ .Builtin }} signed fixed signal.
 type {{ .Name }} struct {
 	buffer []{{ .Builtin }}
@@ -552,7 +558,7 @@ func (s {{ .Name }}) Length() int {
 	if s.channels == 0 {
 		return 0
 	}
-	return len(s.buffer) / int(s.channels)
+	return int(math.Ceil(float64(len(s.buffer)) / float64(s.channels)))
 }
 
 // Cap returns capacity of whole buffer.
