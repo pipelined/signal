@@ -24,7 +24,6 @@ type (
 	// Fixed is a digital signal represented with fixed-point values.
 	Fixed interface {
 		Signal
-		setBitDepth(BitDepth) Fixed
 		BitDepth() BitDepth
 	}
 
@@ -37,6 +36,7 @@ type (
 		Sample(pos int) int64
 		SetSample(pos int, value int64)
 		Reset() Signed
+		setBitDepth(BitDepth) Signed
 	}
 
 	// Unsigned is a digital signal represented with unsigned fixed-point values.
@@ -48,6 +48,7 @@ type (
 		Sample(pos int) uint64
 		SetSample(pos int, value uint64)
 		Reset() Unsigned
+		setBitDepth(BitDepth) Unsigned
 	}
 
 	// Floating is a digital signal represented with floating-point values.

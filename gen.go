@@ -285,7 +285,7 @@ func (a Allocator) {{ .Name }}(bd BitDepth) Signed {
 	}
 }
 
-func (s {{ .Name }}) setBitDepth(bd BitDepth) Fixed {
+func (s {{ .Name }}) setBitDepth(bd BitDepth) Signed {
 	s.bitDepth = limitBitDepth(bd, {{ .MaxBitDepth }})
 	return s
 }
@@ -440,7 +440,7 @@ func (a Allocator) {{ .Name }}(bd BitDepth) Unsigned {
 	}
 }
 
-func (s {{ .Name }}) setBitDepth(bd BitDepth) Fixed {
+func (s {{ .Name }}) setBitDepth(bd BitDepth) Unsigned {
 	s.bitDepth = limitBitDepth(bd, {{ .MaxBitDepth }})
 	return s
 }
