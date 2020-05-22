@@ -281,8 +281,13 @@ func (a Allocator) {{ .Name }}(bd BitDepth) Signed {
 	return {{ .Name }}{
 		buffer:   make([]{{ .Builtin }}, 0, a.Capacity*a.Channels),
 		channels: channels(a.Channels),
-		bitDepth: defaultBitDepth(bd, {{ .MaxBitDepth }}),
+		bitDepth: limitBitDepth(bd, {{ .MaxBitDepth }}),
 	}
+}
+
+func (s {{ .Name }}) setBitDepth(bd BitDepth) Fixed {
+	s.bitDepth = limitBitDepth(bd, {{ .MaxBitDepth }})
+	return s
 }
 
 // Capacity returns capacity of a single channel.
@@ -431,8 +436,13 @@ func (a Allocator) {{ .Name }}(bd BitDepth) Unsigned {
 	return {{ .Name }}{
 		buffer:   make([]{{ .Builtin }}, 0, a.Capacity*a.Channels),
 		channels: channels(a.Channels),
-		bitDepth: defaultBitDepth(bd, BitDepth64),
+		bitDepth: limitBitDepth(bd, BitDepth64),
 	}
+}
+
+func (s {{ .Name }}) setBitDepth(bd BitDepth) Fixed {
+	s.bitDepth = limitBitDepth(bd, {{ .MaxBitDepth }})
+	return s
 }
 
 // Capacity returns capacity of a single channel.

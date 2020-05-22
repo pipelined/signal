@@ -24,6 +24,7 @@ type (
 	// Fixed is a digital signal represented with fixed-point values.
 	Fixed interface {
 		Signal
+		setBitDepth(BitDepth) Fixed
 		BitDepth() BitDepth
 	}
 
@@ -147,7 +148,7 @@ func Scale(high, low BitDepth) int64 {
 }
 
 // defaultBitDepth limits bit depth value to max and returns max if it is 0.
-func defaultBitDepth(b, max BitDepth) bitDepth {
+func limitBitDepth(b, max BitDepth) bitDepth {
 	if b == 0 || b > max {
 		return bitDepth(max)
 	}
