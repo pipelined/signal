@@ -1,4 +1,3 @@
-// Package pool provides allocation pool for signal buffers.
 package pool
 
 import (
