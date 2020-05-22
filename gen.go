@@ -183,11 +183,17 @@ func (p *Pool) Put{{ .Name }}(s Floating) {
 
 // Capacity returns capacity of a single channel.
 func (s {{ .Name }}) Capacity() int {
+	if s.channels == 0 {
+		return 0
+	}
 	return cap(s.buffer) / int(s.channels)
 }
 
 // Length returns length of a single channel.
 func (s {{ .Name }}) Length() int {
+	if s.channels == 0 {
+		return 0
+	}
 	return len(s.buffer) / int(s.channels)
 }
 
@@ -358,11 +364,17 @@ func (s {{ .Name }}) setBitDepth(bd BitDepth) Signed {
 
 // Capacity returns capacity of a single channel.
 func (s {{ .Name }}) Capacity() int {
+	if s.channels == 0 {
+		return 0
+	}
 	return cap(s.buffer) / int(s.channels)
 }
 
 // Length returns length of a single channel.
 func (s {{ .Name }}) Length() int {
+	if s.channels == 0 {
+		return 0
+	}
 	return len(s.buffer) / int(s.channels)
 }
 
@@ -541,11 +553,17 @@ func (s {{ .Name }}) setBitDepth(bd BitDepth) Unsigned {
 
 // Capacity returns capacity of a single channel.
 func (s {{ .Name }}) Capacity() int {
+	if s.channels == 0 {
+		return 0
+	}
 	return cap(s.buffer) / int(s.channels)
 }
 
 // Length returns length of a single channel.
 func (s {{ .Name }}) Length() int {
+	if s.channels == 0 {
+		return 0
+	}
 	return len(s.buffer) / int(s.channels)
 }
 
