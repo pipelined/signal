@@ -139,8 +139,6 @@ const (
 // {{ .Timestamp }}
 package signal
 
-import "fmt"
-
 // {{ .Name }} is a sequential {{ .Builtin }} floating-point signal.
 type {{ .Name }} struct {
 	buffer []{{ .Builtin }}
@@ -174,9 +172,7 @@ func (p *Pool) Put{{ .Name }}(s Floating) {
 	if _, ok := s.({{ .Name }}); !ok {
 		panic("pool put {{ .Builtin }} invalid type")
 	}
-	if s.Capacity() != p.allocator.Capacity {
-		panic(fmt.Sprintf("pool put {{ .Builtin }} invalid capacity: %d expected: %d", s.Capacity(), p.allocator.Capacity))
-	}
+	mustSameCapacity(s.Capacity(), p.allocator.Capacity)
 	p.{{ .Pool }}.Put(s.Reset())
 }
 
@@ -314,8 +310,6 @@ func WriteStriped{{ .Name }}(src [][]{{ .Builtin }}, dst Floating) Floating {
 // {{ .Timestamp }}
 package signal
 
-import "fmt"
-
 // {{ .Name }} is {{ .Builtin }} signed fixed signal.
 type {{ .Name }} struct {
 	buffer []{{ .Builtin }}
@@ -351,9 +345,7 @@ func (p *Pool) Put{{ .Name }}(s Signed) {
 	if _, ok := s.({{ .Name }}); !ok {
 		panic("pool put {{ .Builtin }} invalid type")
 	}
-	if s.Capacity() != p.allocator.Capacity {
-		panic(fmt.Sprintf("pool put {{ .Builtin }} invalid capacity: %d expected: %d", s.Capacity(), p.allocator.Capacity))
-	}
+	mustSameCapacity(s.Capacity(), p.allocator.Capacity)
 	p.{{ .Pool }}.Put(s.Reset())
 }
 
@@ -503,8 +495,6 @@ func WriteStriped{{ .Name }}(src [][]{{ .Builtin }}, dst Signed) Signed {
 // {{ .Timestamp }}
 package signal
 
-import "fmt"
-
 // {{ .Name }} is {{ .Builtin }} signed fixed signal.
 type {{ .Name }} struct {
 	buffer []{{ .Builtin }}
@@ -540,9 +530,7 @@ func (p *Pool) Put{{ .Name }}(s Unsigned) {
 	if _, ok := s.({{ .Name }}); !ok {
 		panic("pool put {{ .Builtin }} invalid type")
 	}
-	if s.Capacity() != p.allocator.Capacity {
-		panic(fmt.Sprintf("pool put {{ .Builtin }} invalid capacity: %d expected: %d", s.Capacity(), p.allocator.Capacity))
-	}
+	mustSameCapacity(s.Capacity(), p.allocator.Capacity)
 	p.{{ .Pool }}.Put(s.Reset())
 }
 

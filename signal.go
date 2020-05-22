@@ -465,6 +465,12 @@ func mustSameBitDepth(bd1, bd2 BitDepth) {
 	}
 }
 
+func mustSameCapacity(c1, c2 int) {
+	if c1 != c2 {
+		panic("different buffer capacity")
+	}
+}
+
 // WriteInt appends values from provided slice into the buffer. Sample
 // values are clipped by maximum value of the buffer bit depth.
 func WriteInt(src []int, dst Signed) Signed {
