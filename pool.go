@@ -2,6 +2,9 @@ package signal
 
 import "sync"
 
+// Pool allows to decrease a number of allocations at runtime. Internally
+// it relies on sync.Pool to manage objects in memory. It provides a pool
+// per signal buffer type.
 type Pool struct {
 	allocator Allocator
 	i8        sync.Pool
@@ -16,6 +19,7 @@ type Pool struct {
 	f64       sync.Pool
 }
 
+// Pool creates a new Pool that uses the allocator to make buffers.
 func (a Allocator) Pool() *Pool {
 	return &Pool{
 		allocator: a,
@@ -56,6 +60,7 @@ func floatingPool(alloc func() Floating) sync.Pool {
 	}
 }
 
+// Allocator returns allocator used by the pool.
 func (p *Pool) Allocator() Allocator {
 	if p != nil {
 		return p.allocator
