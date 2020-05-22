@@ -71,5 +71,16 @@ another buffer needs to be explicitly allocated and appended to the buffer.
 
 The one can also iterate over signal buffers. Please, refer to examples for
 more details.
+
+Pooling
+
+Having an allocator allows to create a Pool. It provides a sync.Pool per
+signal type and uses a single allocator to make all types of buffers. It
+serves the purpose of decreasing a GC during the runtime when many buffers
+are allocated. The pool operates with the interface types (Signed,
+Unsigned, Floating) for convenience and alignment with other functions of
+this package. It's a responsibility of the user to match GetT/PutT methods
+calls with correct types. It is safe for concurrent use by multiple
+goroutines.
 */
 package signal
