@@ -8,7 +8,7 @@
 This package provides functionality to manipulate digital signals and its
 attributes.
 
-It provides structures for various signal types and allows
+It contains structures for various signal types and allows
 conversions from one to another:
 
 * Fixed-point signed
@@ -18,6 +18,5 @@ conversions from one to another:
 Signal types have semantics of golang slices - they can be appended or
 sliced with respect to channels layout.
 
-On top of that, signal types are desinged to simplify control on
-allocations. Package `signal/pool` provides a pool to utilize `sync.Pool`
-for memory reuse.
+On top of that, this package was desinged to simplify control on
+allocations. Check godoc for examples.
