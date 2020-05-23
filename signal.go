@@ -36,6 +36,7 @@ type (
 		Sample(pos int) int64
 		SetSample(pos int, value int64)
 		Reset() Signed
+		setBitDepth(BitDepth) Signed
 	}
 
 	// Unsigned is a digital signal represented with unsigned fixed-point values.
@@ -47,6 +48,7 @@ type (
 		Sample(pos int) uint64
 		SetSample(pos int, value uint64)
 		Reset() Unsigned
+		setBitDepth(BitDepth) Unsigned
 	}
 
 	// Floating is a digital signal represented with floating-point values.
@@ -147,7 +149,7 @@ func Scale(high, low BitDepth) int64 {
 }
 
 // defaultBitDepth limits bit depth value to max and returns max if it is 0.
-func defaultBitDepth(b, max BitDepth) bitDepth {
+func limitBitDepth(b, max BitDepth) bitDepth {
 	if b == 0 || b > max {
 		return bitDepth(max)
 	}
@@ -460,6 +462,12 @@ func mustSameChannels(c1, c2 int) {
 func mustSameBitDepth(bd1, bd2 BitDepth) {
 	if bd1 != bd2 {
 		panic("different bit depth")
+	}
+}
+
+func mustSameCapacity(c1, c2 int) {
+	if c1 != c2 {
+		panic("different buffer capacity")
 	}
 }
 

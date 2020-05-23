@@ -14,6 +14,7 @@ type typeGenerator struct {
 	Timestamp   time.Time
 	Builtin     string
 	Name        string
+	Pool        string
 	MaxBitDepth string // used for fixed-point types only
 }
 
@@ -22,50 +23,60 @@ func main() {
 		{
 			Builtin:     "int8",
 			Name:        "Int8",
+			Pool:        "i8",
 			MaxBitDepth: "BitDepth8",
 		}: signedTemplates,
 		{
 			Builtin:     "int16",
 			Name:        "Int16",
+			Pool:        "i16",
 			MaxBitDepth: "BitDepth16",
 		}: signedTemplates,
 		{
 			Builtin:     "int32",
 			Name:        "Int32",
+			Pool:        "i32",
 			MaxBitDepth: "BitDepth32",
 		}: signedTemplates,
 		{
 			Builtin:     "int64",
 			Name:        "Int64",
+			Pool:        "i64",
 			MaxBitDepth: "BitDepth64",
 		}: signedTemplates,
 		{
 			Builtin:     "uint8",
 			Name:        "Uint8",
+			Pool:        "u8",
 			MaxBitDepth: "BitDepth8",
 		}: unsignedTemplates,
 		{
 			Builtin:     "uint16",
 			Name:        "Uint16",
+			Pool:        "u16",
 			MaxBitDepth: "BitDepth16",
 		}: unsignedTemplates,
 		{
 			Builtin:     "uint32",
 			Name:        "Uint32",
+			Pool:        "u32",
 			MaxBitDepth: "BitDepth32",
 		}: unsignedTemplates,
 		{
 			Builtin:     "uint64",
 			Name:        "Uint64",
+			Pool:        "u64",
 			MaxBitDepth: "BitDepth64",
 		}: unsignedTemplates,
 		{
 			Builtin: "float32",
 			Name:    "Float32",
+			Pool:    "f32",
 		}: floatingTemplates,
 		{
 			Builtin: "float64",
 			Name:    "Float64",
+			Pool:    "f64",
 		}: floatingTemplates,
 	}
 
@@ -128,13 +139,15 @@ const (
 // {{ .Timestamp }}
 package signal
 
+import "math"
+
 // {{ .Name }} is a sequential {{ .Builtin }} floating-point signal.
 type {{ .Name }} struct {
 	buffer []{{ .Builtin }}
 	channels
 }
 
-// {{ .Name }} allocates new sequential {{ .Builtin }} signal buffer.
+// {{ .Name }} allocates a new sequential {{ .Builtin }} signal buffer.
 func (a Allocator) {{ .Name }}() Floating {
 	return {{ .Name }}{
 		buffer:   make([]{{ .Builtin }}, 0, a.Channels*a.Capacity),
@@ -142,14 +155,44 @@ func (a Allocator) {{ .Name }}() Floating {
 	}
 }
 
+// Get{{ .Name }} selects a new sequential {{ .Builtin }} signal buffer.
+// from the pool.
+func (p *Pool) Get{{ .Name }}() Floating {
+	if p == nil {
+		return nil
+	}
+	return p.{{ .Pool }}.Get().(Floating)
+}
+
+// Put{{ .Name }} places signal buffer back to the pool. If a type of
+// provided buffer isn't {{ .Name }} or its capacity doesn't equal
+// allocator capacity, the function will panic.
+func (p *Pool) Put{{ .Name }}(s Floating) {
+	if p == nil {
+		return
+	}
+	if _, ok := s.({{ .Name }}); !ok {
+		panic("pool put {{ .Builtin }} invalid type")
+	}
+	mustSameCapacity(s.Capacity(), p.allocator.Capacity)
+	p.{{ .Pool }}.Put(s.Reset())
+}
+
+
 // Capacity returns capacity of a single channel.
 func (s {{ .Name }}) Capacity() int {
+	if s.channels == 0 {
+		return 0
+	}
 	return cap(s.buffer) / int(s.channels)
 }
 
 // Length returns length of a single channel.
 func (s {{ .Name }}) Length() int {
-	return len(s.buffer) / int(s.channels)
+	if s.channels == 0 {
+		return 0
+	}
+	return int(math.Ceil(float64(len(s.buffer)) / float64(s.channels)))
 }
 
 // Cap returns capacity of whole buffer.
@@ -269,6 +312,8 @@ func WriteStriped{{ .Name }}(src [][]{{ .Builtin }}, dst Floating) Floating {
 // {{ .Timestamp }}
 package signal
 
+import "math"
+
 // {{ .Name }} is {{ .Builtin }} signed fixed signal.
 type {{ .Name }} struct {
 	buffer []{{ .Builtin }}
@@ -276,23 +321,57 @@ type {{ .Name }} struct {
 	bitDepth
 }
 
-// {{ .Name }} allocates new sequential {{ .Builtin }} signal buffer.
+// {{ .Name }} allocates a new sequential {{ .Builtin }} signal buffer.
 func (a Allocator) {{ .Name }}(bd BitDepth) Signed {
 	return {{ .Name }}{
 		buffer:   make([]{{ .Builtin }}, 0, a.Capacity*a.Channels),
 		channels: channels(a.Channels),
-		bitDepth: defaultBitDepth(bd, {{ .MaxBitDepth }}),
+		bitDepth: limitBitDepth(bd, {{ .MaxBitDepth }}),
 	}
+}
+
+// Get{{ .Name }} selects a new sequential {{ .Builtin }} signal buffer.
+// from the pool.
+func (p *Pool) Get{{ .Name }}(bd BitDepth) Signed {
+	if p == nil {
+		return nil
+	}
+	return p.{{ .Pool }}.Get().(Signed).setBitDepth(bd)
+}
+
+// Put{{ .Name }} places signal buffer back to the pool. If a type of
+// provided buffer isn't {{ .Name }} or its capacity doesn't equal
+// allocator capacity, the function will panic.
+func (p *Pool) Put{{ .Name }}(s Signed) {
+	if p == nil {
+		return
+	}
+	if _, ok := s.({{ .Name }}); !ok {
+		panic("pool put {{ .Builtin }} invalid type")
+	}
+	mustSameCapacity(s.Capacity(), p.allocator.Capacity)
+	p.{{ .Pool }}.Put(s.Reset())
+}
+
+func (s {{ .Name }}) setBitDepth(bd BitDepth) Signed {
+	s.bitDepth = limitBitDepth(bd, {{ .MaxBitDepth }})
+	return s
 }
 
 // Capacity returns capacity of a single channel.
 func (s {{ .Name }}) Capacity() int {
+	if s.channels == 0 {
+		return 0
+	}
 	return cap(s.buffer) / int(s.channels)
 }
 
 // Length returns length of a single channel.
 func (s {{ .Name }}) Length() int {
-	return len(s.buffer) / int(s.channels)
+	if s.channels == 0 {
+		return 0
+	}
+	return int(math.Ceil(float64(len(s.buffer)) / float64(s.channels)))
 }
 
 // Cap returns capacity of whole buffer.
@@ -412,12 +491,15 @@ func WriteStriped{{ .Name }}(src [][]{{ .Builtin }}, dst Signed) Signed {
 		}
 	}
 	return dst
-}`
+}
+`
 
 	unsigned = `// Code generated by go generate; DO NOT EDIT.
 // This file was generated by robots at
 // {{ .Timestamp }}
 package signal
+
+import "math"
 
 // {{ .Name }} is {{ .Builtin }} signed fixed signal.
 type {{ .Name }} struct {
@@ -426,23 +508,57 @@ type {{ .Name }} struct {
 	bitDepth
 }
 
-// {{ .Name }} allocates new sequential {{ .Builtin }} signal buffer.
+// {{ .Name }} allocates a new sequential {{ .Builtin }} signal buffer.
 func (a Allocator) {{ .Name }}(bd BitDepth) Unsigned {
 	return {{ .Name }}{
 		buffer:   make([]{{ .Builtin }}, 0, a.Capacity*a.Channels),
 		channels: channels(a.Channels),
-		bitDepth: defaultBitDepth(bd, BitDepth64),
+		bitDepth: limitBitDepth(bd, BitDepth64),
 	}
+}
+
+// Get{{ .Name }} selects a new sequential {{ .Builtin }} signal buffer.
+// from the pool.
+func (p *Pool) Get{{ .Name }}(bd BitDepth) Unsigned {
+	if p == nil {
+		return nil
+	}
+	return p.{{ .Pool }}.Get().(Unsigned).setBitDepth(bd)
+}
+
+// Put{{ .Name }} places signal buffer back to the pool. If a type of
+// provided buffer isn't {{ .Name }} or its capacity doesn't equal
+// allocator capacity, the function will panic.
+func (p *Pool) Put{{ .Name }}(s Unsigned) {
+	if p == nil {
+		return
+	}
+	if _, ok := s.({{ .Name }}); !ok {
+		panic("pool put {{ .Builtin }} invalid type")
+	}
+	mustSameCapacity(s.Capacity(), p.allocator.Capacity)
+	p.{{ .Pool }}.Put(s.Reset())
+}
+
+func (s {{ .Name }}) setBitDepth(bd BitDepth) Unsigned {
+	s.bitDepth = limitBitDepth(bd, {{ .MaxBitDepth }})
+	return s
 }
 
 // Capacity returns capacity of a single channel.
 func (s {{ .Name }}) Capacity() int {
+	if s.channels == 0 {
+		return 0
+	}
 	return cap(s.buffer) / int(s.channels)
 }
 
 // Length returns length of a single channel.
 func (s {{ .Name }}) Length() int {
-	return len(s.buffer) / int(s.channels)
+	if s.channels == 0 {
+		return 0
+	}
+	return int(math.Ceil(float64(len(s.buffer)) / float64(s.channels)))
 }
 
 // Cap returns capacity of whole buffer.
