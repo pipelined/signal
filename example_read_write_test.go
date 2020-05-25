@@ -22,8 +22,8 @@ func Example_readWrite() {
 	signal.ReadInt(buf, output) // read data into output
 	fmt.Println(output)
 
-	output = make([]int, 16)            // reset output
-	signal.ReadInt(buf.Reset(), output) // reset buffer length to 0 and read data into output
+	output = make([]int, 16)                // reset output
+	signal.ReadInt(buf.Slice(0, 0), output) // reset buffer length to 0 and read data into output
 	fmt.Println(output)
 
 	// Output:
