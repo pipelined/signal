@@ -150,7 +150,7 @@ type {{ .Name }} struct {
 // {{ .Name }} allocates a new sequential {{ .Builtin }} signal buffer.
 func (a Allocator) {{ .Name }}() Floating {
 	return {{ .Name }}{
-		buffer:   make([]{{ .Builtin }}, 0, a.Channels*a.Capacity),
+		buffer:   make([]{{ .Builtin }}, a.Channels*a.Length, a.Channels*a.Capacity),
 		channels: channels(a.Channels),
 	}
 }
@@ -175,7 +175,7 @@ func (p *Pool) Put{{ .Name }}(s Floating) {
 		panic("pool put {{ .Builtin }} invalid type")
 	}
 	mustSameCapacity(s.Capacity(), p.allocator.Capacity)
-	p.{{ .Pool }}.Put(s.Reset())
+	p.{{ .Pool }}.Put(s.Slice(0, p.allocator.Length))
 }
 
 
@@ -324,7 +324,7 @@ type {{ .Name }} struct {
 // {{ .Name }} allocates a new sequential {{ .Builtin }} signal buffer.
 func (a Allocator) {{ .Name }}(bd BitDepth) Signed {
 	return {{ .Name }}{
-		buffer:   make([]{{ .Builtin }}, 0, a.Capacity*a.Channels),
+		buffer:   make([]{{ .Builtin }}, a.Channels*a.Length, a.Capacity*a.Channels),
 		channels: channels(a.Channels),
 		bitDepth: limitBitDepth(bd, {{ .MaxBitDepth }}),
 	}
@@ -350,7 +350,7 @@ func (p *Pool) Put{{ .Name }}(s Signed) {
 		panic("pool put {{ .Builtin }} invalid type")
 	}
 	mustSameCapacity(s.Capacity(), p.allocator.Capacity)
-	p.{{ .Pool }}.Put(s.Reset())
+	p.{{ .Pool }}.Put(s.Slice(0, p.allocator.Length))
 }
 
 func (s {{ .Name }}) setBitDepth(bd BitDepth) Signed {
@@ -511,7 +511,7 @@ type {{ .Name }} struct {
 // {{ .Name }} allocates a new sequential {{ .Builtin }} signal buffer.
 func (a Allocator) {{ .Name }}(bd BitDepth) Unsigned {
 	return {{ .Name }}{
-		buffer:   make([]{{ .Builtin }}, 0, a.Capacity*a.Channels),
+		buffer:   make([]{{ .Builtin }}, a.Channels*a.Length, a.Capacity*a.Channels),
 		channels: channels(a.Channels),
 		bitDepth: limitBitDepth(bd, BitDepth64),
 	}
@@ -537,7 +537,7 @@ func (p *Pool) Put{{ .Name }}(s Unsigned) {
 		panic("pool put {{ .Builtin }} invalid type")
 	}
 	mustSameCapacity(s.Capacity(), p.allocator.Capacity)
-	p.{{ .Pool }}.Put(s.Reset())
+	p.{{ .Pool }}.Put(s.Slice(0, p.allocator.Length))
 }
 
 func (s {{ .Name }}) setBitDepth(bd BitDepth) Unsigned {

@@ -64,8 +64,9 @@ type (
 
 	// Allocator provides allocation of various signal buffers.
 	Allocator struct {
-		Capacity int
 		Channels int
+		Length   int
+		Capacity int
 	}
 )
 

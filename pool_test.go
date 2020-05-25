@@ -7,8 +7,9 @@ import (
 )
 
 type expectedAllocation struct {
-	capacity int
 	channels int
+	length   int
+	capacity int
 	signal.BitDepth
 }
 
@@ -45,6 +46,13 @@ func TestPool(t *testing.T) {
 			Capacity: 512,
 		}.Pool()),
 	)
+	t.Run("10 allocs length",
+		testOk(t, 10, signal.Allocator{
+			Channels: 2,
+			Length:   256,
+			Capacity: 512,
+		}.Pool()),
+	)
 	t.Run("100 allocs",
 		testOk(t, 100, signal.Allocator{
 			Channels: 100,
@@ -54,6 +62,7 @@ func TestPool(t *testing.T) {
 }
 
 func testSigned(t *testing.T, p *signal.Pool, s signal.Signed, mbd signal.BitDepth) signal.Signed {
+	t.Helper()
 	if s == nil {
 		return s
 	}
@@ -62,8 +71,9 @@ func testSigned(t *testing.T, p *signal.Pool, s signal.Signed, mbd signal.BitDep
 		t,
 		s,
 		expectedAllocation{
-			capacity: a.Capacity,
 			channels: a.Channels,
+			length:   a.Length,
+			capacity: a.Capacity,
 			BitDepth: mbd,
 		})
 	s.AppendSample(1)
@@ -71,6 +81,7 @@ func testSigned(t *testing.T, p *signal.Pool, s signal.Signed, mbd signal.BitDep
 }
 
 func testUnsigned(t *testing.T, p *signal.Pool, s signal.Unsigned, mbd signal.BitDepth) signal.Unsigned {
+	t.Helper()
 	if s == nil {
 		return s
 	}
@@ -79,8 +90,9 @@ func testUnsigned(t *testing.T, p *signal.Pool, s signal.Unsigned, mbd signal.Bi
 		t,
 		s,
 		expectedAllocation{
-			capacity: a.Capacity,
 			channels: a.Channels,
+			length:   a.Length,
+			capacity: a.Capacity,
 			BitDepth: mbd,
 		})
 	s.AppendSample(1)
@@ -88,6 +100,7 @@ func testUnsigned(t *testing.T, p *signal.Pool, s signal.Unsigned, mbd signal.Bi
 }
 
 func testFloating(t *testing.T, p *signal.Pool, s signal.Floating) signal.Floating {
+	t.Helper()
 	if s == nil {
 		return s
 	}
@@ -96,8 +109,9 @@ func testFloating(t *testing.T, p *signal.Pool, s signal.Floating) signal.Floati
 		t,
 		s,
 		expectedAllocation{
-			capacity: a.Capacity,
 			channels: a.Channels,
+			length:   a.Length,
+			capacity: a.Capacity,
 		})
 	s.AppendSample(1)
 	return s
@@ -108,10 +122,15 @@ func assertAllocation(t *testing.T, s signal.Signal, e expectedAllocation) {
 	if e.channels != s.Channels() {
 		t.Fatalf("Invalid number of channels: %v expected: %v", s.Channels(), e.channels)
 	}
+	if e.length != s.Length() {
+		t.Fatalf("Invalid buffer length: %v expected: %v", s.Length(), e.length)
+	}
 	if e.capacity != s.Capacity() {
 		t.Fatalf("Invalid buffer capacity: %v expected: %v", s.Capacity(), e.capacity)
 	}
-	if s.Length() != 0 {
-		t.Fatalf("non-zero buffer length: %v", s.Length())
+	if f, ok := s.(signal.Fixed); ok {
+		if e.BitDepth != f.BitDepth() {
+			t.Fatalf("Invalid buffer bit depth: %v expected: %v", f.BitDepth(), e.BitDepth)
+		}
 	}
 }
