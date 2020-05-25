@@ -35,7 +35,6 @@ type (
 		AppendSample(int64) Signed
 		Sample(pos int) int64
 		SetSample(pos int, value int64)
-		Reset() Signed
 		setBitDepth(BitDepth) Signed
 	}
 
@@ -47,7 +46,6 @@ type (
 		AppendSample(uint64) Unsigned
 		Sample(pos int) uint64
 		SetSample(pos int, value uint64)
-		Reset() Unsigned
 		setBitDepth(BitDepth) Unsigned
 	}
 
@@ -59,7 +57,6 @@ type (
 		AppendSample(float64) Floating
 		Sample(pos int) float64
 		SetSample(pos int, value float64)
-		Reset() Floating
 	}
 
 	// Allocator provides allocation of various signal buffers.

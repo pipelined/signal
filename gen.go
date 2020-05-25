@@ -233,11 +233,6 @@ func (s {{ .Name }}) Slice(start, end int) Floating {
 	return s
 }
 
-// Reset sets length of the buffer to zero.
-func (s {{ .Name }}) Reset() Floating {
-	return s.Slice(0, 0)
-}
-
 // Append appends data from src buffer to the end of the buffer.
 func (s {{ .Name }}) Append(src Floating) Floating {
 	mustSameChannels(s.Channels(), src.Channels())
@@ -410,11 +405,6 @@ func (s {{ .Name }}) Slice(start, end int) Signed {
 	end = s.ChannelPos(0, end)
 	s.buffer = s.buffer[start:end]
 	return s
-}
-
-// Reset sets length of the buffer to zero.
-func (s {{ .Name }}) Reset() Signed {
-	return s.Slice(0, 0)
 }
 
 // Append appends [0:Length] data from src to current buffer and returns new
@@ -597,11 +587,6 @@ func (s {{ .Name }}) Slice(start, end int) Unsigned {
 	end = s.ChannelPos(0, end)
 	s.buffer = s.buffer[start:end]
 	return s
-}
-
-// Reset sets length of the buffer to zero.
-func (s {{ .Name }}) Reset() Unsigned {
-	return s.Slice(0, 0)
 }
 
 // Append appends data from src to current buffer and returns new
