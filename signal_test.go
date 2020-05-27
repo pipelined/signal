@@ -394,80 +394,94 @@ func ExampleSampleRate_SamplesIn() {
 }
 
 func TestWrite(t *testing.T) {
-	t.Run("striped int 8-bits overflow", testOk(
-		signal.WriteStripedInt(
+	allocator := signal.Allocator{
+		Capacity: 1,
+		Length:   1,
+		Channels: 2,
+	}
+	t.Run("striped int 8-bits overflow", func() func(t *testing.T) {
+		buf := allocator.Int64(signal.BitDepth8)
+		length := signal.WriteStripedInt(
 			[][]int{
 				{math.MaxInt32},
 				{math.MinInt32},
 			},
-			signal.Allocator{
-				Capacity: 1,
-				Channels: 2,
-			}.Int64(signal.BitDepth8),
-		),
-		expected{
-			length:   1,
-			capacity: 1,
-			data: [][]int64{
-				{math.MaxInt8},
-				{math.MinInt8},
+			buf)
+		return testOk(
+			buf,
+			expected{
+				length:   length,
+				capacity: 1,
+				data: [][]int64{
+					{math.MaxInt8},
+					{math.MinInt8},
+				},
 			},
-		},
-	))
-	t.Run("int 8-bits overflow", testOk(
-		signal.WriteInt(
-			[]int{math.MaxInt32, math.MinInt32},
-			signal.Allocator{
-				Capacity: 1,
-				Channels: 2,
-			}.Int64(signal.BitDepth8),
-		),
-		expected{
-			length:   1,
-			capacity: 1,
-			data: [][]int64{
-				{math.MaxInt8},
-				{math.MinInt8},
+		)
+	}())
+	t.Run("int 8-bits overflow", func() func(t *testing.T) {
+		buf := allocator.Int64(signal.BitDepth8)
+		length := signal.WriteInt(
+			[]int{
+				math.MaxInt32,
+				math.MinInt32,
 			},
-		},
-	))
-	t.Run("striped uint 8-bits overflow", testOk(
-		signal.WriteStripedUint(
+			buf,
+		)
+		return testOk(
+			buf,
+			expected{
+				length:   length,
+				capacity: 1,
+				data: [][]int64{
+					{math.MaxInt8},
+					{math.MinInt8},
+				},
+			},
+		)
+	}())
+	t.Run("striped uint 8-bits overflow", func() func(t *testing.T) {
+		buf := allocator.Uint64(signal.BitDepth8)
+		length := signal.WriteStripedUint(
 			[][]uint{
 				{math.MaxUint32},
 				{0},
 			},
-			signal.Allocator{
-				Capacity: 1,
-				Channels: 2,
-			}.Uint64(signal.BitDepth8),
-		),
-		expected{
-			length:   1,
-			capacity: 1,
-			data: [][]uint64{
-				{math.MaxUint8},
-				{0},
+			buf,
+		)
+		return testOk(
+			buf,
+			expected{
+				length:   length,
+				capacity: 1,
+				data: [][]uint64{
+					{math.MaxUint8},
+					{0},
+				},
 			},
-		},
-	))
-	t.Run("striped uint 8-bits overflow", testOk(
-		signal.WriteUint(
-			[]uint{math.MaxUint32, 0},
-			signal.Allocator{
-				Capacity: 1,
-				Channels: 2,
-			}.Uint64(signal.BitDepth8),
-		),
-		expected{
-			length:   1,
-			capacity: 1,
-			data: [][]uint64{
-				{math.MaxUint8},
-				{0},
+		)
+	}())
+	t.Run("uint 8-bits overflow", func() func(t *testing.T) {
+		buf := allocator.Uint64(signal.BitDepth8)
+		length := signal.WriteUint(
+			[]uint{
+				math.MaxUint32,
+				0,
 			},
-		},
-	))
+			buf,
+		)
+		return testOk(
+			buf,
+			expected{
+				length:   length,
+				capacity: 1,
+				data: [][]uint64{
+					{math.MaxUint8},
+					{0},
+				},
+			},
+		)
+	}())
 }
 
 func TestAppendPanic(t *testing.T) {

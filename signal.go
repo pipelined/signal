@@ -3,6 +3,7 @@ package signal
 //go:generate go run gen.go
 
 import (
+	"fmt"
 	"math"
 	"time"
 )
@@ -469,14 +470,18 @@ func mustSameCapacity(c1, c2 int) {
 	}
 }
 
+func chanLen(sliceLen, channels int) int {
+	return int(math.Ceil(float64(sliceLen) / float64(channels)))
+}
+
 // WriteInt appends values from provided slice into the buffer. Sample
 // values are clipped by maximum value of the buffer bit depth.
-func WriteInt(src []int, dst Signed) Signed {
-	length := min(dst.Cap()-dst.Len(), len(src))
+func WriteInt(src []int, dst Signed) int {
+	length := min(dst.Len(), len(src))
 	for pos := 0; pos < length; pos++ {
-		dst = dst.AppendSample(int64(src[pos]))
+		dst.SetSample(pos, int64(src[pos]))
 	}
-	return dst
+	return chanLen(length, dst.Channels())
 }
 
 // WriteStripedInt appends values from provided slice into the buffer. The
@@ -484,7 +489,7 @@ func WriteInt(src []int, dst Signed) Signed {
 // otherwise function will panic. Nested slices can be nil, zero values for
 // that channel will be appended. Sample values are clipped by maximum
 // value of the buffer bit depth.
-func WriteStripedInt(src [][]int, dst Signed) Signed {
+func WriteStripedInt(src [][]int, dst Signed) int {
 	mustSameChannels(dst.Channels(), len(src))
 	var length int
 	for i := range src {
@@ -492,27 +497,28 @@ func WriteStripedInt(src [][]int, dst Signed) Signed {
 			length = len(src[i])
 		}
 	}
-	length = min(length, dst.Capacity()-dst.Length())
-	for pos := 0; pos < length; pos++ {
-		for channel := 0; channel < dst.Channels(); channel++ {
+	length = min(length, dst.Length())
+	for channel := 0; channel < dst.Channels(); channel++ {
+		for pos := 0; pos < length; pos++ {
 			if pos < len(src[channel]) {
-				dst = dst.AppendSample(int64(src[channel][pos]))
+				dst.SetSample(dst.ChannelPos(channel, pos), int64(src[channel][pos]))
 			} else {
-				dst = dst.AppendSample(0)
+				dst.SetSample(dst.ChannelPos(channel, pos), 0)
 			}
 		}
 	}
-	return dst
+	return chanLen(length, dst.Channels())
 }
 
 // WriteUint appends values from provided slice into the buffer. Sample
 // values are clipped by maximum value of the buffer bit depth.
-func WriteUint(src []uint, dst Unsigned) Unsigned {
-	length := min(dst.Cap()-dst.Len(), len(src))
+func WriteUint(src []uint, dst Unsigned) int {
+	length := min(dst.Len(), len(src))
 	for pos := 0; pos < length; pos++ {
-		dst = dst.AppendSample(uint64(src[pos]))
+		fmt.Printf("sample: %d\n", src[pos])
+		dst.SetSample(pos, uint64(src[pos]))
 	}
-	return dst
+	return chanLen(length, dst.Channels())
 }
 
 // WriteStripedUint appends values from provided slice into the buffer. The
@@ -520,7 +526,7 @@ func WriteUint(src []uint, dst Unsigned) Unsigned {
 // otherwise function will panic. Nested slices can be nil, zero values for
 // that channel will be appended. Sample values are clipped by maximum
 // value of the buffer bit depth.
-func WriteStripedUint(src [][]uint, dst Unsigned) Unsigned {
+func WriteStripedUint(src [][]uint, dst Unsigned) int {
 	mustSameChannels(dst.Channels(), len(src))
 	var length int
 	for i := range src {
@@ -528,57 +534,70 @@ func WriteStripedUint(src [][]uint, dst Unsigned) Unsigned {
 			length = len(src[i])
 		}
 	}
-	length = min(length, dst.Capacity()-dst.Length())
+	length = min(length, dst.Length())
 	for pos := 0; pos < length; pos++ {
 		for channel := 0; channel < dst.Channels(); channel++ {
 			if pos < len(src[channel]) {
-				dst = dst.AppendSample(uint64(src[channel][pos]))
+				dst.SetSample(dst.ChannelPos(channel, pos), uint64(src[channel][pos]))
 			} else {
-				dst = dst.AppendSample(0)
+				dst.SetSample(dst.ChannelPos(channel, pos), 0)
 			}
 		}
 	}
-	return dst
+	return chanLen(length, dst.Channels())
 }
 
 // ReadInt reads values from the buffer into provided slice.
-func ReadInt(src Signed, dst []int) {
+func ReadInt(src Signed, dst []int) int {
 	length := min(src.Len(), len(dst))
 	for pos := 0; pos < length; pos++ {
 		dst[pos] = int(src.Sample(pos))
 	}
+	return chanLen(length, src.Channels())
 }
 
 // ReadStripedInt reads values from the buffer into provided slice.
 // The length of provided slice must be equal to the number of channels,
 // otherwise function will panic. Nested slices can be nil, no values for
 // that channel will be appended.
-func ReadStripedInt(src Signed, dst [][]int) {
+func ReadStripedInt(src Signed, dst [][]int) int {
 	mustSameChannels(src.Channels(), len(dst))
+	var length int
 	for channel := 0; channel < src.Channels(); channel++ {
+		if chanLen := min(len(dst[channel]), src.Length()); chanLen > length {
+			length = chanLen
+		}
 		for pos := 0; pos < src.Length() && pos < len(dst[channel]); pos++ {
 			dst[channel][pos] = int(src.Sample(src.ChannelPos(channel, pos)))
 		}
 	}
+	return length
 }
 
 // ReadUint reads values from the buffer into provided slice.
-func ReadUint(src Unsigned, dst []uint) {
+func ReadUint(src Unsigned, dst []uint) int {
 	length := min(src.Len(), len(dst))
 	for pos := 0; pos < length; pos++ {
 		dst[pos] = uint(src.Sample(pos))
 	}
+	return chanLen(length, src.Channels())
 }
 
 // ReadStripedUint reads values from the buffer into provided slice.
 // The length of provided slice must be equal to the number of channels,
 // otherwise function will panic. Nested slices can be nil, no values for
 // that channel will be appended.
-func ReadStripedUint(src Unsigned, dst [][]uint) {
+func ReadStripedUint(src Unsigned, dst [][]uint) int {
 	mustSameChannels(src.Channels(), len(dst))
+	var length int
 	for channel := 0; channel < src.Channels(); channel++ {
-		for pos := 0; pos < src.Length() && pos < len(dst[channel]); pos++ {
+		chanLen := min(len(dst[channel]), src.Length())
+		if chanLen > length {
+			length = chanLen
+		}
+		for pos := 0; pos < chanLen; pos++ {
 			dst[channel][pos] = uint(src.Sample(src.ChannelPos(channel, pos)))
 		}
 	}
+	return length
 }
