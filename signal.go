@@ -3,7 +3,6 @@ package signal
 //go:generate go run gen.go
 
 import (
-	"fmt"
 	"math"
 	"time"
 )
@@ -515,7 +514,6 @@ func WriteStripedInt(src [][]int, dst Signed) int {
 func WriteUint(src []uint, dst Unsigned) int {
 	length := min(dst.Len(), len(src))
 	for pos := 0; pos < length; pos++ {
-		fmt.Printf("sample: %d\n", src[pos])
 		dst.SetSample(pos, uint64(src[pos]))
 	}
 	return chanLen(length, dst.Channels())
