@@ -38,11 +38,11 @@ func main() {
 	var (
 		fixedTemplates = templateNames{
 			signal: "fixed",
-			tests:  "fixed-tests",
+			tests:  "tests",
 		}
 		floatingTemplates = templateNames{
 			signal: "floating",
-			tests:  "floating-tests",
+			tests:  "tests",
 		}
 	)
 	var (
