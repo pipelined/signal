@@ -1,0 +1,40 @@
+{{define "floating"}}{{template "header" .}}
+// {{ .Name }} is {{ .Builtin }} floating-point signal.
+type {{ .Name }} struct {
+	buffer []{{ .Builtin }}
+	channels
+}
+
+// {{ .Name }} allocates a new sequential {{ .Builtin }} signal buffer.
+func (a Allocator) {{ .Name }}() {{ .Interface }} {
+	return {{ .Name }}{
+		buffer:   make([]{{ .Builtin }}, a.Channels*a.Length, a.Channels*a.Capacity),
+		channels: channels(a.Channels),
+	}
+}
+
+// AppendSample appends sample at the end of the buffer.
+// Sample is not appended if buffer capacity is reached.
+func (s {{ .Name }}) AppendSample(value {{ .SampleType }}) {{ .Interface }} {
+	if len(s.buffer) == cap(s.buffer) {
+		return s
+	}
+	s.buffer = append(s.buffer, {{ .Builtin }}(value))
+	return s
+}
+
+// SetSample sets sample value for provided index.
+func (s {{ .Name }}) SetSample(i int, value {{ .SampleType }}) {
+	s.buffer[i] = {{ .Builtin }}(value)
+}
+
+// Get{{ .Name }} selects a new sequential {{ .Builtin }} signal buffer.
+// from the pool.
+func (p *Pool) Get{{ .Name }}() {{ .Interface }} {
+	if p == nil {
+		return nil
+	}
+	return p.{{ .Pool }}.Get().({{ .Interface }})
+}
+{{template "signal" .}}
+{{end}}

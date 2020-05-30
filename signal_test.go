@@ -48,24 +48,19 @@ func ExampleFloatingAsFloating() {
 	alloc := signal.Allocator{
 		Channels: 1,
 		Capacity: 3,
+		Length:   3,
 	}
-	result := make([]float64, 3)
 
-	// float64 to float32 signal
-	// read output to the result
-	signal.ReadFloat64(
-		// convert floating input to floating output
-		signal.FloatingAsFloating(
-			// write float64 values to input
-			signal.WriteFloat64(
-				[]float64{1, 0, -1},
-				alloc.Float64(),
-			),
-			alloc.Float32(),
-		),
-		result,
-	)
+	// 64-bit floating to 32-bit floating signal
+	f64, f32 := alloc.Float64(), alloc.Float32()
+	// write float32 values to input
+	signal.WriteFloat64([]float64{1, 0, -1}, f64)
+	// convert float32 input to float64 output
+	signal.FloatingAsFloating(f64, f32)
 
+	result := make([]float32, 3)
+	// read result
+	signal.ReadFloat32(f32, result)
 	fmt.Println(result)
 	// Output:
 	// [1 0 -1]
@@ -75,24 +70,19 @@ func ExampleFloatingAsSigned() {
 	alloc := signal.Allocator{
 		Channels: 1,
 		Capacity: 3,
+		Length:   3,
 	}
-	result := make([]int64, 3)
 
 	// 64-bit floating to 64-bit signed signal
-	// read output to the result
-	signal.ReadInt64(
-		// convert floating input to signed output
-		signal.FloatingAsSigned(
-			// write float64 values to input
-			signal.WriteFloat64(
-				[]float64{1, 0, -1},
-				alloc.Float64(),
-			),
-			alloc.Int64(signal.BitDepth64),
-		),
-		result,
-	)
+	f64, i64 := alloc.Float64(), alloc.Int64(signal.BitDepth64)
+	// write float64 values to input
+	signal.WriteFloat64([]float64{1, 0, -1}, f64)
+	// convert floating input to signed output
+	signal.FloatingAsSigned(f64, i64)
 
+	result := make([]int64, 3)
+	// read result
+	signal.ReadInt64(i64, result)
 	fmt.Println(result)
 	// Output:
 	// [9223372036854775807 0 -9223372036854775808]
@@ -102,24 +92,19 @@ func ExampleFloatingAsUnsigned() {
 	alloc := signal.Allocator{
 		Channels: 1,
 		Capacity: 3,
+		Length:   3,
 	}
-	result := make([]uint64, 3)
 
 	// 64-bit floating to 64-bit unsigned signal
-	// read output to the result
-	signal.ReadUint64(
-		// convert floating input to unsigned output
-		signal.FloatingAsUnsigned(
-			// write float64 values to input
-			signal.WriteFloat64(
-				[]float64{1, 0, -1},
-				alloc.Float64(),
-			),
-			alloc.Uint64(signal.BitDepth64),
-		),
-		result,
-	)
+	f64, u64 := alloc.Float64(), alloc.Uint64(signal.BitDepth64)
+	// write float64 values to input
+	signal.WriteFloat64([]float64{1, 0, -1}, f64)
+	// convert floating input to unsigned output
+	signal.FloatingAsUnsigned(f64, u64)
 
+	result := make([]uint64, 3)
+	// read result
+	signal.ReadUint64(u64, result)
 	fmt.Println(result)
 	// Output:
 	// [18446744073709551615 9223372036854775808 0]
@@ -129,24 +114,19 @@ func ExampleSignedAsFloating() {
 	alloc := signal.Allocator{
 		Channels: 1,
 		Capacity: 3,
+		Length:   3,
 	}
-	result := make([]float64, 3)
 
 	// 8-bit signed to 64-bit floating signal
-	// read output to the result
-	signal.ReadFloat64(
-		// convert signed input to signed output
-		signal.SignedAsFloating(
-			// write int values to input
-			signal.WriteInt64(
-				[]int64{math.MaxInt64, 0, math.MinInt64},
-				alloc.Int64(signal.BitDepth64),
-			),
-			alloc.Float64(),
-		),
-		result,
-	)
+	i8, f64 := alloc.Int8(signal.BitDepth8), alloc.Float64()
+	// write int8 values to input
+	signal.WriteInt8([]int8{math.MaxInt8, 0, math.MinInt8}, i8)
+	// convert signed input to signed output
+	signal.SignedAsFloating(i8, f64)
 
+	result := make([]float64, 3)
+	// read output to the result
+	signal.ReadFloat64(f64, result)
 	fmt.Println(result)
 	// Output:
 	// [1 0 -1]
@@ -156,40 +136,33 @@ func ExampleSignedAsSigned() {
 	alloc := signal.Allocator{
 		Channels: 1,
 		Capacity: 3,
+		Length:   3,
 	}
 	result := make([]int64, 3)
 
 	// downscale 64-bit signed to 8-bit signed
-	// read output to the result
-	signal.ReadInt64(
+	{
+		i64, i8 := alloc.Int64(signal.BitDepth64), alloc.Int8(signal.BitDepth8)
+		// write int64 values to input
+		signal.WriteInt64([]int64{math.MaxInt64, 0, math.MinInt64}, i64)
 		// convert signed input to signed output
-		signal.SignedAsSigned(
-			// write int values to input
-			signal.WriteInt64(
-				[]int64{math.MaxInt64, 0, math.MinInt64},
-				alloc.Int64(signal.BitDepth64),
-			),
-			alloc.Int64(signal.BitDepth8),
-		),
-		result,
-	)
-	fmt.Println(result)
+		signal.SignedAsSigned(i64, i8)
+		// read output to the result
+		signal.ReadInt64(i8, result)
+		fmt.Println(result)
+	}
 
 	// upscale signed 8-bit to signed 16-bit
-	// read output to the result
-	signal.ReadInt64(
+	{
+		i8, i64 := alloc.Int8(signal.BitDepth8), alloc.Int64(signal.BitDepth16)
+		// write int8 values to input
+		signal.WriteInt8([]int8{math.MaxInt8, 0, math.MinInt8}, i8)
 		// convert signed input to signed output
-		signal.SignedAsSigned(
-			// write int values to input
-			signal.WriteInt64(
-				[]int64{math.MaxInt8, 0, math.MinInt8},
-				alloc.Int64(signal.BitDepth8),
-			),
-			alloc.Int64(signal.BitDepth16),
-		),
-		result,
-	)
-	fmt.Println(result)
+		signal.SignedAsSigned(i8, i64)
+		// read output to the result
+		signal.ReadInt64(i64, result)
+		fmt.Println(result)
+	}
 	// Output:
 	// [127 0 -128]
 	// [32767 0 -32768]
@@ -199,40 +172,33 @@ func ExampleSignedAsUnsigned() {
 	alloc := signal.Allocator{
 		Channels: 1,
 		Capacity: 3,
+		Length:   3,
 	}
 	result := make([]uint64, 3)
 
 	// downscale 64-bit signed to 8-bit unsigned
-	// read output to the result
-	signal.ReadUint64(
+	{
+		i64, u64 := alloc.Int64(signal.BitDepth64), alloc.Uint64(signal.BitDepth8)
+		// write int values to input
+		signal.WriteInt64([]int64{math.MaxInt64, 0, math.MinInt64}, i64)
 		// convert signed input to unsigned output
-		signal.SignedAsUnsigned(
-			// write int values to input
-			signal.WriteInt64(
-				[]int64{math.MaxInt64, 0, math.MinInt64},
-				alloc.Int64(signal.BitDepth64),
-			),
-			alloc.Uint64(signal.BitDepth8),
-		),
-		result,
-	)
-	fmt.Println(result)
+		signal.SignedAsUnsigned(i64, u64)
+		// read output to the result
+		signal.ReadUint64(u64, result)
+		fmt.Println(result)
+	}
 
 	// upscale 8-bit signed to 16-bit unsigned
-	// read output to the result
-	signal.ReadUint64(
+	{
+		i64, u64 := alloc.Int64(signal.BitDepth8), alloc.Uint64(signal.BitDepth16)
+		// write int values to input
+		signal.WriteInt64([]int64{math.MaxInt8, 0, math.MinInt8}, i64)
 		// convert signed input to unsigned output
-		signal.SignedAsUnsigned(
-			// write int values to input
-			signal.WriteInt64(
-				[]int64{math.MaxInt8, 0, math.MinInt8},
-				alloc.Int64(signal.BitDepth8),
-			),
-			alloc.Uint64(signal.BitDepth16),
-		),
-		result,
-	)
-	fmt.Println(result)
+		signal.SignedAsUnsigned(i64, u64)
+		// read output to the result
+		signal.ReadUint64(u64, result)
+		fmt.Println(result)
+	}
 	// Output:
 	// [255 128 0]
 	// [65535 32768 0]
@@ -242,24 +208,18 @@ func ExampleUnsignedAsFloating() {
 	alloc := signal.Allocator{
 		Channels: 1,
 		Capacity: 3,
+		Length:   3,
 	}
 	result := make([]float64, 3)
 
-	// signed 8-bit to 64-bit floating signal
+	// unsigned 8-bit to 64-bit floating signal
+	u64, f64 := alloc.Uint64(signal.BitDepth8), alloc.Float64()
+	// write uint values to input
+	signal.WriteUint64([]uint64{math.MaxUint8, math.MaxInt8 + 1, 0}, u64)
+	// convert unsigned input to floating output
+	signal.UnsignedAsFloating(u64, f64)
 	// read output to the result
-	signal.ReadFloat64(
-		// convert unsigned input to floating output
-		signal.UnsignedAsFloating(
-			// write uint values to input
-			signal.WriteUint64(
-				[]uint64{math.MaxUint64, math.MaxInt64 + 1, 0},
-				alloc.Uint64(signal.BitDepth64),
-			),
-			alloc.Float64(),
-		),
-		result,
-	)
-
+	signal.ReadFloat64(f64, result)
 	fmt.Println(result)
 	// Output:
 	// [1 0 -1]
@@ -269,40 +229,33 @@ func ExampleUnsignedAsSigned() {
 	alloc := signal.Allocator{
 		Channels: 1,
 		Capacity: 3,
+		Length:   3,
 	}
 	result := make([]int64, 3)
 
 	// downscale 64-bit unsigned to 8-bit signed
-	// read output to the result
-	signal.ReadInt64(
+	{
+		u64, i64 := alloc.Uint64(signal.BitDepth64), alloc.Int64(signal.BitDepth8)
+		// write uint values to input
+		signal.WriteUint64([]uint64{math.MaxUint64, math.MaxInt64 + 1, 0}, u64)
 		// convert unsigned input to signed output
-		signal.UnsignedAsSigned(
-			// write uint values to input
-			signal.WriteUint64(
-				[]uint64{math.MaxUint64, math.MaxInt64 + 1, 0},
-				alloc.Uint64(signal.BitDepth64),
-			),
-			alloc.Int64(signal.BitDepth8),
-		),
-		result,
-	)
-	fmt.Println(result)
+		signal.UnsignedAsSigned(u64, i64)
+		// read output to the result
+		signal.ReadInt64(i64, result)
+		fmt.Println(result)
+	}
 
 	// upscale unsigned 8-bit to signed 16-bit
-	// read output to the result
-	signal.ReadInt64(
+	{
+		u64, i64 := alloc.Uint64(signal.BitDepth8), alloc.Int64(signal.BitDepth16)
+		// write uint values to input
+		signal.WriteUint64([]uint64{math.MaxUint8, math.MaxInt8 + 1, 0}, u64)
 		// convert unsigned input to signed output
-		signal.UnsignedAsSigned(
-			// write uint values to input
-			signal.WriteUint64(
-				[]uint64{math.MaxUint8, math.MaxInt8 + 1, 0},
-				alloc.Uint64(signal.BitDepth8),
-			),
-			alloc.Int64(signal.BitDepth16),
-		),
-		result,
-	)
-	fmt.Println(result)
+		signal.UnsignedAsSigned(u64, i64)
+		// read output to the result
+		signal.ReadInt64(i64, result)
+		fmt.Println(result)
+	}
 	// Output:
 	// [127 0 -128]
 	// [32767 0 -32768]
@@ -312,40 +265,33 @@ func ExampleUnsignedAsUnsigned() {
 	alloc := signal.Allocator{
 		Channels: 1,
 		Capacity: 3,
+		Length:   3,
 	}
 	result := make([]uint64, 3)
 
 	// downscale 64-bit unsigned to 8-bit unsigned
-	// read output to the result
-	signal.ReadUint64(
+	{
+		u64, u8 := alloc.Uint64(signal.BitDepth64), alloc.Uint8(signal.BitDepth8)
+		// write uint values to input
+		signal.WriteUint64([]uint64{math.MaxUint64, math.MaxInt64 + 1, 0}, u64)
 		// convert unsigned input to unsigned output
-		signal.UnsignedAsUnsigned(
-			// write uint values to input
-			signal.WriteUint64(
-				[]uint64{math.MaxUint64, math.MaxInt64 + 1, 0},
-				alloc.Uint64(signal.BitDepth64),
-			),
-			alloc.Uint64(signal.BitDepth8),
-		),
-		result,
-	)
-	fmt.Println(result)
+		signal.UnsignedAsUnsigned(u64, u8)
+		// read output to the result
+		signal.ReadUint64(u8, result)
+		fmt.Println(result)
+	}
 
 	// upscale 8-bit unsigned to 16-bit unsigned
-	// read output to the result
-	signal.ReadUint64(
+	{
+		u8, u16 := alloc.Uint8(signal.BitDepth8), alloc.Uint16(signal.BitDepth16)
+		// write uint values to input
+		signal.WriteUint64([]uint64{math.MaxUint16, math.MaxInt8 + 1, 0}, u8)
 		// convert unsigned input to unsigned output
-		signal.UnsignedAsUnsigned(
-			// write uint values to input
-			signal.WriteUint64(
-				[]uint64{math.MaxUint16, math.MaxInt8 + 1, 0},
-				alloc.Uint64(signal.BitDepth8),
-			),
-			alloc.Uint64(signal.BitDepth16),
-		),
-		result,
-	)
-	fmt.Println(result)
+		signal.UnsignedAsUnsigned(u8, u16)
+		// read output to the result
+		signal.ReadUint64(u16, result)
+		fmt.Println(result)
+	}
 	// Output:
 	// [255 128 0]
 	// [65535 32768 0]
@@ -394,80 +340,100 @@ func ExampleSampleRate_SamplesIn() {
 }
 
 func TestWrite(t *testing.T) {
-	t.Run("striped int 8-bits overflow", testOk(
-		signal.WriteStripedInt(
+	allocator := signal.Allocator{
+		Capacity: 1,
+		Length:   1,
+		Channels: 3,
+	}
+	t.Run("striped int 8-bits overflow", func() func(t *testing.T) {
+		buf := allocator.Int64(signal.BitDepth8)
+		length := signal.WriteStripedInt(
 			[][]int{
 				{math.MaxInt32},
 				{math.MinInt32},
+				{},
 			},
-			signal.Allocator{
-				Capacity: 1,
-				Channels: 2,
-			}.Int64(signal.BitDepth8),
-		),
-		expected{
-			length:   1,
-			capacity: 1,
-			data: [][]int64{
-				{math.MaxInt8},
-				{math.MinInt8},
+			buf)
+		return testOk(
+			buf,
+			expected{
+				length:   length,
+				capacity: 1,
+				data: [][]int64{
+					{math.MaxInt8},
+					{math.MinInt8},
+					{0},
+				},
 			},
-		},
-	))
-	t.Run("int 8-bits overflow", testOk(
-		signal.WriteInt(
-			[]int{math.MaxInt32, math.MinInt32},
-			signal.Allocator{
-				Capacity: 1,
-				Channels: 2,
-			}.Int64(signal.BitDepth8),
-		),
-		expected{
-			length:   1,
-			capacity: 1,
-			data: [][]int64{
-				{math.MaxInt8},
-				{math.MinInt8},
+		)
+	}())
+	t.Run("int 8-bits overflow", func() func(t *testing.T) {
+		buf := allocator.Int64(signal.BitDepth8)
+		length := signal.WriteInt(
+			[]int{
+				math.MaxInt32,
+				math.MinInt32,
 			},
-		},
-	))
-	t.Run("striped uint 8-bits overflow", testOk(
-		signal.WriteStripedUint(
+			buf,
+		)
+		return testOk(
+			buf,
+			expected{
+				length:   length,
+				capacity: 1,
+				data: [][]int64{
+					{math.MaxInt8},
+					{math.MinInt8},
+					{0},
+				},
+			},
+		)
+	}())
+	t.Run("striped uint 8-bits overflow", func() func(t *testing.T) {
+		buf := allocator.Uint64(signal.BitDepth8)
+		length := signal.WriteStripedUint(
 			[][]uint{
 				{math.MaxUint32},
 				{0},
+				{},
 			},
-			signal.Allocator{
-				Capacity: 1,
-				Channels: 2,
-			}.Uint64(signal.BitDepth8),
-		),
-		expected{
-			length:   1,
-			capacity: 1,
-			data: [][]uint64{
-				{math.MaxUint8},
-				{0},
+			buf,
+		)
+		return testOk(
+			buf,
+			expected{
+				length:   length,
+				capacity: 1,
+				data: [][]uint64{
+					{math.MaxUint8},
+					{0},
+					{0},
+				},
 			},
-		},
-	))
-	t.Run("striped uint 8-bits overflow", testOk(
-		signal.WriteUint(
-			[]uint{math.MaxUint32, 0},
-			signal.Allocator{
-				Capacity: 1,
-				Channels: 2,
-			}.Uint64(signal.BitDepth8),
-		),
-		expected{
-			length:   1,
-			capacity: 1,
-			data: [][]uint64{
-				{math.MaxUint8},
-				{0},
+		)
+	}())
+	t.Run("uint 8-bits overflow", func() func(t *testing.T) {
+		buf := allocator.Uint64(signal.BitDepth8)
+		length := signal.WriteUint(
+			[]uint{
+				math.MaxUint32,
+				0,
 			},
-		},
-	))
+			buf,
+		)
+		return testOk(
+			buf,
+			expected{
+				length:   length,
+				capacity: 1,
+				data: [][]uint64{
+					{math.MaxUint8},
+					{0},
+					{0},
+				},
+			},
+		)
+	}())
 }
 
 func TestAppendPanic(t *testing.T) {
