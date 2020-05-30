@@ -31,10 +31,10 @@ func (s {{ .Name }}) AppendSample(value {{ .SampleType }}) {{ .Interface }} {
 	return s
 }
 
-// SetSample sets sample value for provided position.
+// SetSample sets sample value for provided index.
 // Sample values are capped by maximum value of the buffer bit depth.
-func (s {{ .Name }}) SetSample(pos int, value {{ .SampleType }}) {
-	s.buffer[pos] = {{ .Builtin }}(s.BitDepth().{{ .Interface }}Value(value))
+func (s {{ .Name }}) SetSample(i int, value {{ .SampleType }}) {
+	s.buffer[i] = {{ .Builtin }}(s.BitDepth().{{ .Interface }}Value(value))
 }
 
 // Get{{ .Name }} selects a new sequential {{ .Builtin }} signal buffer.

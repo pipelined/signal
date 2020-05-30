@@ -23,9 +23,9 @@ func (s {{ .Name }}) AppendSample(value {{ .SampleType }}) {{ .Interface }} {
 	return s
 }
 
-// SetSample sets sample value for provided position.
-func (s {{ .Name }}) SetSample(pos int, value {{ .SampleType }}) {
-	s.buffer[pos] = {{ .Builtin }}(value)
+// SetSample sets sample value for provided index.
+func (s {{ .Name }}) SetSample(i int, value {{ .SampleType }}) {
+	s.buffer[i] = {{ .Builtin }}(value)
 }
 
 // Get{{ .Name }} selects a new sequential {{ .Builtin }} signal buffer.

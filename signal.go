@@ -18,7 +18,6 @@ type (
 		Length() int
 		Len() int
 		Cap() int
-		ChannelPos(int, int) int
 	}
 
 	// Fixed is a digital signal represented with fixed-point values.
@@ -33,8 +32,8 @@ type (
 		Slice(int, int) Signed
 		Append(Signed) Signed
 		AppendSample(int64) Signed
-		Sample(pos int) int64
-		SetSample(pos int, value int64)
+		Sample(int) int64
+		SetSample(int, int64)
 		setBitDepth(BitDepth) Signed
 	}
 
@@ -44,8 +43,8 @@ type (
 		Slice(int, int) Unsigned
 		Append(Unsigned) Unsigned
 		AppendSample(uint64) Unsigned
-		Sample(pos int) uint64
-		SetSample(pos int, value uint64)
+		Sample(int) uint64
+		SetSample(int, uint64)
 		setBitDepth(BitDepth) Unsigned
 	}
 
@@ -55,8 +54,8 @@ type (
 		Slice(int, int) Floating
 		Append(Floating) Floating
 		AppendSample(float64) Floating
-		Sample(pos int) float64
-		SetSample(pos int, value float64)
+		Sample(int) float64
+		SetSample(int, float64)
 	}
 
 	// Allocator provides allocation of various signal buffers.
@@ -179,8 +178,8 @@ func FloatingAsFloating(src Floating, dst Floating) int {
 		return 0
 	}
 	// determine the multiplier for bit depth conversion
-	for pos := 0; pos < length; pos++ {
-		dst.SetSample(pos, src.Sample(pos))
+	for i := 0; i < length; i++ {
+		dst.SetSample(i, src.Sample(i))
 	}
 	return min(src.Length(), dst.Length())
 }
@@ -200,11 +199,11 @@ func FloatingAsSigned(src Floating, dst Signed) int {
 	}
 	// determine the multiplier for bit depth conversion
 	msv := dst.BitDepth().MaxSignedValue()
-	for pos := 0; pos < length; pos++ {
-		if sample := capFloat(src.Sample(pos)); sample > 0 {
-			dst.SetSample(pos, int64(sample)*msv)
+	for i := 0; i < length; i++ {
+		if sample := capFloat(src.Sample(i)); sample > 0 {
+			dst.SetSample(i, int64(sample)*msv)
 		} else {
-			dst.SetSample(pos, int64(sample)*(msv+1))
+			dst.SetSample(i, int64(sample)*(msv+1))
 		}
 	}
 	return min(src.Length(), dst.Length())
@@ -224,11 +223,11 @@ func FloatingAsUnsigned(src Floating, dst Unsigned) int {
 	}
 	// determine the multiplier for bit depth conversion
 	msv := uint64(dst.BitDepth().MaxSignedValue())
-	for pos := 0; pos < length; pos++ {
-		if sample := capFloat(src.Sample(pos)); sample > 0 {
-			dst.SetSample(pos, uint64(sample)*msv+(msv+1))
+	for i := 0; i < length; i++ {
+		if sample := capFloat(src.Sample(i)); sample > 0 {
+			dst.SetSample(i, uint64(sample)*msv+(msv+1))
 		} else {
-			dst.SetSample(pos, uint64(sample)*(msv+1)+(msv+1))
+			dst.SetSample(i, uint64(sample)*(msv+1)+(msv+1))
 		}
 	}
 	return min(src.Length(), dst.Length())
@@ -248,11 +247,11 @@ func SignedAsFloating(src Signed, dst Floating) int {
 	}
 	// determine the divider for bit depth conversion.
 	msv := float64(src.BitDepth().MaxSignedValue())
-	for pos := 0; pos < length; pos++ {
-		if sample := src.Sample(pos); sample > 0 {
-			dst.SetSample(pos, float64(sample)/msv)
+	for i := 0; i < length; i++ {
+		if sample := src.Sample(i); sample > 0 {
+			dst.SetSample(i, float64(sample)/msv)
 		} else {
-			dst.SetSample(pos, float64(sample)/(msv+1))
+			dst.SetSample(i, float64(sample)/(msv+1))
 		}
 	}
 	return min(src.Length(), dst.Length())
@@ -273,19 +272,19 @@ func SignedAsSigned(src Signed, dst Signed) int {
 	// downscale
 	if src.BitDepth() >= dst.BitDepth() {
 		scale := Scale(src.BitDepth(), dst.BitDepth())
-		for pos := 0; pos < length; pos++ {
-			dst.SetSample(pos, src.Sample(pos)/scale)
+		for i := 0; i < length; i++ {
+			dst.SetSample(i, src.Sample(i)/scale)
 		}
 		return min(src.Length(), dst.Length())
 	}
 
 	// upscale
 	scale := Scale(dst.BitDepth(), src.BitDepth())
-	for pos := 0; pos < length; pos++ {
-		if sample := src.Sample(pos); sample > 0 {
-			dst.SetSample(pos, (src.Sample(pos)+1)*scale-1)
+	for i := 0; i < length; i++ {
+		if sample := src.Sample(i); sample > 0 {
+			dst.SetSample(i, (src.Sample(i)+1)*scale-1)
 		} else {
-			dst.SetSample(pos, src.Sample(pos)*scale)
+			dst.SetSample(i, src.Sample(i)*scale)
 		}
 	}
 	return min(src.Length(), dst.Length())
@@ -309,19 +308,19 @@ func SignedAsUnsigned(src Signed, dst Unsigned) int {
 	// downscale
 	if src.BitDepth() >= dst.BitDepth() {
 		scale := Scale(src.BitDepth(), dst.BitDepth())
-		for pos := 0; pos < length; pos++ {
-			dst.SetSample(pos, uint64(src.Sample(pos)/scale)+msv+1)
+		for i := 0; i < length; i++ {
+			dst.SetSample(i, uint64(src.Sample(i)/scale)+msv+1)
 		}
 		return min(src.Length(), dst.Length())
 	}
 
 	// upscale
 	scale := Scale(dst.BitDepth(), src.BitDepth())
-	for pos := 0; pos < length; pos++ {
-		if sample := src.Sample(pos); sample > 0 {
-			dst.SetSample(pos, uint64((src.Sample(pos)+1)*scale)+msv)
+	for i := 0; i < length; i++ {
+		if sample := src.Sample(i); sample > 0 {
+			dst.SetSample(i, uint64((src.Sample(i)+1)*scale)+msv)
 		} else {
-			dst.SetSample(pos, uint64(src.Sample(pos)*scale)+msv+1)
+			dst.SetSample(i, uint64(src.Sample(i)*scale)+msv+1)
 		}
 	}
 	return min(src.Length(), dst.Length())
@@ -340,11 +339,11 @@ func UnsignedAsFloating(src Unsigned, dst Floating) int {
 	}
 	// determine the multiplier for bit depth conversion
 	msv := float64(src.BitDepth().MaxSignedValue())
-	for pos := 0; pos < length; pos++ {
-		if sample := src.Sample(pos); sample > 0 {
-			dst.SetSample(pos, (float64(sample)-(msv+1))/msv)
+	for i := 0; i < length; i++ {
+		if sample := src.Sample(i); sample > 0 {
+			dst.SetSample(i, (float64(sample)-(msv+1))/msv)
 		} else {
-			dst.SetSample(pos, (float64(sample)-(msv+1))/(msv+1))
+			dst.SetSample(i, (float64(sample)-(msv+1))/(msv+1))
 		}
 	}
 	return min(src.Length(), dst.Length())
@@ -367,19 +366,19 @@ func UnsignedAsSigned(src Unsigned, dst Signed) int {
 	// downscale
 	if src.BitDepth() >= dst.BitDepth() {
 		scale := Scale(src.BitDepth(), dst.BitDepth())
-		for pos := 0; pos < length; pos++ {
-			dst.SetSample(pos, int64(src.Sample(pos)-(msv+1))/scale)
+		for i := 0; i < length; i++ {
+			dst.SetSample(i, int64(src.Sample(i)-(msv+1))/scale)
 		}
 		return min(src.Length(), dst.Length())
 	}
 
 	// upscale
 	scale := Scale(dst.BitDepth(), src.BitDepth())
-	for pos := 0; pos < length; pos++ {
-		if sample := int64(src.Sample(pos) - (msv + 1)); sample > 0 {
-			dst.SetSample(pos, (sample+1)*scale-1)
+	for i := 0; i < length; i++ {
+		if sample := int64(src.Sample(i) - (msv + 1)); sample > 0 {
+			dst.SetSample(i, (sample+1)*scale-1)
 		} else {
-			dst.SetSample(pos, sample*scale)
+			dst.SetSample(i, sample*scale)
 		}
 	}
 	return min(src.Length(), dst.Length())
@@ -400,8 +399,8 @@ func UnsignedAsUnsigned(src, dst Unsigned) int {
 	// downscale
 	if src.BitDepth() >= dst.BitDepth() {
 		scale := uint64(Scale(src.BitDepth(), dst.BitDepth()))
-		for pos := 0; pos < length; pos++ {
-			dst.SetSample(pos, src.Sample(pos)/scale)
+		for i := 0; i < length; i++ {
+			dst.SetSample(i, src.Sample(i)/scale)
 		}
 		return min(src.Length(), dst.Length())
 	}
@@ -409,12 +408,12 @@ func UnsignedAsUnsigned(src, dst Unsigned) int {
 	// upscale
 	scale := uint64(Scale(dst.BitDepth(), src.BitDepth()))
 	msv := uint64(src.BitDepth().MaxSignedValue())
-	for pos := 0; pos < length; pos++ {
+	for i := 0; i < length; i++ {
 		var sample uint64
-		if sample = src.Sample(pos); sample > msv+1 {
-			dst.SetSample(pos, (sample+1)*scale-1)
+		if sample = src.Sample(i); sample > msv+1 {
+			dst.SetSample(i, (sample+1)*scale-1)
 		} else {
-			dst.SetSample(pos, sample*scale)
+			dst.SetSample(i, sample*scale)
 		}
 	}
 	return min(src.Length(), dst.Length())
@@ -471,18 +470,19 @@ func ChannelLength(sliceLen, channels int) int {
 	return int(math.Ceil(float64(sliceLen) / float64(channels)))
 }
 
-// ChannelPos calculates sample position in the buffer based on channel and
-// postition in the channel.
-func (c channels) ChannelPos(channel, pos int) int {
-	return int(c)*pos + channel
+// BufferIndex calculates sample index in the buffer based on number of
+// channels in the buffer, channel of the sample and sample index in the
+// channel.
+func BufferIndex(channels, channel, idx int) int {
+	return channels*idx + channel
 }
 
 // WriteInt writes values from provided slice into the buffer.
 // Returns a number of samples written per channel.
 func WriteInt(src []int, dst Signed) int {
 	length := min(dst.Len(), len(src))
-	for pos := 0; pos < length; pos++ {
-		dst.SetSample(pos, int64(src[pos]))
+	for i := 0; i < length; i++ {
+		dst.SetSample(i, int64(src[i]))
 	}
 	return ChannelLength(length, dst.Channels())
 }
@@ -502,12 +502,12 @@ func WriteStripedInt(src [][]int, dst Signed) (written int) {
 	}
 	// limit a number of writes to the length of the buffer
 	written = min(written, dst.Length())
-	for channel := 0; channel < dst.Channels(); channel++ {
-		for pos := 0; pos < written; pos++ {
-			if pos < len(src[channel]) {
-				dst.SetSample(dst.ChannelPos(channel, pos), int64(src[channel][pos]))
+	for c := 0; c < dst.Channels(); c++ {
+		for i := 0; i < written; i++ {
+			if i < len(src[c]) {
+				dst.SetSample(BufferIndex(dst.Channels(), c, i), int64(src[c][i]))
 			} else {
-				dst.SetSample(dst.ChannelPos(channel, pos), 0)
+				dst.SetSample(BufferIndex(dst.Channels(), c, i), 0)
 			}
 		}
 	}
@@ -518,8 +518,8 @@ func WriteStripedInt(src [][]int, dst Signed) (written int) {
 // Returns a number of samples written per channel.
 func WriteUint(src []uint, dst Unsigned) int {
 	length := min(dst.Len(), len(src))
-	for pos := 0; pos < length; pos++ {
-		dst.SetSample(pos, uint64(src[pos]))
+	for i := 0; i < length; i++ {
+		dst.SetSample(i, uint64(src[i]))
 	}
 	return ChannelLength(length, dst.Channels())
 }
@@ -539,12 +539,12 @@ func WriteStripedUint(src [][]uint, dst Unsigned) (written int) {
 	}
 	// limit a number of writes to the length of the buffer
 	written = min(written, dst.Length())
-	for channel := 0; channel < dst.Channels(); channel++ {
-		for pos := 0; pos < written; pos++ {
-			if pos < len(src[channel]) {
-				dst.SetSample(dst.ChannelPos(channel, pos), uint64(src[channel][pos]))
+	for c := 0; c < dst.Channels(); c++ {
+		for i := 0; i < written; i++ {
+			if i < len(src[c]) {
+				dst.SetSample(BufferIndex(dst.Channels(), c, i), uint64(src[c][i]))
 			} else {
-				dst.SetSample(dst.ChannelPos(channel, pos), 0)
+				dst.SetSample(BufferIndex(dst.Channels(), c, i), 0)
 			}
 		}
 	}
@@ -555,8 +555,8 @@ func WriteStripedUint(src [][]uint, dst Unsigned) (written int) {
 // Returns number of samples read per channel.
 func ReadInt(src Signed, dst []int) int {
 	length := min(src.Len(), len(dst))
-	for pos := 0; pos < length; pos++ {
-		dst[pos] = int(src.Sample(pos))
+	for i := 0; i < length; i++ {
+		dst[i] = int(src.Sample(i))
 	}
 	return ChannelLength(length, src.Channels())
 }
@@ -568,13 +568,13 @@ func ReadInt(src Signed, dst []int) int {
 // longest channel.
 func ReadStripedInt(src Signed, dst [][]int) (read int) {
 	mustSameChannels(src.Channels(), len(dst))
-	for channel := 0; channel < src.Channels(); channel++ {
-		length := min(len(dst[channel]), src.Length())
+	for c := 0; c < src.Channels(); c++ {
+		length := min(len(dst[c]), src.Length())
 		if length > read {
 			read = length
 		}
-		for pos := 0; pos < length; pos++ {
-			dst[channel][pos] = int(src.Sample(src.ChannelPos(channel, pos)))
+		for i := 0; i < length; i++ {
+			dst[c][i] = int(src.Sample(BufferIndex(src.Channels(), c, i)))
 		}
 	}
 	return
@@ -583,8 +583,8 @@ func ReadStripedInt(src Signed, dst [][]int) (read int) {
 // ReadUint reads values from the buffer into provided slice.
 func ReadUint(src Unsigned, dst []uint) int {
 	length := min(src.Len(), len(dst))
-	for pos := 0; pos < length; pos++ {
-		dst[pos] = uint(src.Sample(pos))
+	for i := 0; i < length; i++ {
+		dst[i] = uint(src.Sample(i))
 	}
 	return ChannelLength(length, src.Channels())
 }
@@ -596,13 +596,13 @@ func ReadUint(src Unsigned, dst []uint) int {
 // longest channel.
 func ReadStripedUint(src Unsigned, dst [][]uint) (read int) {
 	mustSameChannels(src.Channels(), len(dst))
-	for channel := 0; channel < src.Channels(); channel++ {
-		length := min(len(dst[channel]), src.Length())
+	for c := 0; c < src.Channels(); c++ {
+		length := min(len(dst[c]), src.Length())
 		if length > read {
 			read = length
 		}
-		for pos := 0; pos < length; pos++ {
-			dst[channel][pos] = uint(src.Sample(src.ChannelPos(channel, pos)))
+		for i := 0; i < length; i++ {
+			dst[c][i] = uint(src.Sample(BufferIndex(src.Channels(), c, i)))
 		}
 	}
 	return

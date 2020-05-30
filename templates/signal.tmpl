@@ -47,9 +47,9 @@ func (s {{ .Name }}) Len() int {
 	return len(s.buffer)
 }
 
-// Sample returns signal value for provided channel and position.
-func (s {{ .Name }}) Sample(pos int) {{ .SampleType }} {
-	return {{ .SampleType }}(s.buffer[pos])
+// Sample returns signal value for provided channel and index.
+func (s {{ .Name }}) Sample(i int) {{ .SampleType }} {
+	return {{ .SampleType }}(s.buffer[i])
 }
 
 // Append appends [0:Length] samples from src to current buffer and returns new
@@ -64,16 +64,16 @@ func (s {{ .Name }}) Append(src {{ .Interface }}) {{ .Interface }} {
 		s.buffer = append(make([]{{ .Builtin }}, 0, s.Cap()+src.Cap()), s.buffer...)
 	}
 	result := {{ .Interface }}(s)
-	for pos := 0; pos < src.Len(); pos++ {
-		result = result.AppendSample(src.Sample(pos))
+	for i := 0; i < src.Len(); i++ {
+		result = result.AppendSample(src.Sample(i))
 	}
 	return result
 }
 
 // Slice slices buffer with respect to channels.
 func (s {{ .Name }}) Slice(start, end int) {{ .Interface }} {
-	start = s.ChannelPos(0, start)
-	end = s.ChannelPos(0, end)
+	start = BufferIndex(s.Channels(), 0, start)
+	end = BufferIndex(s.Channels(), 0, end)
 	s.buffer = s.buffer[start:end]
 	return s
 }
@@ -82,8 +82,8 @@ func (s {{ .Name }}) Slice(start, end int) {{ .Interface }} {
 // Returns number of samples read per channel.
 func Read{{ .Name }}(src {{ .Interface }}, dst []{{ .Builtin }}) int {
 	length := min(src.Len(), len(dst))
-	for pos := 0; pos < length; pos++ {
-		dst[pos] = {{if eq .Interface "Floating"}}{{ .Builtin }}(src.Sample(pos)){{else}}{{ .Builtin }}({{ .MaxBitDepth }}.{{ .Interface }}Value(src.Sample(pos))){{end}}
+	for i := 0; i < length; i++ {
+		dst[i] = {{if eq .Interface "Floating"}}{{ .Builtin }}(src.Sample(i)){{else}}{{ .Builtin }}({{ .MaxBitDepth }}.{{ .Interface }}Value(src.Sample(i))){{end}}
 	}
 	return ChannelLength(length, src.Channels())
 }
@@ -95,13 +95,13 @@ func Read{{ .Name }}(src {{ .Interface }}, dst []{{ .Builtin }}) int {
 // longest channel.
 func ReadStriped{{ .Name }}(src {{ .Interface }}, dst [][]{{ .Builtin }}) (read int) {
 	mustSameChannels(src.Channels(), len(dst))
-	for channel := 0; channel < src.Channels(); channel++ {
-		length := min(len(dst[channel]), src.Length())
+	for c := 0; c < src.Channels(); c++ {
+		length := min(len(dst[c]), src.Length())
 		if length > read {
 			read = length
 		}
-		for pos := 0; pos < length; pos++ {
-			dst[channel][pos] = {{if eq .Interface "Floating"}}{{ .Builtin }}(src.Sample(src.ChannelPos(channel, pos))){{else}}{{ .Builtin }}({{ .MaxBitDepth }}.{{ .Interface }}Value(src.Sample(src.ChannelPos(channel, pos)))){{end}}
+		for i := 0; i < length; i++ {
+			dst[c][i] = {{if eq .Interface "Floating"}}{{ .Builtin }}(src.Sample(BufferIndex(src.Channels(), c, i))){{else}}{{ .Builtin }}({{ .MaxBitDepth }}.{{ .Interface }}Value(src.Sample(BufferIndex(src.Channels(), c, i)))){{end}}
 		}
 	}
 	return
@@ -111,8 +111,8 @@ func ReadStriped{{ .Name }}(src {{ .Interface }}, dst [][]{{ .Builtin }}) (read 
 // Returns a number of samples written per channel.
 func Write{{ .Name }}(src []{{ .Builtin }}, dst {{ .Interface }}) int {
 	length := min(dst.Len(), len(src))
-	for pos := 0; pos < length; pos++ {
-		dst.SetSample(pos, {{ .SampleType }}(src[pos]))
+	for i := 0; i < length; i++ {
+		dst.SetSample(i, {{ .SampleType }}(src[i]))
 	}
 	return ChannelLength(length, dst.Channels())
 }
@@ -132,12 +132,12 @@ func WriteStriped{{ .Name }}(src [][]{{ .Builtin }}, dst {{ .Interface }}) (writ
 	}
 	// limit a number of writes to the length of the buffer
 	written = min(written, dst.Length())
-	for channel := 0; channel < dst.Channels(); channel++ {
-		for pos := 0; pos < written; pos++ {
-			if pos < len(src[channel]) {
-				dst.SetSample(dst.ChannelPos(channel, pos), {{ .SampleType }}(src[channel][pos]))
+	for c := 0; c < dst.Channels(); c++ {
+		for i := 0; i < written; i++ {
+			if i < len(src[c]) {
+				dst.SetSample(BufferIndex(dst.Channels(), c, i), {{ .SampleType }}(src[c][i]))
 			} else {
-				dst.SetSample(dst.ChannelPos(channel, pos), 0)
+				dst.SetSample(BufferIndex(dst.Channels(), c, i), 0)
 			}
 		}
 	}

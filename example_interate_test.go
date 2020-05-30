@@ -19,14 +19,14 @@ func Example_iterate() {
 	signal.WriteStripedInt8([][]int8{{1, 1, 1, 1}, {2, 2, 2, 2}}, buf)
 
 	// iterate over buffer interleaved data
-	for pos := 0; pos < buf.Len(); pos++ {
-		fmt.Printf("%d", buf.Sample(pos))
+	for i := 0; i < buf.Len(); i++ {
+		fmt.Printf("%d", buf.Sample(i))
 	}
 
-	for channel := 0; channel < buf.Channels(); channel++ {
+	for c := 0; c < buf.Channels(); c++ {
 		fmt.Println()
-		for pos := 0; pos < buf.Length(); pos++ {
-			fmt.Printf("%d", buf.Sample(buf.ChannelPos(channel, pos)))
+		for i := 0; i < buf.Length(); i++ {
+			fmt.Printf("%d", buf.Sample(signal.BufferIndex(buf.Channels(), c, i)))
 		}
 	}
 
