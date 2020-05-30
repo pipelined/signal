@@ -85,7 +85,7 @@ func Read{{ .Name }}(src {{ .Interface }}, dst []{{ .Builtin }}) int {
 	for pos := 0; pos < length; pos++ {
 		dst[pos] = {{if eq .Interface "Floating"}}{{ .Builtin }}(src.Sample(pos)){{else}}{{ .Builtin }}({{ .MaxBitDepth }}.{{ .Interface }}Value(src.Sample(pos))){{end}}
 	}
-	return chanLen(length, src.Channels())
+	return ChannelLength(length, src.Channels())
 }
 
 // ReadStriped{{ .Name }} reads values from the buffer into provided slice. The
@@ -114,7 +114,7 @@ func Write{{ .Name }}(src []{{ .Builtin }}, dst {{ .Interface }}) int {
 	for pos := 0; pos < length; pos++ {
 		dst.SetSample(pos, {{ .SampleType }}(src[pos]))
 	}
-	return chanLen(length, dst.Channels())
+	return ChannelLength(length, dst.Channels())
 }
 
 // WriteStriped{{ .Name }} writes values from provided slice into the buffer.

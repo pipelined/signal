@@ -95,7 +95,7 @@ func (s Float32) Sample(pos int) float64 {
 // new buffer will be allocated with capacity of both sources.
 func (s Float32) Append(src Floating) Floating {
 	mustSameChannels(s.Channels(), src.Channels())
-	
+
 	if s.Cap() < s.Len()+src.Len() {
 		// allocate and append buffer with cap of both sources capacity;
 		s.buffer = append(make([]float32, 0, s.Cap()+src.Cap()), s.buffer...)
@@ -122,7 +122,7 @@ func ReadFloat32(src Floating, dst []float32) int {
 	for pos := 0; pos < length; pos++ {
 		dst[pos] = float32(src.Sample(pos))
 	}
-	return chanLen(length, src.Channels())
+	return ChannelLength(length, src.Channels())
 }
 
 // ReadStripedFloat32 reads values from the buffer into provided slice. The
@@ -151,7 +151,7 @@ func WriteFloat32(src []float32, dst Floating) int {
 	for pos := 0; pos < length; pos++ {
 		dst.SetSample(pos, float64(src[pos]))
 	}
-	return chanLen(length, dst.Channels())
+	return ChannelLength(length, dst.Channels())
 }
 
 // WriteStripedFloat32 writes values from provided slice into the buffer.

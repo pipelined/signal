@@ -343,7 +343,7 @@ func TestWrite(t *testing.T) {
 	allocator := signal.Allocator{
 		Capacity: 1,
 		Length:   1,
-		Channels: 2,
+		Channels: 3,
 	}
 	t.Run("striped int 8-bits overflow", func() func(t *testing.T) {
 		buf := allocator.Int64(signal.BitDepth8)
@@ -351,6 +351,7 @@ func TestWrite(t *testing.T) {
 			[][]int{
 				{math.MaxInt32},
 				{math.MinInt32},
+				{},
 			},
 			buf)
 		return testOk(
@@ -361,6 +362,7 @@ func TestWrite(t *testing.T) {
 				data: [][]int64{
 					{math.MaxInt8},
 					{math.MinInt8},
+					{0},
 				},
 			},
 		)
@@ -382,6 +384,7 @@ func TestWrite(t *testing.T) {
 				data: [][]int64{
 					{math.MaxInt8},
 					{math.MinInt8},
+					{0},
 				},
 			},
 		)
@@ -392,6 +395,7 @@ func TestWrite(t *testing.T) {
 			[][]uint{
 				{math.MaxUint32},
 				{0},
+				{},
 			},
 			buf,
 		)
@@ -402,6 +406,7 @@ func TestWrite(t *testing.T) {
 				capacity: 1,
 				data: [][]uint64{
 					{math.MaxUint8},
+					{0},
 					{0},
 				},
 			},
@@ -423,6 +428,7 @@ func TestWrite(t *testing.T) {
 				capacity: 1,
 				data: [][]uint64{
 					{math.MaxUint8},
+					{0},
 					{0},
 				},
 			},

@@ -175,11 +175,14 @@ func FloatingAsFloating(src Floating, dst Floating) int {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
+	if length == 0 {
+		return 0
+	}
 	// determine the multiplier for bit depth conversion
 	for pos := 0; pos < length; pos++ {
 		dst.SetSample(pos, src.Sample(pos))
 	}
-	return chanLen(length, dst.Channels())
+	return min(src.Length(), dst.Length())
 }
 
 // FloatingAsSigned converts floating-point samples into signed fixed-point
@@ -204,7 +207,7 @@ func FloatingAsSigned(src Floating, dst Signed) int {
 			dst.SetSample(pos, int64(sample)*(msv+1))
 		}
 	}
-	return chanLen(length, dst.Channels())
+	return min(src.Length(), dst.Length())
 }
 
 // FloatingAsUnsigned converts floating-point samples into unsigned
@@ -228,7 +231,7 @@ func FloatingAsUnsigned(src Floating, dst Unsigned) int {
 			dst.SetSample(pos, uint64(sample)*(msv+1)+(msv+1))
 		}
 	}
-	return chanLen(length, dst.Channels())
+	return min(src.Length(), dst.Length())
 }
 
 // SignedAsFloating converts signed fixed-point samples into floating-point
@@ -252,7 +255,7 @@ func SignedAsFloating(src Signed, dst Floating) int {
 			dst.SetSample(pos, float64(sample)/(msv+1))
 		}
 	}
-	return chanLen(length, dst.Channels())
+	return min(src.Length(), dst.Length())
 }
 
 // SignedAsSigned appends signed fixed-point samples to the signed
@@ -273,7 +276,7 @@ func SignedAsSigned(src Signed, dst Signed) int {
 		for pos := 0; pos < length; pos++ {
 			dst.SetSample(pos, src.Sample(pos)/scale)
 		}
-		return chanLen(length, dst.Channels())
+		return min(src.Length(), dst.Length())
 	}
 
 	// upscale
@@ -285,7 +288,7 @@ func SignedAsSigned(src Signed, dst Signed) int {
 			dst.SetSample(pos, src.Sample(pos)*scale)
 		}
 	}
-	return chanLen(length, dst.Channels())
+	return min(src.Length(), dst.Length())
 }
 
 // SignedAsUnsigned converts signed fixed-point samples into unsigned
@@ -309,7 +312,7 @@ func SignedAsUnsigned(src Signed, dst Unsigned) int {
 		for pos := 0; pos < length; pos++ {
 			dst.SetSample(pos, uint64(src.Sample(pos)/scale)+msv+1)
 		}
-		return chanLen(length, dst.Channels())
+		return min(src.Length(), dst.Length())
 	}
 
 	// upscale
@@ -321,7 +324,7 @@ func SignedAsUnsigned(src Signed, dst Unsigned) int {
 			dst.SetSample(pos, uint64(src.Sample(pos)*scale)+msv+1)
 		}
 	}
-	return chanLen(length, dst.Channels())
+	return min(src.Length(), dst.Length())
 }
 
 // UnsignedAsFloating converts unsigned fixed-point samples into
@@ -344,7 +347,7 @@ func UnsignedAsFloating(src Unsigned, dst Floating) int {
 			dst.SetSample(pos, (float64(sample)-(msv+1))/(msv+1))
 		}
 	}
-	return chanLen(length, dst.Channels())
+	return min(src.Length(), dst.Length())
 }
 
 // UnsignedAsSigned converts unsigned fixed-point samples into signed
@@ -367,7 +370,7 @@ func UnsignedAsSigned(src Unsigned, dst Signed) int {
 		for pos := 0; pos < length; pos++ {
 			dst.SetSample(pos, int64(src.Sample(pos)-(msv+1))/scale)
 		}
-		return chanLen(length, dst.Channels())
+		return min(src.Length(), dst.Length())
 	}
 
 	// upscale
@@ -379,7 +382,7 @@ func UnsignedAsSigned(src Unsigned, dst Signed) int {
 			dst.SetSample(pos, sample*scale)
 		}
 	}
-	return chanLen(length, dst.Channels())
+	return min(src.Length(), dst.Length())
 }
 
 // UnsignedAsUnsigned appends unsigned fixed-point samples to the unsigned
@@ -400,7 +403,7 @@ func UnsignedAsUnsigned(src, dst Unsigned) int {
 		for pos := 0; pos < length; pos++ {
 			dst.SetSample(pos, src.Sample(pos)/scale)
 		}
-		return chanLen(length, dst.Channels())
+		return min(src.Length(), dst.Length())
 	}
 
 	// upscale
@@ -414,7 +417,7 @@ func UnsignedAsUnsigned(src, dst Unsigned) int {
 			dst.SetSample(pos, sample*scale)
 		}
 	}
-	return chanLen(length, dst.Channels())
+	return min(src.Length(), dst.Length())
 }
 
 // BitDepth returns bit depth of the buffer.
@@ -425,12 +428,6 @@ func (bd bitDepth) BitDepth() BitDepth {
 // Channels returns number of channels in the buffer.
 func (c channels) Channels() int {
 	return int(c)
-}
-
-// ChannelPos calculates sample position in the buffer based on channel and
-// postition in the channel.
-func (c channels) ChannelPos(channel, pos int) int {
-	return int(c)*pos + channel
 }
 
 func capFloat(v float64) float64 {
@@ -468,8 +465,16 @@ func mustSameCapacity(c1, c2 int) {
 	}
 }
 
-func chanLen(sliceLen, channels int) int {
+// ChannelLength calculates a channel length for provided buffer length and
+// number of channels.
+func ChannelLength(sliceLen, channels int) int {
 	return int(math.Ceil(float64(sliceLen) / float64(channels)))
+}
+
+// ChannelPos calculates sample position in the buffer based on channel and
+// postition in the channel.
+func (c channels) ChannelPos(channel, pos int) int {
+	return int(c)*pos + channel
 }
 
 // WriteInt writes values from provided slice into the buffer.
@@ -479,7 +484,7 @@ func WriteInt(src []int, dst Signed) int {
 	for pos := 0; pos < length; pos++ {
 		dst.SetSample(pos, int64(src[pos]))
 	}
-	return chanLen(length, dst.Channels())
+	return ChannelLength(length, dst.Channels())
 }
 
 // WriteStripedInt writes values from provided slice into the buffer.
@@ -516,7 +521,7 @@ func WriteUint(src []uint, dst Unsigned) int {
 	for pos := 0; pos < length; pos++ {
 		dst.SetSample(pos, uint64(src[pos]))
 	}
-	return chanLen(length, dst.Channels())
+	return ChannelLength(length, dst.Channels())
 }
 
 // WriteStripedUint writes values from provided slice into the buffer.
@@ -553,7 +558,7 @@ func ReadInt(src Signed, dst []int) int {
 	for pos := 0; pos < length; pos++ {
 		dst[pos] = int(src.Sample(pos))
 	}
-	return chanLen(length, src.Channels())
+	return ChannelLength(length, src.Channels())
 }
 
 // ReadStripedInt reads values from the buffer into provided slice. The
@@ -581,7 +586,7 @@ func ReadUint(src Unsigned, dst []uint) int {
 	for pos := 0; pos < length; pos++ {
 		dst[pos] = uint(src.Sample(pos))
 	}
-	return chanLen(length, src.Channels())
+	return ChannelLength(length, src.Channels())
 }
 
 // ReadStripedUint reads values from the buffer into provided slice. The

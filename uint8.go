@@ -131,7 +131,7 @@ func ReadUint8(src Unsigned, dst []uint8) int {
 	for pos := 0; pos < length; pos++ {
 		dst[pos] = uint8(BitDepth8.UnsignedValue(src.Sample(pos)))
 	}
-	return chanLen(length, src.Channels())
+	return ChannelLength(length, src.Channels())
 }
 
 // ReadStripedUint8 reads values from the buffer into provided slice. The
@@ -160,7 +160,7 @@ func WriteUint8(src []uint8, dst Unsigned) int {
 	for pos := 0; pos < length; pos++ {
 		dst.SetSample(pos, uint64(src[pos]))
 	}
-	return chanLen(length, dst.Channels())
+	return ChannelLength(length, dst.Channels())
 }
 
 // WriteStripedUint8 writes values from provided slice into the buffer.

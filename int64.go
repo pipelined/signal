@@ -131,7 +131,7 @@ func ReadInt64(src Signed, dst []int64) int {
 	for pos := 0; pos < length; pos++ {
 		dst[pos] = int64(BitDepth64.SignedValue(src.Sample(pos)))
 	}
-	return chanLen(length, src.Channels())
+	return ChannelLength(length, src.Channels())
 }
 
 // ReadStripedInt64 reads values from the buffer into provided slice. The
@@ -160,7 +160,7 @@ func WriteInt64(src []int64, dst Signed) int {
 	for pos := 0; pos < length; pos++ {
 		dst.SetSample(pos, int64(src[pos]))
 	}
-	return chanLen(length, dst.Channels())
+	return ChannelLength(length, dst.Channels())
 }
 
 // WriteStripedInt64 writes values from provided slice into the buffer.

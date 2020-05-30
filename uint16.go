@@ -131,7 +131,7 @@ func ReadUint16(src Unsigned, dst []uint16) int {
 	for pos := 0; pos < length; pos++ {
 		dst[pos] = uint16(BitDepth16.UnsignedValue(src.Sample(pos)))
 	}
-	return chanLen(length, src.Channels())
+	return ChannelLength(length, src.Channels())
 }
 
 // ReadStripedUint16 reads values from the buffer into provided slice. The
@@ -160,7 +160,7 @@ func WriteUint16(src []uint16, dst Unsigned) int {
 	for pos := 0; pos < length; pos++ {
 		dst.SetSample(pos, uint64(src[pos]))
 	}
-	return chanLen(length, dst.Channels())
+	return ChannelLength(length, dst.Channels())
 }
 
 // WriteStripedUint16 writes values from provided slice into the buffer.
