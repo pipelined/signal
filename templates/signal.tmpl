@@ -21,7 +21,7 @@ func (p *Pool) Put{{ .Name }}(s {{ .Interface }}) {
 	if s.Length() != p.allocator.Length {
 		s = s.Slice(0, p.allocator.Length)
 	}
-	p.{{ .Pool }}.Put(s.Slice(0, p.allocator.Length))
+	p.{{ .Pool }}.Put(s)
 }
 
 // Capacity returns capacity of a single channel.
