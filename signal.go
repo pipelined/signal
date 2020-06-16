@@ -209,6 +209,7 @@ func FloatingAsSigned(src Floating, dst Signed) int {
 				sample = msv
 			}
 		} else {
+			// no overflow here
 			sample = int64(f * (float64(msv) + 1))
 		}
 		dst.SetSample(i, sample)
@@ -234,12 +235,14 @@ func FloatingAsUnsigned(src Floating, dst Unsigned) int {
 	for i := 0; i < length; i++ {
 		var sample uint64
 		if f := src.Sample(i); f > 0 {
+			// detect overflow
 			if int64(f) == 0 {
 				sample = uint64(f*float64(msv)) + offset
 			} else {
 				sample = msv + offset
 			}
 		} else {
+			// no overflow here
 			sample = uint64(f*(float64(msv)+1)) + offset
 		}
 		dst.SetSample(i, sample)
