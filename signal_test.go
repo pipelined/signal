@@ -67,47 +67,71 @@ func ExampleFloatingAsFloating() {
 }
 
 func ExampleFloatingAsSigned() {
+	values := 7
 	alloc := signal.Allocator{
 		Channels: 1,
-		Capacity: 3,
-		Length:   3,
+		Capacity: values,
+		Length:   values,
 	}
 
 	// 64-bit floating to 64-bit signed signal
 	f64, i64 := alloc.Float64(), alloc.Int64(signal.BitDepth64)
 	// write float64 values to input
-	signal.WriteFloat64([]float64{1, 0, -1}, f64)
+	signal.WriteFloat64(
+		[]float64{
+			math.Nextafter(1, 2),
+			1,
+			math.Nextafter(1, 0),
+			0,
+			math.Nextafter(-1, 0),
+			-1,
+			math.Nextafter(-1, -2),
+		},
+		f64,
+	)
 	// convert floating input to signed output
 	signal.FloatingAsSigned(f64, i64)
 
-	result := make([]int64, 3)
+	result := make([]int64, values)
 	// read result
 	signal.ReadInt64(i64, result)
 	fmt.Println(result)
 	// Output:
-	// [9223372036854775807 0 -9223372036854775808]
+	// [9223372036854775807 9223372036854775807 9223372036854774784 0 -9223372036854774784 -9223372036854775808 -9223372036854775808]
 }
 
 func ExampleFloatingAsUnsigned() {
+	values := 7
 	alloc := signal.Allocator{
 		Channels: 1,
-		Capacity: 3,
-		Length:   3,
+		Capacity: values,
+		Length:   values,
 	}
 
 	// 64-bit floating to 64-bit unsigned signal
 	f64, u64 := alloc.Float64(), alloc.Uint64(signal.BitDepth64)
 	// write float64 values to input
-	signal.WriteFloat64([]float64{1, 0, -1}, f64)
+	signal.WriteFloat64(
+		[]float64{
+			math.Nextafter(1, 2),
+			1,
+			math.Nextafter(1, 0),
+			0,
+			math.Nextafter(-1, 0),
+			-1,
+			math.Nextafter(-1, -2),
+		},
+		f64,
+	)
 	// convert floating input to unsigned output
 	signal.FloatingAsUnsigned(f64, u64)
 
-	result := make([]uint64, 3)
+	result := make([]uint64, values)
 	// read result
 	signal.ReadUint64(u64, result)
 	fmt.Println(result)
 	// Output:
-	// [18446744073709551615 9223372036854775808 0]
+	// [18446744073709551615 18446744073709551615 18446744073709550592 9223372036854775808 1024 0 0]
 }
 
 func ExampleSignedAsFloating() {

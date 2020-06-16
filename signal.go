@@ -200,11 +200,18 @@ func FloatingAsSigned(src Floating, dst Signed) int {
 	// determine the multiplier for bit depth conversion
 	msv := dst.BitDepth().MaxSignedValue()
 	for i := 0; i < length; i++ {
-		if sample := capFloat(src.Sample(i)); sample > 0 {
-			dst.SetSample(i, int64(sample)*msv)
+		var sample int64
+		if f := src.Sample(i); f > 0 {
+			// detect overflow
+			if int64(f) == 0 {
+				sample = int64(f * float64(msv))
+			} else {
+				sample = msv
+			}
 		} else {
-			dst.SetSample(i, int64(sample)*(msv+1))
+			sample = int64(f * (float64(msv) + 1))
 		}
+		dst.SetSample(i, sample)
 	}
 	return min(src.Length(), dst.Length())
 }
@@ -223,12 +230,19 @@ func FloatingAsUnsigned(src Floating, dst Unsigned) int {
 	}
 	// determine the multiplier for bit depth conversion
 	msv := uint64(dst.BitDepth().MaxSignedValue())
+	offset := msv + 1
 	for i := 0; i < length; i++ {
-		if sample := capFloat(src.Sample(i)); sample > 0 {
-			dst.SetSample(i, uint64(sample)*msv+(msv+1))
+		var sample uint64
+		if f := src.Sample(i); f > 0 {
+			if int64(f) == 0 {
+				sample = uint64(f*float64(msv)) + offset
+			} else {
+				sample = msv + offset
+			}
 		} else {
-			dst.SetSample(i, uint64(sample)*(msv+1)+(msv+1))
+			sample = uint64(f*(float64(msv)+1)) + offset
 		}
+		dst.SetSample(i, sample)
 	}
 	return min(src.Length(), dst.Length())
 }
