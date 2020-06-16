@@ -135,25 +135,26 @@ func ExampleFloatingAsUnsigned() {
 }
 
 func ExampleSignedAsFloating() {
+	values := 5
 	alloc := signal.Allocator{
 		Channels: 1,
-		Capacity: 3,
-		Length:   3,
+		Capacity: values,
+		Length:   values,
 	}
 
 	// 8-bit signed to 64-bit floating signal
 	i8, f64 := alloc.Int8(signal.BitDepth8), alloc.Float64()
 	// write int8 values to input
-	signal.WriteInt8([]int8{math.MaxInt8, 0, math.MinInt8}, i8)
+	signal.WriteInt8([]int8{math.MaxInt8, math.MaxInt8 - 1, 0, math.MinInt8 + 1, math.MinInt8}, i8)
 	// convert signed input to signed output
 	signal.SignedAsFloating(i8, f64)
 
-	result := make([]float64, 3)
+	result := make([]float64, values)
 	// read output to the result
 	signal.ReadFloat64(f64, result)
 	fmt.Println(result)
 	// Output:
-	// [1 0 -1]
+	// [1 0.9921259842519685 0 -0.9921875 -1]
 }
 
 func ExampleSignedAsSigned() {
