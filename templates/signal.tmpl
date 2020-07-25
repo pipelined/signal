@@ -14,7 +14,12 @@ func (p *Pool) Put{{ .Name }}(s {{ .Interface }}) {
 	if p == nil {
 		return
 	}
-	if _, ok := s.({{ .Name }}); !ok {
+	if sig, ok := s.({{ .Name }}); ok {
+		capacity := cap(sig.buffer)
+		for i, buf := 0, sig.buffer[:capacity]; i < capacity; i++ {
+			buf[i] = 0
+		}
+	} else {
 		panic("pool put {{ .Builtin }} invalid type")
 	}
 	mustSameCapacity(s.Capacity(), p.allocator.Capacity)
@@ -60,8 +65,8 @@ func (s {{ .Name }}) Sample(i int) {{ .SampleType }} {
 // otherwise function will panic. If current buffer doesn't have enough capacity,
 // new buffer will be allocated with capacity of both sources.
 func (s {{ .Name }}) Append(src {{ .Interface }}) {{ .Interface }} {
-	mustSameChannels(s.Channels(), src.Channels())
-	{{if ne .Interface "Floating"}}mustSameBitDepth(s.BitDepth(), src.BitDepth()){{end}}
+	mustSameChannels(s.Channels(), src.Channels()){{if ne .Interface "Floating"}}
+	mustSameBitDepth(s.BitDepth(), src.BitDepth()){{end}}
 	if s.Cap() < s.Len()+src.Len() {
 		// allocate and append buffer with cap of both sources capacity;
 		s.buffer = append(make([]{{ .Builtin }}, 0, s.Cap()+src.Cap()), s.buffer...)
