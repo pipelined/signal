@@ -4,6 +4,7 @@ package signal
 
 import (
 	"math"
+	"reflect"
 	"time"
 )
 
@@ -623,4 +624,10 @@ func ReadStripedUint(src Unsigned, dst [][]uint) (read int) {
 		}
 	}
 	return
+}
+
+// alignCapacity ensures that buffer capacity is aligned with number of
+// channels.
+func alignCapacity(s interface{}, channels, cap int) {
+	reflect.ValueOf(s).Elem().SetCap(cap - cap%channels)
 }
