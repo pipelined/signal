@@ -26,7 +26,7 @@ func Example_iterate() {
 	for c := 0; c < buf.Channels(); c++ {
 		fmt.Println()
 		for i := 0; i < buf.Length(); i++ {
-			fmt.Printf("%d", buf.Sample(signal.BufferIndex(buf.Channels(), c, i)))
+			fmt.Printf("%d", buf.Sample(buf.BufferIndex(c, i)))
 		}
 	}
 

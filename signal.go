@@ -19,6 +19,7 @@ type (
 		Length() int
 		Len() int
 		Cap() int
+		BufferIndex(int, int) int
 	}
 
 	// Fixed is a digital signal represented with fixed-point values.
@@ -491,8 +492,8 @@ func ChannelLength(sliceLen, channels int) int {
 // BufferIndex calculates sample index in the buffer based on number of
 // channels in the buffer, channel of the sample and sample index in the
 // channel.
-func BufferIndex(channels, channel, idx int) int {
-	return channels*idx + channel
+func (c channels) BufferIndex(channel, idx int) int {
+	return int(c)*idx + channel
 }
 
 // WriteInt writes values from provided slice into the buffer.
@@ -523,9 +524,9 @@ func WriteStripedInt(src [][]int, dst Signed) (written int) {
 	for c := 0; c < dst.Channels(); c++ {
 		for i := 0; i < written; i++ {
 			if i < len(src[c]) {
-				dst.SetSample(BufferIndex(dst.Channels(), c, i), int64(src[c][i]))
+				dst.SetSample(dst.BufferIndex(c, i), int64(src[c][i]))
 			} else {
-				dst.SetSample(BufferIndex(dst.Channels(), c, i), 0)
+				dst.SetSample(dst.BufferIndex(c, i), 0)
 			}
 		}
 	}
@@ -560,9 +561,9 @@ func WriteStripedUint(src [][]uint, dst Unsigned) (written int) {
 	for c := 0; c < dst.Channels(); c++ {
 		for i := 0; i < written; i++ {
 			if i < len(src[c]) {
-				dst.SetSample(BufferIndex(dst.Channels(), c, i), uint64(src[c][i]))
+				dst.SetSample(dst.BufferIndex(c, i), uint64(src[c][i]))
 			} else {
-				dst.SetSample(BufferIndex(dst.Channels(), c, i), 0)
+				dst.SetSample(dst.BufferIndex(c, i), 0)
 			}
 		}
 	}
@@ -592,7 +593,7 @@ func ReadStripedInt(src Signed, dst [][]int) (read int) {
 			read = length
 		}
 		for i := 0; i < length; i++ {
-			dst[c][i] = int(src.Sample(BufferIndex(src.Channels(), c, i)))
+			dst[c][i] = int(src.Sample(src.BufferIndex(c, i)))
 		}
 	}
 	return
@@ -620,7 +621,7 @@ func ReadStripedUint(src Unsigned, dst [][]uint) (read int) {
 			read = length
 		}
 		for i := 0; i < length; i++ {
-			dst[c][i] = uint(src.Sample(BufferIndex(src.Channels(), c, i)))
+			dst[c][i] = uint(src.Sample(src.BufferIndex(c, i)))
 		}
 	}
 	return

@@ -81,8 +81,8 @@ func (s {{ .Name }}) Append(src {{ .Interface }}) {{ .Interface }} {
 
 // Slice slices buffer with respect to channels.
 func (s {{ .Name }}) Slice(start, end int) {{ .Interface }} {
-	start = BufferIndex(s.Channels(), 0, start)
-	end = BufferIndex(s.Channels(), 0, end)
+	start = s.BufferIndex(0, start)
+	end = s.BufferIndex(0, end)
 	s.buffer = s.buffer[start:end]
 	return s
 }
@@ -110,7 +110,7 @@ func ReadStriped{{ .Name }}(src {{ .Interface }}, dst [][]{{ .Builtin }}) (read 
 			read = length
 		}
 		for i := 0; i < length; i++ {
-			dst[c][i] = {{if eq .Interface "Floating"}}{{ .Builtin }}(src.Sample(BufferIndex(src.Channels(), c, i))){{else}}{{ .Builtin }}({{ .MaxBitDepth }}.{{ .Interface }}Value(src.Sample(BufferIndex(src.Channels(), c, i)))){{end}}
+			dst[c][i] = {{if eq .Interface "Floating"}}{{ .Builtin }}(src.Sample(src.BufferIndex(c, i))){{else}}{{ .Builtin }}({{ .MaxBitDepth }}.{{ .Interface }}Value(src.Sample(src.BufferIndex(c, i)))){{end}}
 		}
 	}
 	return
@@ -144,9 +144,9 @@ func WriteStriped{{ .Name }}(src [][]{{ .Builtin }}, dst {{ .Interface }}) (writ
 	for c := 0; c < dst.Channels(); c++ {
 		for i := 0; i < written; i++ {
 			if i < len(src[c]) {
-				dst.SetSample(BufferIndex(dst.Channels(), c, i), {{ .SampleType }}(src[c][i]))
+				dst.SetSample(dst.BufferIndex(c, i), {{ .SampleType }}(src[c][i]))
 			} else {
-				dst.SetSample(BufferIndex(dst.Channels(), c, i), 0)
+				dst.SetSample(dst.BufferIndex(c, i), 0)
 			}
 		}
 	}
