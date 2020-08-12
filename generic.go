@@ -1,6 +1,6 @@
 package signal
 
-// Slice is a generic wrapper of Slice function for all signal types.
+// Slice allows to slice arbitrary signal type.
 func Slice(s Signal, start, end int) Signal {
 	switch b := s.(type) {
 	case Signed:
@@ -13,7 +13,7 @@ func Slice(s Signal, start, end int) Signal {
 	return s
 }
 
-// AsFloating is a generic wrapper for conversion to floating for any signal type.
+// AsFloating allows to convert arbitrary signal type to floating.
 func AsFloating(s Signal, dst Floating) (read int) {
 	switch src := s.(type) {
 	case Signed:
@@ -26,7 +26,7 @@ func AsFloating(s Signal, dst Floating) (read int) {
 	return
 }
 
-// AsSigned is a generic wrapper for conversion to signed for any signal type.
+// AsSigned allows to convert arbitrary signal type to signed.
 func AsSigned(s Signal, dst Signed) (read int) {
 	switch src := s.(type) {
 	case Signed:
@@ -39,7 +39,7 @@ func AsSigned(s Signal, dst Signed) (read int) {
 	return
 }
 
-// AsUnsigned is a generic wrapper for conversion to unsigned for any signal type.
+// AsUnsigned allows to convert arbitrary signal type to unsigned.
 func AsUnsigned(s Signal, dst Unsigned) (read int) {
 	switch src := s.(type) {
 	case Signed:
