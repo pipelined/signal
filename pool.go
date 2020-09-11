@@ -97,8 +97,10 @@ func GetPool(channels, capacity int) *Pool {
 	return &p
 }
 
-// ResetPools cleans up internal cache of pools.
-func ResetPools() {
+// ResetPoolCache resets internal cache of pools and makes existing pools
+// available for GC. One good use case might be when the application
+// changes global buffer size.
+func ResetPoolCache() {
 	cache.Lock()
 	defer cache.Unlock()
 	cache.pools = map[int]*Pool{}
