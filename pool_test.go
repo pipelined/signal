@@ -14,104 +14,89 @@ type expectedAllocation struct {
 }
 
 func TestPool(t *testing.T) {
-	testOk := func(t *testing.T, allocs int, p *signal.Pool) func(t *testing.T) {
+	testOk := func(t *testing.T, allocs int, channels, length, capacity int) func(t *testing.T) {
 		return func(t *testing.T) {
+			p := signal.GetPool(channels, capacity)
 			for i := 0; i < allocs; i++ {
 				// floating
-				p.PutFloat32(testFloating(t, p, p.GetFloat32()))
-				p.PutFloat64(testFloating(t, p, p.GetFloat64()))
+				p.PutFloat32(testFloating(t, channels, length, capacity, p.GetFloat32(length)))
+				p.PutFloat64(testFloating(t, channels, length, capacity, p.GetFloat64(length)))
 				// signed
-				p.PutInt8(testSigned(t, p, p.GetInt8(signal.MaxBitDepth), signal.BitDepth8))
-				p.PutInt16(testSigned(t, p, p.GetInt16(signal.MaxBitDepth), signal.BitDepth16))
-				p.PutInt32(testSigned(t, p, p.GetInt32(signal.MaxBitDepth), signal.BitDepth32))
-				p.PutInt64(testSigned(t, p, p.GetInt64(signal.MaxBitDepth), signal.BitDepth64))
+				p.PutInt8(testSigned(t, channels, length, capacity, p.GetInt8(length, signal.MaxBitDepth), signal.BitDepth8))
+				p.PutInt16(testSigned(t, channels, length, capacity, p.GetInt16(length, signal.MaxBitDepth), signal.BitDepth16))
+				p.PutInt32(testSigned(t, channels, length, capacity, p.GetInt32(length, signal.MaxBitDepth), signal.BitDepth32))
+				p.PutInt64(testSigned(t, channels, length, capacity, p.GetInt64(length, signal.MaxBitDepth), signal.BitDepth64))
 				// unsigned
-				p.PutUint8(testUnsigned(t, p, p.GetUint8(signal.MaxBitDepth), signal.BitDepth8))
-				p.PutUint16(testUnsigned(t, p, p.GetUint16(signal.MaxBitDepth), signal.BitDepth16))
-				p.PutUint32(testUnsigned(t, p, p.GetUint32(signal.MaxBitDepth), signal.BitDepth32))
-				p.PutUint64(testUnsigned(t, p, p.GetUint64(signal.MaxBitDepth), signal.BitDepth64))
+				p.PutUint8(testUnsigned(t, channels, length, capacity, p.GetUint8(length, signal.MaxBitDepth), signal.BitDepth8))
+				p.PutUint16(testUnsigned(t, channels, length, capacity, p.GetUint16(length, signal.MaxBitDepth), signal.BitDepth16))
+				p.PutUint32(testUnsigned(t, channels, length, capacity, p.GetUint32(length, signal.MaxBitDepth), signal.BitDepth32))
+				p.PutUint64(testUnsigned(t, channels, length, capacity, p.GetUint64(length, signal.MaxBitDepth), signal.BitDepth64))
 			}
 		}
 	}
 
-	t.Run("nil pool",
-		testOk(t, 10, nil),
-	)
 	t.Run("empty allocs",
-		testOk(t, 10, signal.Allocator{}.Pool()),
+		testOk(t, 10, 0, 0, 0),
 	)
 	t.Run("10 allocs",
-		testOk(t, 10, signal.Allocator{
-			Channels: 1,
-			Capacity: 512,
-		}.Pool()),
+		testOk(t, 10, 1, 0, 512),
 	)
 	t.Run("10 allocs length",
-		testOk(t, 10, signal.Allocator{
-			Channels: 2,
-			Length:   256,
-			Capacity: 512,
-		}.Pool()),
+		testOk(t, 10, 2, 256, 512),
 	)
 	t.Run("100 allocs",
-		testOk(t, 100, signal.Allocator{
-			Channels: 100,
-			Capacity: 512,
-		}.Pool()),
+		testOk(t, 100, 100, 0, 512),
 	)
 }
 
-func testSigned(t *testing.T, p *signal.Pool, s signal.Signed, mbd signal.BitDepth) signal.Signed {
+func testSigned(t *testing.T, channels, length, capacity int, s signal.Signed, mbd signal.BitDepth) signal.Signed {
 	t.Helper()
 	if s == nil {
 		return s
 	}
-	a := p.Allocator()
 	assertAllocation(
 		t,
 		s,
 		expectedAllocation{
-			channels: a.Channels,
-			length:   a.Length,
-			capacity: a.Capacity,
+			channels: channels,
+			length:   length,
+			capacity: capacity,
 			BitDepth: mbd,
 		})
 	s.AppendSample(1)
 	return s
 }
 
-func testUnsigned(t *testing.T, p *signal.Pool, s signal.Unsigned, mbd signal.BitDepth) signal.Unsigned {
+func testUnsigned(t *testing.T, channels, length, capacity int, s signal.Unsigned, mbd signal.BitDepth) signal.Unsigned {
 	t.Helper()
 	if s == nil {
 		return s
 	}
-	a := p.Allocator()
 	assertAllocation(
 		t,
 		s,
 		expectedAllocation{
-			channels: a.Channels,
-			length:   a.Length,
-			capacity: a.Capacity,
+			channels: channels,
+			length:   length,
+			capacity: capacity,
 			BitDepth: mbd,
 		})
 	s.AppendSample(1)
 	return s
 }
 
-func testFloating(t *testing.T, p *signal.Pool, s signal.Floating) signal.Floating {
+func testFloating(t *testing.T, channels, length, capacity int, s signal.Floating) signal.Floating {
 	t.Helper()
 	if s == nil {
 		return s
 	}
-	a := p.Allocator()
 	assertAllocation(
 		t,
 		s,
 		expectedAllocation{
-			channels: a.Channels,
-			length:   a.Length,
-			capacity: a.Capacity,
+			channels: channels,
+			length:   length,
+			capacity: capacity,
 		})
 	s.AppendSample(1)
 	return s
