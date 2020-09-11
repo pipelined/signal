@@ -14,19 +14,16 @@ func (p *Pool) Put{{ .Name }}(s {{ .Interface }}) {
 	if p == nil {
 		return
 	}
+	mustSameCapacity(s.Cap(), p.allocSize)
 	if sig, ok := s.({{ .Name }}); ok {
-		capacity := cap(sig.buffer)
-		for i, buf := 0, sig.buffer[:capacity]; i < capacity; i++ {
+		buf := sig.buffer[:sig.Cap()]
+		for i := range buf {
 			buf[i] = 0
 		}
+		p.{{ .Pool }}.Put(sig.buffer)
 	} else {
 		panic("pool put {{ .Builtin }} invalid type")
 	}
-	mustSameCapacity(s.Capacity(), p.allocator.Capacity)
-	if s.Length() != p.allocator.Length {
-		s = s.Slice(0, p.allocator.Length)
-	}
-	p.{{ .Pool }}.Put(s)
 }
 
 // Capacity returns capacity of a single channel.

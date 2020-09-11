@@ -39,11 +39,15 @@ func (s {{ .Name }}) SetSample(i int, value {{ .SampleType }}) {
 
 // Get{{ .Name }} selects a new sequential {{ .Builtin }} signal buffer.
 // from the pool.
-func (p *Pool) Get{{ .Name }}(bd BitDepth) {{ .Interface }} {
+func (p *Pool) Get{{ .Name }}(length int, bd BitDepth) {{ .Interface }} {
 	if p == nil {
 		return nil
 	}
-	return p.{{ .Pool }}.Get().({{ .Interface }}).setBitDepth(bd)
+	return {{ .Name }}{
+		buffer:   p.{{ .Pool }}.Get().([]{{ .Builtin }})[:p.channels*length],
+		channels: channels(p.channels),
+		bitDepth: limitBitDepth(bd, {{ .MaxBitDepth }}),
+	}
 }
 {{template "signal" .}}
 {{end}}
