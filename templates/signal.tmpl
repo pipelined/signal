@@ -10,11 +10,8 @@ import "math"
 // Put{{ .Name }} places signal buffer back to the pool. If a type of
 // provided buffer isn't {{ .Name }} or its capacity doesn't equal
 // allocator capacity, the function will panic.
-func (p *Pool) Put{{ .Name }}(s {{ .Interface }}) {
-	if p == nil {
-		return
-	}
-	mustSameCapacity(s.Cap(), p.allocSize)
+func (p PoolAllocator) Put{{ .Name }}(s {{ .Interface }}) {
+	mustSameCapacity(s.Cap(), p.Channels*p.Capacity)
 	if sig, ok := s.({{ .Name }}); ok {
 		buf := sig.buffer[:sig.Cap()]
 		for i := range buf {

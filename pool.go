@@ -4,44 +4,52 @@ import "sync"
 
 var cache = struct {
 	sync.Mutex
-	pools map[int]*Pool
+	pools map[int]*pool
 }{
-	pools: map[int]*Pool{},
+	pools: map[int]*pool{},
 }
 
-// Pool allows to decrease a number of allocations at runtime. Internally
-// it relies on sync.Pool to manage objects in memory. It provides a pool
+// PoolAllocator allows to decrease a number of allocations at runtime. Internally
+// it relies on sync.PoolAllocator to manage objects in memory. It provides a pool
 // per signal buffer type.
-type Pool struct {
-	allocSize int
-	channels  int
-	i8        sync.Pool
-	i16       sync.Pool
-	i32       sync.Pool
-	i64       sync.Pool
-	u8        sync.Pool
-	u16       sync.Pool
-	u32       sync.Pool
-	u64       sync.Pool
-	f32       sync.Pool
-	f64       sync.Pool
+type PoolAllocator struct {
+	Channels int
+	Capacity int
+	Length   int
+	*pool
 }
 
-// GetPool returns pool for provided buffer dimensions. Pools are cached
-// internally, so multiple calls for with same dimentions will return the
-// same pool instance.
-func GetPool(channels, capacity int) *Pool {
+type pool struct {
+	i8  sync.Pool
+	i16 sync.Pool
+	i32 sync.Pool
+	i64 sync.Pool
+	u8  sync.Pool
+	u16 sync.Pool
+	u32 sync.Pool
+	u64 sync.Pool
+	f32 sync.Pool
+	f64 sync.Pool
+}
+
+// GetPoolAllocator returns pool for provided buffer dimensions. Pools are
+// cached internally, so multiple calls with same dimentions will return
+// the same pool instance.
+func GetPoolAllocator(channels, length, capacity int) PoolAllocator {
 	size := channels * capacity
 	cache.Lock()
 	defer cache.Unlock()
 
 	if p, ok := cache.pools[size]; ok {
-		return p
+		return PoolAllocator{
+			Length:   length,
+			Channels: channels,
+			Capacity: capacity,
+			pool:     p,
+		}
 	}
 
-	p := Pool{
-		channels:  channels,
-		allocSize: size,
+	pool := pool{
 		i8: sync.Pool{
 			New: func() interface{} {
 				return make([]int8, 0, size)
@@ -93,15 +101,21 @@ func GetPool(channels, capacity int) *Pool {
 			},
 		},
 	}
-	cache.pools[size] = &p
-	return &p
+
+	cache.pools[size] = &pool
+	return PoolAllocator{
+		Channels: channels,
+		Length:   length,
+		Capacity: capacity,
+		pool:     &pool,
+	}
 }
 
-// ResetPoolCache resets internal cache of pools and makes existing pools
+// ClearPoolAllocatorCache resets internal cache of pools and makes existing pools
 // available for GC. One good use case might be when the application
 // changes global buffer size.
-func ResetPoolCache() {
+func ClearPoolAllocatorCache() {
 	cache.Lock()
 	defer cache.Unlock()
-	cache.pools = map[int]*Pool{}
+	cache.pools = map[int]*pool{}
 }

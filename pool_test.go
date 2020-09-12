@@ -16,21 +16,22 @@ type expectedAllocation struct {
 func TestPool(t *testing.T) {
 	testOk := func(t *testing.T, allocs int, channels, length, capacity int) func(t *testing.T) {
 		return func(t *testing.T) {
-			p := signal.GetPool(channels, capacity)
+			t.Helper()
+			p := signal.GetPoolAllocator(channels, length, capacity)
 			for i := 0; i < allocs; i++ {
 				// floating
-				p.PutFloat32(testFloating(t, channels, length, capacity, p.GetFloat32(length)))
-				p.PutFloat64(testFloating(t, channels, length, capacity, p.GetFloat64(length)))
+				p.PutFloat32(testFloating(t, channels, length, capacity, p.GetFloat32()))
+				p.PutFloat64(testFloating(t, channels, length, capacity, p.GetFloat64()))
 				// signed
-				p.PutInt8(testSigned(t, channels, length, capacity, p.GetInt8(length, signal.MaxBitDepth), signal.BitDepth8))
-				p.PutInt16(testSigned(t, channels, length, capacity, p.GetInt16(length, signal.MaxBitDepth), signal.BitDepth16))
-				p.PutInt32(testSigned(t, channels, length, capacity, p.GetInt32(length, signal.MaxBitDepth), signal.BitDepth32))
-				p.PutInt64(testSigned(t, channels, length, capacity, p.GetInt64(length, signal.MaxBitDepth), signal.BitDepth64))
+				p.PutInt8(testSigned(t, channels, length, capacity, p.GetInt8(signal.MaxBitDepth), signal.BitDepth8))
+				p.PutInt16(testSigned(t, channels, length, capacity, p.GetInt16(signal.MaxBitDepth), signal.BitDepth16))
+				p.PutInt32(testSigned(t, channels, length, capacity, p.GetInt32(signal.MaxBitDepth), signal.BitDepth32))
+				p.PutInt64(testSigned(t, channels, length, capacity, p.GetInt64(signal.MaxBitDepth), signal.BitDepth64))
 				// unsigned
-				p.PutUint8(testUnsigned(t, channels, length, capacity, p.GetUint8(length, signal.MaxBitDepth), signal.BitDepth8))
-				p.PutUint16(testUnsigned(t, channels, length, capacity, p.GetUint16(length, signal.MaxBitDepth), signal.BitDepth16))
-				p.PutUint32(testUnsigned(t, channels, length, capacity, p.GetUint32(length, signal.MaxBitDepth), signal.BitDepth32))
-				p.PutUint64(testUnsigned(t, channels, length, capacity, p.GetUint64(length, signal.MaxBitDepth), signal.BitDepth64))
+				p.PutUint8(testUnsigned(t, channels, length, capacity, p.GetUint8(signal.MaxBitDepth), signal.BitDepth8))
+				p.PutUint16(testUnsigned(t, channels, length, capacity, p.GetUint16(signal.MaxBitDepth), signal.BitDepth16))
+				p.PutUint32(testUnsigned(t, channels, length, capacity, p.GetUint32(signal.MaxBitDepth), signal.BitDepth32))
+				p.PutUint64(testUnsigned(t, channels, length, capacity, p.GetUint64(signal.MaxBitDepth), signal.BitDepth64))
 			}
 		}
 	}
