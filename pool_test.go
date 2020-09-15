@@ -110,25 +110,9 @@ func TestPool(t *testing.T) {
 }
 
 func TestGetPool(t *testing.T) {
-	// a1 := signal.Allocator{
-	// 	Channels: 10,
-	// 	Capacity: 512,
-	// }
-	// a2 := signal.Allocator{
-	// 	Channels: 10,
-	// 	Length:   512,
-	// 	Capacity: 512,
-	// }
-
 	p1 := signal.GetPoolAllocator(10, 0, 512)
 	p2 := signal.GetPoolAllocator(10, 512, 512)
-	if p1 != p2 {
-		t.Fatal("p1 must be equal to p2")
-	}
-
-	signal.ClearPoolAllocatorCache()
-	p3 := signal.GetPoolAllocator(10, 0, 512)
-	if p1 == p3 {
-		t.Fatal("p1 must not be equal to p3")
+	if p1 == p2 {
+		t.Fatal("p1 must be not equal to p2")
 	}
 }
