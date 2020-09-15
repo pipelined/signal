@@ -8,14 +8,19 @@ type {{ .Name }} struct {
 
 // {{ .Name }} allocates a new sequential {{ .Builtin }} signal buffer.
 func (a Allocator) {{ .Name }}(bd BitDepth) {{ .Interface }} {
-	return {{ .Name }}{
+	return &{{ .Name }}{
 		buffer:   make([]{{ .Builtin }}, a.Channels*a.Length, a.Channels*a.Capacity),
 		channels: channels(a.Channels),
 		bitDepth: limitBitDepth(bd, {{ .MaxBitDepth }}),
 	}
 }
 
-func (s {{ .Name }}) setBitDepth(bd BitDepth) {{ .Interface }} {
+// Get{{ .Name }} selects a new sequential {{ .Builtin }} signal buffer.
+// from the pool.
+func (p *PoolAllocator) Get{{ .Name }}(bd BitDepth) {{ .Interface }} {
+	s := p.{{ .Pool }}.Get().(*{{ .Name }})
+	s.channels = channels(p.Channels)
+	s.buffer = s.buffer[:p.Length*p.Channels]
 	s.bitDepth = limitBitDepth(bd, {{ .MaxBitDepth }})
 	return s
 }
@@ -23,28 +28,17 @@ func (s {{ .Name }}) setBitDepth(bd BitDepth) {{ .Interface }} {
 // AppendSample appends sample at the end of the buffer.
 // Sample is not appended if buffer capacity is reached.
 // Sample values are capped by maximum value of the buffer bit depth.
-func (s {{ .Name }}) AppendSample(value {{ .SampleType }}) {{ .Interface }} {
+func (s *{{ .Name }}) AppendSample(value {{ .SampleType }}) {
 	if len(s.buffer) == cap(s.buffer) {
-		return s
+		return
 	}
 	s.buffer = append(s.buffer, {{ .Builtin }}(s.BitDepth().{{ .Interface }}Value(value)))
-	return s
 }
 
 // SetSample sets sample value for provided index.
 // Sample values are capped by maximum value of the buffer bit depth.
 func (s {{ .Name }}) SetSample(i int, value {{ .SampleType }}) {
 	s.buffer[i] = {{ .Builtin }}(s.BitDepth().{{ .Interface }}Value(value))
-}
-
-// Get{{ .Name }} selects a new sequential {{ .Builtin }} signal buffer.
-// from the pool.
-func (p PoolAllocator) Get{{ .Name }}(bd BitDepth) {{ .Interface }} {
-	return {{ .Name }}{
-		buffer:   p.{{ .Pool }}.Get().([]{{ .Builtin }})[:p.Channels*p.Length],
-		channels: channels(p.Channels),
-		bitDepth: limitBitDepth(bd, {{ .MaxBitDepth }}),
-	}
 }
 {{template "signal" .}}
 {{end}}

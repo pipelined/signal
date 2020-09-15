@@ -11,14 +11,16 @@ func Example_pool() {
 	pool := signal.GetPoolAllocator(2, 0, 512)
 
 	// producer allocates new buffers
-	produceFunc := func(allocs int, p signal.PoolAllocator, c chan<- signal.Floating) {
+	produceFunc := func(allocs int, p *signal.PoolAllocator, c chan<- signal.Floating) {
 		for i := 0; i < allocs; i++ {
-			c <- p.GetFloat64().AppendSample(1.0)
+			buf := p.GetFloat64()
+			buf.AppendSample(1.0)
+			c <- buf
 		}
 		close(c)
 	}
 	// consumer processes buffers and puts them back to the pool
-	consumeFunc := func(p signal.PoolAllocator, c <-chan signal.Floating, done chan struct{}) {
+	consumeFunc := func(p *signal.PoolAllocator, c <-chan signal.Floating, done chan struct{}) {
 		for s := range c {
 			fmt.Printf("Length: %d Capacity: %d\n", s.Length(), s.Capacity())
 		}

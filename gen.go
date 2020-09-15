@@ -4,7 +4,9 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"text/template"
 	"time"
@@ -143,8 +145,11 @@ func generate(templateName string, gen generator, fileName string) {
 	die(fmt.Sprintf("create %s file", fileName), err)
 	defer f.Close()
 
-	err = templates.ExecuteTemplate(f, templateName, gen)
+	var b bytes.Buffer
+	err = templates.ExecuteTemplate(&b, templateName, gen)
 	die(fmt.Sprintf("execute %s template for %s type", templateName, gen.Name), err)
+	_, err = io.Copy(f, &b)
+	die(fmt.Sprintf("writing file for %s type", templateName, gen.Name), err)
 }
 
 func die(reason string, err error) {

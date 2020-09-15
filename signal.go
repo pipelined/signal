@@ -20,6 +20,7 @@ type (
 		Len() int
 		Cap() int
 		BufferIndex(int, int) int
+		Free(*PoolAllocator)
 	}
 
 	// Fixed is a digital signal represented with fixed-point values.
@@ -32,30 +33,30 @@ type (
 	Signed interface {
 		Fixed
 		Slice(int, int) Signed
-		Append(Signed) Signed
-		AppendSample(int64) Signed
+		Append(Signed)
+		AppendSample(int64)
 		Sample(int) int64
 		SetSample(int, int64)
-		setBitDepth(BitDepth) Signed
+		// setBitDepth(BitDepth)
 	}
 
 	// Unsigned is a digital signal represented with unsigned fixed-point values.
 	Unsigned interface {
 		Fixed
 		Slice(int, int) Unsigned
-		Append(Unsigned) Unsigned
-		AppendSample(uint64) Unsigned
+		Append(Unsigned)
+		AppendSample(uint64)
 		Sample(int) uint64
 		SetSample(int, uint64)
-		setBitDepth(BitDepth) Unsigned
+		// setBitDepth(BitDepth)
 	}
 
 	// Floating is a digital signal represented with floating-point values.
 	Floating interface {
 		Signal
 		Slice(int, int) Floating
-		Append(Floating) Floating
-		AppendSample(float64) Floating
+		Append(Floating)
+		AppendSample(float64)
 		Sample(int) float64
 		SetSample(int, float64)
 	}
@@ -122,8 +123,7 @@ func (b BitDepth) MinSignedValue() int64 {
 // range.
 func (b BitDepth) UnsignedValue(val uint64) uint64 {
 	max := b.MaxUnsignedValue()
-	switch {
-	case val > max:
+	if val > max {
 		return max
 	}
 	return val
@@ -172,7 +172,7 @@ func (rate SampleRate) SamplesIn(d time.Duration) int {
 // destination buffer. Both buffers must have the same number of channels,
 // otherwise function will panic. Returns a number of samples written per
 // channel.
-func FloatingAsFloating(src Floating, dst Floating) int {
+func FloatingAsFloating(src, dst Floating) int {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
@@ -280,7 +280,7 @@ func SignedAsFloating(src Signed, dst Floating) int {
 // fixed-point destination buffer. The samples are quantized to the
 // destination bit depth. Buffers must have the same number of channels,
 // otherwise function will panic.
-func SignedAsSigned(src Signed, dst Signed) int {
+func SignedAsSigned(src, dst Signed) int {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
@@ -629,6 +629,6 @@ func ReadStripedUint(src Unsigned, dst [][]uint) (read int) {
 
 // alignCapacity ensures that buffer capacity is aligned with number of
 // channels.
-func alignCapacity(s interface{}, channels, cap int) {
-	reflect.ValueOf(s).Elem().SetCap(cap - cap%channels)
+func alignCapacity(s interface{}, channels, c int) {
+	reflect.ValueOf(s).Elem().SetCap(c - c%channels)
 }
