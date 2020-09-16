@@ -2,68 +2,80 @@ package signal
 
 import "sync"
 
-// Pool allows to decrease a number of allocations at runtime. Internally
-// it relies on sync.Pool to manage objects in memory. It provides a pool
+var cache = struct {
+	sync.Mutex
+	pools map[int]*pool
+}{
+	pools: map[int]*pool{},
+}
+
+// PoolAllocator allows to decrease a number of allocations at runtime. Internally
+// it relies on sync.PoolAllocator to manage objects in memory. It provides a pool
 // per signal buffer type.
-type Pool struct {
-	allocator Allocator
-	i8        sync.Pool
-	i16       sync.Pool
-	i32       sync.Pool
-	i64       sync.Pool
-	u8        sync.Pool
-	u16       sync.Pool
-	u32       sync.Pool
-	u64       sync.Pool
-	f32       sync.Pool
-	f64       sync.Pool
+type PoolAllocator struct {
+	Channels int
+	Capacity int
+	Length   int
+	*pool
 }
 
-// Pool creates a new Pool that uses the allocator to make buffers.
-func (a Allocator) Pool() *Pool {
-	return &Pool{
-		allocator: a,
-		i8:        signedPool(a.Int8, BitDepth8),
-		i16:       signedPool(a.Int16, BitDepth16),
-		i32:       signedPool(a.Int32, BitDepth32),
-		i64:       signedPool(a.Int64, BitDepth64),
-		u8:        unsignedPool(a.Uint8, BitDepth8),
-		u16:       unsignedPool(a.Uint16, BitDepth16),
-		u32:       unsignedPool(a.Uint32, BitDepth32),
-		u64:       unsignedPool(a.Uint64, BitDepth64),
-		f32:       floatingPool(a.Float32),
-		f64:       floatingPool(a.Float64),
+type pool struct {
+	i8  sync.Pool
+	i16 sync.Pool
+	i32 sync.Pool
+	i64 sync.Pool
+	u8  sync.Pool
+	u16 sync.Pool
+	u32 sync.Pool
+	u64 sync.Pool
+	f32 sync.Pool
+	f64 sync.Pool
+}
+
+// GetPoolAllocator returns pool for provided buffer dimensions. Pools are
+// cached internally, so multiple calls with same dimentions will return
+// the same pool instance.
+func GetPoolAllocator(channels, length, capacity int) *PoolAllocator {
+	size := channels * capacity
+	cache.Lock()
+	defer cache.Unlock()
+
+	if p, ok := cache.pools[size]; ok {
+		return &PoolAllocator{
+			Channels: channels,
+			Length:   length,
+			Capacity: capacity,
+			pool:     p,
+		}
+	}
+
+	p := pool{
+		i8:  int8pool(size),
+		i16: int16pool(size),
+		i32: int32pool(size),
+		i64: int64pool(size),
+		u8:  uint8pool(size),
+		u16: uint16pool(size),
+		u32: uint32pool(size),
+		u64: uint64pool(size),
+		f32: float32pool(size),
+		f64: float64pool(size),
+	}
+
+	cache.pools[size] = &p
+	return &PoolAllocator{
+		Channels: channels,
+		Length:   length,
+		Capacity: capacity,
+		pool:     &p,
 	}
 }
 
-func signedPool(alloc func(BitDepth) Signed, mbd BitDepth) sync.Pool {
-	return sync.Pool{
-		New: func() interface{} {
-			return alloc(mbd)
-		},
-	}
-}
-
-func unsignedPool(alloc func(BitDepth) Unsigned, mbd BitDepth) sync.Pool {
-	return sync.Pool{
-		New: func() interface{} {
-			return alloc(mbd)
-		},
-	}
-}
-
-func floatingPool(alloc func() Floating) sync.Pool {
-	return sync.Pool{
-		New: func() interface{} {
-			return alloc()
-		},
-	}
-}
-
-// Allocator returns allocator used by the pool.
-func (p *Pool) Allocator() Allocator {
-	if p != nil {
-		return p.allocator
-	}
-	return Allocator{}
+// ClearPoolAllocatorCache resets internal cache of pools and makes
+// existing pools available for GC. One good use case might be when the
+// application changes global buffer size.
+func ClearPoolAllocatorCache() {
+	cache.Lock()
+	defer cache.Unlock()
+	cache.pools = map[int]*pool{}
 }

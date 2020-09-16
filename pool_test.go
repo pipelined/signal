@@ -14,123 +14,105 @@ type expectedAllocation struct {
 }
 
 func TestPool(t *testing.T) {
-	testOk := func(t *testing.T, allocs int, p *signal.Pool) func(t *testing.T) {
+	assertAllocation := func(t *testing.T, s signal.Signal, e expectedAllocation) {
+		t.Helper()
+		if e.channels != s.Channels() {
+			t.Fatalf("Invalid number of channels: %v expected: %v", s.Channels(), e.channels)
+		}
+		if e.length != s.Length() {
+			t.Fatalf("Invalid buffer length: %v expected: %v", s.Length(), e.length)
+		}
+		if e.capacity != s.Capacity() {
+			t.Fatalf("Invalid buffer capacity: %v expected: %v", s.Capacity(), e.capacity)
+		}
+		if f, ok := s.(signal.Fixed); ok {
+			if e.BitDepth != f.BitDepth() {
+				t.Fatalf("Invalid buffer bit depth: %v expected: %v", f.BitDepth(), e.BitDepth)
+			}
+		}
+	}
+	testSigned := func(t *testing.T, channels, length, capacity int, s signal.Signed, mbd signal.BitDepth) signal.Signed {
+		t.Helper()
+		assertAllocation(
+			t,
+			s,
+			expectedAllocation{
+				channels: channels,
+				length:   length,
+				capacity: capacity,
+				BitDepth: mbd,
+			})
+		s.AppendSample(1)
+		return s
+	}
+	testUnsigned := func(t *testing.T, channels, length, capacity int, s signal.Unsigned, mbd signal.BitDepth) signal.Unsigned {
+		t.Helper()
+		assertAllocation(
+			t,
+			s,
+			expectedAllocation{
+				channels: channels,
+				length:   length,
+				capacity: capacity,
+				BitDepth: mbd,
+			})
+		s.AppendSample(1)
+		return s
+	}
+	testFloating := func(t *testing.T, channels, length, capacity int, s signal.Floating) signal.Floating {
+		t.Helper()
+		assertAllocation(
+			t,
+			s,
+			expectedAllocation{
+				channels: channels,
+				length:   length,
+				capacity: capacity,
+			})
+		s.AppendSample(1)
+		return s
+	}
+
+	testOk := func(t *testing.T, allocs int, channels, length, capacity int) func(t *testing.T) {
 		return func(t *testing.T) {
+			t.Helper()
+			p := signal.GetPoolAllocator(channels, length, capacity)
 			for i := 0; i < allocs; i++ {
 				// floating
-				p.PutFloat32(testFloating(t, p, p.GetFloat32()))
-				p.PutFloat64(testFloating(t, p, p.GetFloat64()))
+				testFloating(t, channels, length, capacity, p.GetFloat32()).Free(p)
+				testFloating(t, channels, length, capacity, p.GetFloat64()).Free(p)
 				// signed
-				p.PutInt8(testSigned(t, p, p.GetInt8(signal.MaxBitDepth), signal.BitDepth8))
-				p.PutInt16(testSigned(t, p, p.GetInt16(signal.MaxBitDepth), signal.BitDepth16))
-				p.PutInt32(testSigned(t, p, p.GetInt32(signal.MaxBitDepth), signal.BitDepth32))
-				p.PutInt64(testSigned(t, p, p.GetInt64(signal.MaxBitDepth), signal.BitDepth64))
+				testSigned(t, channels, length, capacity, p.GetInt8(signal.MaxBitDepth), signal.BitDepth8).Free(p)
+				testSigned(t, channels, length, capacity, p.GetInt16(signal.MaxBitDepth), signal.BitDepth16).Free(p)
+				testSigned(t, channels, length, capacity, p.GetInt32(signal.MaxBitDepth), signal.BitDepth32).Free(p)
+				testSigned(t, channels, length, capacity, p.GetInt64(signal.MaxBitDepth), signal.BitDepth64).Free(p)
 				// unsigned
-				p.PutUint8(testUnsigned(t, p, p.GetUint8(signal.MaxBitDepth), signal.BitDepth8))
-				p.PutUint16(testUnsigned(t, p, p.GetUint16(signal.MaxBitDepth), signal.BitDepth16))
-				p.PutUint32(testUnsigned(t, p, p.GetUint32(signal.MaxBitDepth), signal.BitDepth32))
-				p.PutUint64(testUnsigned(t, p, p.GetUint64(signal.MaxBitDepth), signal.BitDepth64))
+				testUnsigned(t, channels, length, capacity, p.GetUint8(signal.MaxBitDepth), signal.BitDepth8).Free(p)
+				testUnsigned(t, channels, length, capacity, p.GetUint16(signal.MaxBitDepth), signal.BitDepth16).Free(p)
+				testUnsigned(t, channels, length, capacity, p.GetUint32(signal.MaxBitDepth), signal.BitDepth32).Free(p)
+				testUnsigned(t, channels, length, capacity, p.GetUint64(signal.MaxBitDepth), signal.BitDepth64).Free(p)
 			}
 		}
 	}
 
-	t.Run("nil pool",
-		testOk(t, 10, nil),
-	)
 	t.Run("empty allocs",
-		testOk(t, 10, signal.Allocator{}.Pool()),
+		testOk(t, 10, 0, 0, 0),
 	)
 	t.Run("10 allocs",
-		testOk(t, 10, signal.Allocator{
-			Channels: 1,
-			Capacity: 512,
-		}.Pool()),
+		testOk(t, 10, 1, 0, 512),
 	)
 	t.Run("10 allocs length",
-		testOk(t, 10, signal.Allocator{
-			Channels: 2,
-			Length:   256,
-			Capacity: 512,
-		}.Pool()),
+		testOk(t, 10, 2, 256, 512),
 	)
 	t.Run("100 allocs",
-		testOk(t, 100, signal.Allocator{
-			Channels: 100,
-			Capacity: 512,
-		}.Pool()),
+		testOk(t, 100, 100, 0, 512),
 	)
 }
 
-func testSigned(t *testing.T, p *signal.Pool, s signal.Signed, mbd signal.BitDepth) signal.Signed {
-	t.Helper()
-	if s == nil {
-		return s
-	}
-	a := p.Allocator()
-	assertAllocation(
-		t,
-		s,
-		expectedAllocation{
-			channels: a.Channels,
-			length:   a.Length,
-			capacity: a.Capacity,
-			BitDepth: mbd,
-		})
-	s.AppendSample(1)
-	return s
-}
-
-func testUnsigned(t *testing.T, p *signal.Pool, s signal.Unsigned, mbd signal.BitDepth) signal.Unsigned {
-	t.Helper()
-	if s == nil {
-		return s
-	}
-	a := p.Allocator()
-	assertAllocation(
-		t,
-		s,
-		expectedAllocation{
-			channels: a.Channels,
-			length:   a.Length,
-			capacity: a.Capacity,
-			BitDepth: mbd,
-		})
-	s.AppendSample(1)
-	return s
-}
-
-func testFloating(t *testing.T, p *signal.Pool, s signal.Floating) signal.Floating {
-	t.Helper()
-	if s == nil {
-		return s
-	}
-	a := p.Allocator()
-	assertAllocation(
-		t,
-		s,
-		expectedAllocation{
-			channels: a.Channels,
-			length:   a.Length,
-			capacity: a.Capacity,
-		})
-	s.AppendSample(1)
-	return s
-}
-
-func assertAllocation(t *testing.T, s signal.Signal, e expectedAllocation) {
-	t.Helper()
-	if e.channels != s.Channels() {
-		t.Fatalf("Invalid number of channels: %v expected: %v", s.Channels(), e.channels)
-	}
-	if e.length != s.Length() {
-		t.Fatalf("Invalid buffer length: %v expected: %v", s.Length(), e.length)
-	}
-	if e.capacity != s.Capacity() {
-		t.Fatalf("Invalid buffer capacity: %v expected: %v", s.Capacity(), e.capacity)
-	}
-	if f, ok := s.(signal.Fixed); ok {
-		if e.BitDepth != f.BitDepth() {
-			t.Fatalf("Invalid buffer bit depth: %v expected: %v", f.BitDepth(), e.BitDepth)
-		}
+func TestGetPool(t *testing.T) {
+	p1 := signal.GetPoolAllocator(10, 0, 512)
+	p2 := signal.GetPoolAllocator(10, 512, 512)
+	if p1 == p2 {
+		t.Fatal("p1 must be not equal to p2")
 	}
 }
