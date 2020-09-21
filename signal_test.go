@@ -448,14 +448,14 @@ func ExampleBitDepth_UnsignedValue() {
 	// 255
 }
 
-func ExampleSampleRate_DurationOf() {
-	fmt.Println(signal.SampleRate(44100).DurationOf(88200))
+func ExampleFrequency_Duration() {
+	fmt.Println(signal.Frequency(44100).Duration(88200))
 	// Output:
 	// 2s
 }
 
-func ExampleSampleRate_SamplesIn() {
-	fmt.Println(signal.SampleRate(44100).SamplesIn(time.Second * 2))
+func ExampleFrequency_Events() {
+	fmt.Println(signal.Frequency(44100).Events(time.Second * 2))
 	// Output:
 	// 88200
 }

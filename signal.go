@@ -155,17 +155,19 @@ func limitBitDepth(b, max BitDepth) bitDepth {
 	return bitDepth(b)
 }
 
-// SampleRate is the number of samples obtained in one second.
-type SampleRate uint
+// Frequency in Hertz is the number of occurrences of a repeating event per
+// second. It might represent sample rate or pitch.
+type Frequency float64
 
-// DurationOf returns time duration of samples at this sample rate.
-func (rate SampleRate) DurationOf(samples int) time.Duration {
-	return time.Duration(math.Round(float64(time.Second) / float64(rate) * float64(samples)))
+// Duration returns a total time duration for a number events at this
+// frequency.
+func (f Frequency) Duration(events int) time.Duration {
+	return time.Duration(math.Round(float64(time.Second) / float64(f) * float64(events)))
 }
 
-// SamplesIn returns number of samples for time duration at this sample rate.
-func (rate SampleRate) SamplesIn(d time.Duration) int {
-	return int(math.Round(float64(rate) / float64(time.Second) * float64(d)))
+// Events returns a number of events for time duration at this frequency.
+func (f Frequency) Events(d time.Duration) int {
+	return int(math.Round(float64(f) / float64(time.Second) * float64(d)))
 }
 
 // FloatingAsFloating appends floating-point samples to the floating-point
