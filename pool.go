@@ -9,9 +9,9 @@ var cache = struct {
 	pools: map[int]*pool{},
 }
 
-// PoolAllocator allows to decrease a number of allocations at runtime. Internally
-// it relies on sync.PoolAllocator to manage objects in memory. It provides a pool
-// per signal buffer type.
+// PoolAllocator allows to decrease a number of allocations at runtime.
+// Internally it relies on sync.PoolAllocator to manage objects in memory.
+// It contains a pool per signal buffer type.
 type PoolAllocator struct {
 	Channels int
 	Capacity int
@@ -32,9 +32,11 @@ type pool struct {
 	f64 sync.Pool
 }
 
-// GetPoolAllocator returns pool for provided buffer dimensions. Pools are
-// cached internally, so multiple calls with same dimentions will return
-// the same pool instance.
+// GetPoolAllocator returns pool for provided buffer dimensions - number of
+// channels and capacity. The length is not taken into account, it's only
+// used to provide desired size when once new buffer is requested. Pools
+// are cached internally, so multiple calls with same dimentions will
+// return the same pool instance.
 func GetPoolAllocator(channels, length, capacity int) *PoolAllocator {
 	size := channels * capacity
 	cache.Lock()
