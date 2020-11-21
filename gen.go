@@ -6,6 +6,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"go/format"
 	"io"
 	"os"
 	"text/template"
@@ -141,14 +142,17 @@ func main() {
 }
 
 func generate(templateName string, gen generator, fileName string) {
+
+	var raw bytes.Buffer
+	err := templates.ExecuteTemplate(&raw, templateName, gen)
+	die(fmt.Sprintf("execute %s template for %s type", templateName, gen.Name), err)
+	formatted, err := format.Source(raw.Bytes())
+	die(fmt.Sprintf("formatting file for %s type", templateName, gen.Name), err)
+
 	f, err := os.Create(fileName)
 	die(fmt.Sprintf("create %s file", fileName), err)
 	defer f.Close()
-
-	var b bytes.Buffer
-	err = templates.ExecuteTemplate(&b, templateName, gen)
-	die(fmt.Sprintf("execute %s template for %s type", templateName, gen.Name), err)
-	_, err = io.Copy(f, &b)
+	_, err = io.Copy(f, bytes.NewBuffer(formatted))
 	die(fmt.Sprintf("writing file for %s type", templateName, gen.Name), err)
 }
 
