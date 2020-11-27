@@ -37,7 +37,6 @@ type (
 		AppendSample(int64)
 		Sample(int) int64
 		SetSample(int, int64)
-		// setBitDepth(BitDepth)
 	}
 
 	// Unsigned is a digital signal represented with unsigned fixed-point values.
@@ -48,7 +47,6 @@ type (
 		AppendSample(uint64)
 		Sample(int) uint64
 		SetSample(int, uint64)
-		// setBitDepth(BitDepth)
 	}
 
 	// Floating is a digital signal represented with floating-point values.
