@@ -32,6 +32,13 @@ func (p *PoolAllocator) GetFloat64() Floating {
 	return s
 }
 
+func (s *Float64) Channel(c int) Floating {
+	return floatingChannel{
+		buf:     s,
+		channel: c,
+	}
+}
+
 // AppendSample appends sample at the end of the buffer.
 // Sample is not appended if buffer capacity is reached.
 func (s *Float64) AppendSample(value float64) {

@@ -53,6 +53,7 @@ type (
 	Floating interface {
 		Signal
 		Slice(int, int) Floating
+		Channel(int) Floating
 		Append(Floating)
 		AppendSample(float64)
 		Sample(int) float64
