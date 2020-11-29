@@ -15,10 +15,10 @@ func (c floatingChannel) Append(s Floating) {
 func (c floatingChannel) AppendSample(s float64) {
 	for i := 0; i < c.buf.Channels(); i++ {
 		if c.channel == i {
-			c.AppendSample(s)
+			c.buf.AppendSample(s)
 			continue
 		}
-		c.AppendSample(0)
+		c.buf.AppendSample(0)
 	}
 }
 
@@ -58,7 +58,7 @@ func (c floatingChannel) Sample(pos int) float64 {
 }
 
 func (c floatingChannel) SetSample(pos int, s float64) {
-	c.buf.SetSample(c.channel*pos, s)
+	c.buf.SetSample(c.buf.BufferIndex(c.channel, pos), s)
 }
 
 func (c floatingChannel) Free(*PoolAllocator) {

@@ -125,6 +125,10 @@ func (s *Float32) Slice(start, end int) Floating {
 	}
 }
 
+func (s *Float32) Channel(c int) Floating {
+	return s
+}
+
 // ReadFloat32 reads values from the buffer into provided slice.
 // Returns number of samples read per channel.
 func ReadFloat32(src Floating, dst []float32) int {
