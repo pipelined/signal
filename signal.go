@@ -19,7 +19,7 @@ type (
 		Length() int
 		Len() int
 		Cap() int
-		BufferIndex(int, int) int
+		BufferIndex(channel int, index int) int
 		Free(*PoolAllocator)
 	}
 
@@ -32,32 +32,32 @@ type (
 	// Signed is a digital signal represented with signed fixed-point values.
 	Signed interface {
 		Fixed
-		Slice(int, int) Signed
+		Slice(start int, end int) Signed
 		Append(Signed)
-		AppendSample(int64)
-		Sample(int) int64
-		SetSample(int, int64)
+		AppendSample(value int64)
+		Sample(index int) int64
+		SetSample(index int, value int64)
 	}
 
 	// Unsigned is a digital signal represented with unsigned fixed-point values.
 	Unsigned interface {
 		Fixed
-		Slice(int, int) Unsigned
+		Slice(start int, end int) Unsigned
 		Append(Unsigned)
-		AppendSample(uint64)
-		Sample(int) uint64
-		SetSample(int, uint64)
+		AppendSample(value uint64)
+		Sample(index int) uint64
+		SetSample(index int, value uint64)
 	}
 
 	// Floating is a digital signal represented with floating-point values.
 	Floating interface {
 		Signal
-		Slice(int, int) Floating
-		Channel(int) Floating
+		Slice(start int, end int) Floating
+		Channel(channel int) Floating
 		Append(Floating)
-		AppendSample(float64)
-		Sample(int) float64
-		SetSample(int, float64)
+		AppendSample(value float64)
+		Sample(index int) float64
+		SetSample(index int, value float64)
 	}
 
 	// Allocator provides allocation of various signal buffers.
