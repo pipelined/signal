@@ -2,73 +2,75 @@ package signal
 
 type (
 	floatingChannel struct {
-		buf     Floating
+		buffer  Floating
 		channel int
 	}
 )
 
-// TODO
+// Append panics.
 func (c floatingChannel) Append(s Floating) {
+	panic("appending signal to the single channel")
 }
 
-// TODO
+// AppendSample panics.
 func (c floatingChannel) AppendSample(s float64) {
-	for i := 0; i < c.buf.Channels(); i++ {
-		if c.channel == i {
-			c.buf.AppendSample(s)
-			continue
-		}
-		c.buf.AppendSample(0)
-	}
+	panic("appending sample to the single channel")
 }
 
-func (c floatingChannel) BufferIndex(channel int, pos int) int {
-	return c.channel * pos
+// BufferIndex returns sample index in the channel of signal buffer.
+func (c floatingChannel) BufferIndex(channel int, index int) int {
+	return c.channel * index
 }
 
+// Channels always returns 1.
 func (c floatingChannel) Channels() int {
 	return 1
 }
 
+// Cap returns capacity of the channel.
 func (c floatingChannel) Cap() int {
-	return c.buf.Capacity()
+	return c.buffer.Capacity()
 }
 
+// Capacity returns capacity of the channel.
 func (c floatingChannel) Capacity() int {
-	return c.buf.Capacity()
+	return c.buffer.Capacity()
 }
 
+// Len returns length of the channel.
 func (c floatingChannel) Len() int {
-	return c.buf.Length()
+	return c.buffer.Length()
 }
 
+// Length returns length of the channel.
 func (c floatingChannel) Length() int {
-	return c.buf.Length()
+	return c.buffer.Length()
 }
 
+// Channel panics.
 func (c floatingChannel) Channel(channel int) Floating {
-	return floatingChannel{
-		buf:     c.buf,
-		channel: channel,
-	}
+	panic("slicing channel of the channel")
 }
 
-func (c floatingChannel) Sample(pos int) float64 {
-	return c.buf.Sample(pos * c.channel)
+// Sample returns signal value for provided channel and index.
+func (c floatingChannel) Sample(index int) float64 {
+	return c.buffer.Sample(index * c.channel)
 }
 
-func (c floatingChannel) SetSample(pos int, s float64) {
-	c.buf.SetSample(c.buf.BufferIndex(c.channel, pos), s)
+// SetSample sets sample value for provided index.
+func (c floatingChannel) SetSample(index int, s float64) {
+	c.buffer.SetSample(c.buffer.BufferIndex(c.channel, index), s)
 }
 
+// Free panics.
 func (c floatingChannel) Free(*PoolAllocator) {
 	panic("freeing single channel of the buffer")
 }
 
-// TODO
+// Slice slices buffer with respect to channels.
 func (c floatingChannel) Slice(start, end int) Floating {
 	return floatingChannel{
-		buf:     c.buf.Slice(start, end),
+		buffer:  c.buffer.Slice(start, end),
 		channel: c.channel,
 	}
 }

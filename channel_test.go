@@ -7,53 +7,49 @@ import (
 )
 
 func TestChannel(t *testing.T) {
-	testAppendFloating := func() func(*testing.T) {
+	testFloating := func() func(*testing.T) {
 		result := signal.Allocator{
 			Channels: 3,
+			Length:   3,
 			Capacity: 3,
 		}.Float64()
-		c := result.Channel(1)
-		for i := 1; i < 4; i++ {
-			c.AppendSample(float64(i))
+		channel := 1
+		c := result.Channel(channel).Slice(0, 2)
+		for i := 0; i < c.Len(); i++ {
+			c.SetSample(i, float64(i+1))
 		}
-		return testOk(
-			result,
-			expected{
-				length:   3,
-				capacity: 3,
-				data: [][]float64{
-					{0, 0, 0},
-					{1, 2, 3},
-					{0, 0, 0},
-				},
-			},
-		)
+		return func(t *testing.T) {
+			assertEqual(t, "channels", c.Channels(), 1)
+			assertEqual(t, "length", c.Len(), c.Length())
+			assertEqual(t, "capacity", c.Cap(), c.Capacity())
+			for i := 0; i < c.Cap(); i++ {
+				assertEqual(t, "index", c.Sample(i), result.Sample(c.BufferIndex(channel, i)))
+			}
+		}
 	}
-
-	testSetFloating := func() func(*testing.T) {
+	testPanic := func() func(*testing.T) {
 		result := signal.Allocator{
 			Channels: 3,
 			Length:   3,
 			Capacity: 3,
 		}.Float64()
 		c := result.Channel(1)
-		for i := 0; i < c.Len(); i++ {
-			c.SetSample(i, float64(i+1))
+		return func(t *testing.T) {
+			assertPanic(t, func() {
+				c.Append(nil)
+			})
+			assertPanic(t, func() {
+				c.AppendSample(0)
+			})
+			assertPanic(t, func() {
+				c.Channel(0)
+			})
+			assertPanic(t, func() {
+				c.Free(nil)
+			})
 		}
-		return testOk(
-			result,
-			expected{
-				length:   3,
-				capacity: 3,
-				data: [][]float64{
-					{0, 0, 0},
-					{1, 2, 3},
-					{0, 0, 0},
-				},
-			},
-		)
 	}
 
-	t.Run("append floating", testAppendFloating())
-	t.Run("set floating", testSetFloating())
+	t.Run("floating channel", testFloating())
+	t.Run("panic floating channel", testPanic())
 }
