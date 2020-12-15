@@ -33,6 +33,7 @@ type (
 	Signed interface {
 		Fixed
 		Slice(start int, end int) Signed
+		Channel(channel int) Signed
 		Append(Signed)
 		AppendSample(value int64)
 		Sample(index int) int64
@@ -43,6 +44,7 @@ type (
 	Unsigned interface {
 		Fixed
 		Slice(start int, end int) Unsigned
+		Channel(channel int) Unsigned
 		Append(Unsigned)
 		AppendSample(value uint64)
 		Sample(index int) uint64
