@@ -9,6 +9,7 @@ import (
 	"go/format"
 	"io"
 	"os"
+	"strings"
 	"text/template"
 	"time"
 )
@@ -27,12 +28,21 @@ type generator struct {
 	Name        string
 	Pool        string
 	MaxBitDepth string // used for fixed-point types only
+	*ChannelTemplates
 }
 
 // properties for interface generation
 type InterfaceProps struct {
-	Interface  string
-	SampleType string
+	Interface   string
+	SampleType  string
+	ChannelType string
+}
+
+// data for channel types generation. generated for each widest type -
+// float64, int64, uint64.
+type ChannelTemplates struct {
+	signal string
+	tests  string
 }
 
 var templates = template.Must(template.ParseGlob("templates/*.tmpl"))
@@ -50,18 +60,25 @@ func main() {
 	)
 	var (
 		signedProps = InterfaceProps{
-			Interface:  "Signed",
-			SampleType: "int64",
+			Interface:   "Signed",
+			SampleType:  "int64",
+			ChannelType: "signedChannel",
 		}
 		unsignedProps = InterfaceProps{
-			Interface:  "Unsigned",
-			SampleType: "uint64",
+			Interface:   "Unsigned",
+			SampleType:  "uint64",
+			ChannelType: "unsignedChannel",
 		}
 		floatingProps = InterfaceProps{
-			Interface:  "Floating",
-			SampleType: "float64",
+			Interface:   "Floating",
+			SampleType:  "float64",
+			ChannelType: "floatingChannel",
 		}
 	)
+	channelTemplates := ChannelTemplates{
+		signal: "channel",
+		tests:  "channel_tests",
+	}
 	types := map[generator]templateNames{
 		{
 			InterfaceProps: signedProps,
@@ -85,11 +102,12 @@ func main() {
 			MaxBitDepth:    "BitDepth32",
 		}: fixedTemplates,
 		{
-			InterfaceProps: signedProps,
-			Builtin:        "int64",
-			Name:           "Int64",
-			Pool:           "i64",
-			MaxBitDepth:    "BitDepth64",
+			InterfaceProps:   signedProps,
+			Builtin:          "int64",
+			Name:             "Int64",
+			Pool:             "i64",
+			MaxBitDepth:      "BitDepth64",
+			ChannelTemplates: &channelTemplates,
 		}: fixedTemplates,
 		{
 			InterfaceProps: unsignedProps,
@@ -113,11 +131,12 @@ func main() {
 			MaxBitDepth:    "BitDepth32",
 		}: fixedTemplates,
 		{
-			InterfaceProps: unsignedProps,
-			Builtin:        "uint64",
-			Name:           "Uint64",
-			Pool:           "u64",
-			MaxBitDepth:    "BitDepth64",
+			InterfaceProps:   unsignedProps,
+			Builtin:          "uint64",
+			Name:             "Uint64",
+			Pool:             "u64",
+			MaxBitDepth:      "BitDepth64",
+			ChannelTemplates: &channelTemplates,
 		}: fixedTemplates,
 		{
 			InterfaceProps: floatingProps,
@@ -126,10 +145,11 @@ func main() {
 			Pool:           "f32",
 		}: floatingTemplates,
 		{
-			InterfaceProps: floatingProps,
-			Builtin:        "float64",
-			Name:           "Float64",
-			Pool:           "f64",
+			InterfaceProps:   floatingProps,
+			Builtin:          "float64",
+			Name:             "Float64",
+			Pool:             "f64",
+			ChannelTemplates: &channelTemplates,
 		}: floatingTemplates,
 	}
 
@@ -138,6 +158,10 @@ func main() {
 
 		generate(t.signal, g, fmt.Sprintf("%s.go", g.Builtin))
 		generate(t.tests, g, fmt.Sprintf("%s_test.go", g.Builtin))
+		if g.ChannelTemplates != nil {
+			generate(g.ChannelTemplates.signal, g, fmt.Sprintf("channel_%s.go", strings.ToLower(g.Interface)))
+			generate(g.ChannelTemplates.tests, g, fmt.Sprintf("channel_%s_test.go", strings.ToLower(g.Interface)))
+		}
 	}
 }
 
