@@ -57,7 +57,7 @@ func (s *{{ .Name }}) Len() int {
 	return len(s.buffer)
 }
 
-// Sample returns signal value for provided channel and index.
+// Sample returns signal value for provided sample index.
 func (s *{{ .Name }}) Sample(i int) {{ .SampleType }} {
 	return {{ .SampleType }}(s.buffer[i])
 }
@@ -88,6 +88,15 @@ func (s *{{ .Name }}) Slice(start, end int) {{ .Interface }} {
 		channels: s.channels,
 		buffer: s.buffer[start:end],{{if ne .Interface "Floating"}}
 		bitDepth: s.bitDepth,{{end}}
+	}
+}
+
+// Channel returns a single channel of signal buffer. It behaves exactly as
+// {{ .Interface }} buffer, but Append and AppendSample cause panic.
+func (s *{{ .Name }}) Channel(c int) {{ .Interface }} {
+	return {{ .ChannelType }}{
+		buffer:  s,
+		channel: c,
 	}
 }
 
