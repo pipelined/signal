@@ -13,7 +13,7 @@ func Example_pool() {
 	// producer allocates new buffers
 	produceFunc := func(allocs int, p *signal.PoolAllocator, c chan<- signal.Floating) {
 		for i := 0; i < allocs; i++ {
-			buf := p.GetFloat64()
+			buf := p.Float64()
 			buf.AppendSample(1.0)
 			c <- buf
 		}

@@ -14,9 +14,9 @@ func (a Allocator) {{ .Allocator }}() {{ .Interface }} {
 	}
 }
 
-// Get{{ .Allocator }} selects a new sequential {{ .Builtin }} signal buffer.
+// {{ .Allocator }} selects a new sequential {{ .Builtin }} signal buffer.
 // from the pool.
-func (p *PoolAllocator) Get{{ .Allocator }}() {{ .Interface }} {
+func (p *PoolAllocator) {{ .Allocator }}() {{ .Interface }} {
 	s := p.{{ .Name }}.Get().(*{{ .Name }})
 	s.channels = channels(p.Channels)
 	s.buffer = s.buffer[:p.Length*p.Channels]
