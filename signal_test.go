@@ -480,7 +480,7 @@ func TestWrite(t *testing.T) {
 			expected{
 				length:   length,
 				capacity: 1,
-				data: [][]int64{
+				data: [][]int8{
 					{math.MaxInt8},
 					{math.MinInt8},
 					{0},
@@ -502,7 +502,7 @@ func TestWrite(t *testing.T) {
 			expected{
 				length:   length,
 				capacity: 1,
-				data: [][]int64{
+				data: [][]int8{
 					{math.MaxInt8},
 					{math.MinInt8},
 					{0},
@@ -525,7 +525,7 @@ func TestWrite(t *testing.T) {
 			expected{
 				length:   length,
 				capacity: 1,
-				data: [][]uint64{
+				data: [][]uint8{
 					{math.MaxUint8},
 					{0},
 					{0},
@@ -547,7 +547,7 @@ func TestWrite(t *testing.T) {
 			expected{
 				length:   length,
 				capacity: 1,
-				data: [][]uint64{
+				data: [][]uint8{
 					{math.MaxUint8},
 					{0},
 					{0},
@@ -595,70 +595,73 @@ func assertPanic(t *testing.T, fn func()) {
 
 func result(sig signal.Signal) interface{} {
 	switch src := sig.(type) {
-	case *signal.Int8:
-		result := make([][]int8, src.Channels())
-		for i := range result {
-			result[i] = make([]int8, src.Length())
+	case signal.Signed:
+		switch src.BitDepth() {
+		case signal.BitDepth8:
+			result := make([][]int8, src.Channels())
+			for i := range result {
+				result[i] = make([]int8, src.Length())
+			}
+			signal.ReadStripedInt8(src, result)
+			return result
+		case signal.BitDepth16:
+			result := make([][]int16, src.Channels())
+			for i := range result {
+				result[i] = make([]int16, src.Length())
+			}
+			signal.ReadStripedInt16(src, result)
+			return result
+		case signal.BitDepth32:
+			result := make([][]int32, src.Channels())
+			for i := range result {
+				result[i] = make([]int32, src.Length())
+			}
+			signal.ReadStripedInt32(src, result)
+			return result
+		case signal.BitDepth64:
+			result := make([][]int64, src.Channels())
+			for i := range result {
+				result[i] = make([]int64, src.Length())
+			}
+			signal.ReadStripedInt64(src, result)
+			return result
+		default:
+			panic(fmt.Sprintf("unsupported bit depth: %T", src.BitDepth()))
 		}
-		signal.ReadStripedInt8(src, result)
-		return result
-	case *signal.Int16:
-		result := make([][]int16, src.Channels())
-		for i := range result {
-			result[i] = make([]int16, src.Length())
+	case signal.Unsigned:
+		switch src.BitDepth() {
+		case signal.BitDepth8:
+			result := make([][]uint8, src.Channels())
+			for i := range result {
+				result[i] = make([]uint8, src.Length())
+			}
+			signal.ReadStripedUint8(src, result)
+			return result
+		case signal.BitDepth16:
+			result := make([][]uint16, src.Channels())
+			for i := range result {
+				result[i] = make([]uint16, src.Length())
+			}
+			signal.ReadStripedUint16(src, result)
+			return result
+		case signal.BitDepth32:
+			result := make([][]uint32, src.Channels())
+			for i := range result {
+				result[i] = make([]uint32, src.Length())
+			}
+			signal.ReadStripedUint32(src, result)
+			return result
+		case signal.BitDepth64:
+			result := make([][]uint64, src.Channels())
+			for i := range result {
+				result[i] = make([]uint64, src.Length())
+			}
+			signal.ReadStripedUint64(src, result)
+			return result
+		default:
+			panic(fmt.Sprintf("unsupported bit depth: %T", src.BitDepth()))
 		}
-		signal.ReadStripedInt16(src, result)
-		return result
-	case *signal.Int32:
-		result := make([][]int32, src.Channels())
-		for i := range result {
-			result[i] = make([]int32, src.Length())
-		}
-		signal.ReadStripedInt32(src, result)
-		return result
-	case *signal.Int64:
-		result := make([][]int64, src.Channels())
-		for i := range result {
-			result[i] = make([]int64, src.Length())
-		}
-		signal.ReadStripedInt64(src, result)
-		return result
-	case *signal.Uint8:
-		result := make([][]uint8, src.Channels())
-		for i := range result {
-			result[i] = make([]uint8, src.Length())
-		}
-		signal.ReadStripedUint8(src, result)
-		return result
-	case *signal.Uint16:
-		result := make([][]uint16, src.Channels())
-		for i := range result {
-			result[i] = make([]uint16, src.Length())
-		}
-		signal.ReadStripedUint16(src, result)
-		return result
-	case *signal.Uint32:
-		result := make([][]uint32, src.Channels())
-		for i := range result {
-			result[i] = make([]uint32, src.Length())
-		}
-		signal.ReadStripedUint32(src, result)
-		return result
-	case *signal.Uint64:
-		result := make([][]uint64, src.Channels())
-		for i := range result {
-			result[i] = make([]uint64, src.Length())
-		}
-		signal.ReadStripedUint64(src, result)
-		return result
-	case *signal.Float32:
-		result := make([][]float32, src.Channels())
-		for i := range result {
-			result[i] = make([]float32, src.Length())
-		}
-		signal.ReadStripedFloat32(src, result)
-		return result
-	case *signal.Float64:
+	case signal.Floating:
 		result := make([][]float64, src.Channels())
 		for i := range result {
 			result[i] = make([]float64, src.Length())

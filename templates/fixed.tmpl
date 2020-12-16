@@ -1,4 +1,5 @@
-{{define "fixed"}}{{template "header" .}}
+{{define "fixed"}}
+{{template "signal_header" .}}
 // {{ .Name }} is {{ .Builtin }} {{ .Interface }} fixed-point signal.
 type {{ .Name }} struct {
 	buffer []{{ .Builtin }}

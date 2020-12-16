@@ -1,4 +1,5 @@
-{{define "floating"}}{{template "header" .}}
+{{define "floating"}}
+{{template "signal_header" .}}
 // {{ .Name }} is {{ .Builtin }} floating-point signal.
 type {{ .Name }} struct {
 	buffer []{{ .Builtin }}
