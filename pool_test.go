@@ -79,18 +79,18 @@ func TestPool(t *testing.T) {
 			p := signal.GetPoolAllocator(channels, length, capacity)
 			for i := 0; i < allocs; i++ {
 				// floating
-				testFloating(t, channels, length, capacity, p.GetFloat32()).Free(p)
-				testFloating(t, channels, length, capacity, p.GetFloat64()).Free(p)
+				testFloating(t, channels, length, capacity, p.Float32()).Free(p)
+				testFloating(t, channels, length, capacity, p.Float64()).Free(p)
 				// signed
-				testSigned(t, channels, length, capacity, p.GetInt8(signal.MaxBitDepth), signal.BitDepth8).Free(p)
-				testSigned(t, channels, length, capacity, p.GetInt16(signal.MaxBitDepth), signal.BitDepth16).Free(p)
-				testSigned(t, channels, length, capacity, p.GetInt32(signal.MaxBitDepth), signal.BitDepth32).Free(p)
-				testSigned(t, channels, length, capacity, p.GetInt64(signal.MaxBitDepth), signal.BitDepth64).Free(p)
+				testSigned(t, channels, length, capacity, p.Int8(signal.MaxBitDepth), signal.BitDepth8).Free(p)
+				testSigned(t, channels, length, capacity, p.Int16(signal.MaxBitDepth), signal.BitDepth16).Free(p)
+				testSigned(t, channels, length, capacity, p.Int32(signal.MaxBitDepth), signal.BitDepth32).Free(p)
+				testSigned(t, channels, length, capacity, p.Int64(signal.MaxBitDepth), signal.BitDepth64).Free(p)
 				// unsigned
-				testUnsigned(t, channels, length, capacity, p.GetUint8(signal.MaxBitDepth), signal.BitDepth8).Free(p)
-				testUnsigned(t, channels, length, capacity, p.GetUint16(signal.MaxBitDepth), signal.BitDepth16).Free(p)
-				testUnsigned(t, channels, length, capacity, p.GetUint32(signal.MaxBitDepth), signal.BitDepth32).Free(p)
-				testUnsigned(t, channels, length, capacity, p.GetUint64(signal.MaxBitDepth), signal.BitDepth64).Free(p)
+				testUnsigned(t, channels, length, capacity, p.Uint8(signal.MaxBitDepth), signal.BitDepth8).Free(p)
+				testUnsigned(t, channels, length, capacity, p.Uint16(signal.MaxBitDepth), signal.BitDepth16).Free(p)
+				testUnsigned(t, channels, length, capacity, p.Uint32(signal.MaxBitDepth), signal.BitDepth32).Free(p)
+				testUnsigned(t, channels, length, capacity, p.Uint64(signal.MaxBitDepth), signal.BitDepth64).Free(p)
 			}
 		}
 	}

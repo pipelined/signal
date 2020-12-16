@@ -16,9 +16,9 @@ func (a Allocator) {{ .Allocator }}(bd BitDepth) {{ .Interface }} {
 	}
 }
 
-// Get{{ .Allocator }} selects a new sequential {{ .Builtin }} signal buffer.
+// {{ .Allocator }} selects a new sequential {{ .Builtin }} signal buffer.
 // from the pool.
-func (p *PoolAllocator) Get{{ .Allocator }}(bd BitDepth) {{ .Interface }} {
+func (p *PoolAllocator) {{ .Allocator }}(bd BitDepth) {{ .Interface }} {
 	s := p.{{ .Name }}.Get().(*{{ .Name }})
 	s.channels = channels(p.Channels)
 	s.buffer = s.buffer[:p.Length*p.Channels]
