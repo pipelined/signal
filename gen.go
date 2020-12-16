@@ -26,7 +26,7 @@ type generator struct {
 	Timestamp   time.Time
 	Builtin     string
 	Name        string
-	Pool        string
+	Allocator   string
 	MaxBitDepth string // used for fixed-point types only
 	*ChannelTemplates
 }
@@ -83,72 +83,72 @@ func main() {
 		{
 			InterfaceProps: signedProps,
 			Builtin:        "int8",
-			Name:           "Int8",
-			Pool:           "i8",
+			Name:           "i8",
+			Allocator:      "Int8",
 			MaxBitDepth:    "BitDepth8",
 		}: fixedTemplates,
 		{
 			InterfaceProps: signedProps,
 			Builtin:        "int16",
-			Name:           "Int16",
-			Pool:           "i16",
+			Name:           "i16",
+			Allocator:      "Int16",
 			MaxBitDepth:    "BitDepth16",
 		}: fixedTemplates,
 		{
 			InterfaceProps: signedProps,
 			Builtin:        "int32",
-			Name:           "Int32",
-			Pool:           "i32",
+			Name:           "i32",
+			Allocator:      "Int32",
 			MaxBitDepth:    "BitDepth32",
 		}: fixedTemplates,
 		{
 			InterfaceProps:   signedProps,
 			Builtin:          "int64",
-			Name:             "Int64",
-			Pool:             "i64",
+			Name:             "i64",
+			Allocator:        "Int64",
 			MaxBitDepth:      "BitDepth64",
 			ChannelTemplates: &channelTemplates,
 		}: fixedTemplates,
 		{
 			InterfaceProps: unsignedProps,
 			Builtin:        "uint8",
-			Name:           "Uint8",
-			Pool:           "u8",
+			Name:           "u8",
+			Allocator:      "Uint8",
 			MaxBitDepth:    "BitDepth8",
 		}: fixedTemplates,
 		{
 			InterfaceProps: unsignedProps,
 			Builtin:        "uint16",
-			Name:           "Uint16",
-			Pool:           "u16",
+			Name:           "u16",
+			Allocator:      "Uint16",
 			MaxBitDepth:    "BitDepth16",
 		}: fixedTemplates,
 		{
 			InterfaceProps: unsignedProps,
 			Builtin:        "uint32",
-			Name:           "Uint32",
-			Pool:           "u32",
+			Name:           "u32",
+			Allocator:      "Uint32",
 			MaxBitDepth:    "BitDepth32",
 		}: fixedTemplates,
 		{
 			InterfaceProps:   unsignedProps,
 			Builtin:          "uint64",
-			Name:             "Uint64",
-			Pool:             "u64",
+			Name:             "u64",
+			Allocator:        "Uint64",
 			MaxBitDepth:      "BitDepth64",
 			ChannelTemplates: &channelTemplates,
 		}: fixedTemplates,
 		{
 			InterfaceProps: floatingProps,
 			Builtin:        "float32",
-			Name:           "Float32",
-			Pool:           "f32",
+			Name:           "f32",
+			Allocator:      "Float32",
 		}: floatingTemplates,
 		{
 			InterfaceProps:   floatingProps,
 			Builtin:          "float64",
-			Name:             "Float64",
-			Pool:             "f64",
+			Name:             "f64",
+			Allocator:        "Float64",
 			ChannelTemplates: &channelTemplates,
 		}: floatingTemplates,
 	}
