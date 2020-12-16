@@ -105,7 +105,7 @@ func Test{{ .Interface }}Channel(t *testing.T) {
 			Channels: 3,
 			Length:   3,
 			Capacity: 3,
-		}.{{ .Name }}({{if ne .Interface "Floating"}}signal.BitDepth32{{end}})
+		}.{{ .Allocator }}({{if ne .Interface "Floating"}}signal.BitDepth32{{end}})
 		channel := 1
 		c := result.Channel(channel).Slice(0, 2)
 		for i := 0; i < c.Len(); i++ {
@@ -125,7 +125,7 @@ func Test{{ .Interface }}Channel(t *testing.T) {
 			Channels: 3,
 			Length:   3,
 			Capacity: 3,
-		}.{{ .Name }}({{if ne .Interface "Floating"}}signal.BitDepth32{{end}})
+		}.{{ .Allocator }}({{if ne .Interface "Floating"}}signal.BitDepth32{{end}})
 		c := result.Channel(1)
 		return func(t *testing.T) {
 			assertPanic(t, func() {

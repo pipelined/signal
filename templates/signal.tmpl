@@ -19,7 +19,7 @@ func (s *{{ .Name }}) Free(p *PoolAllocator) {
 	for i := range s.buffer {
 		s.buffer[i] = 0
 	}
-	p.{{ .Pool }}.Put(s)
+	p.{{ .Name }}.Put(s)
 }
 
 func {{ .Builtin }}pool(size int) sync.Pool {
@@ -101,9 +101,9 @@ func (s *{{ .Name }}) Channel(c int) {{ .Interface }} {
 	}
 }
 
-// Read{{ .Name }} reads values from the buffer into provided slice.
+// Read{{ .Allocator }} reads values from the buffer into provided slice.
 // Returns number of samples read per channel.
-func Read{{ .Name }}(src {{ .Interface }}, dst []{{ .Builtin }}) int {
+func Read{{ .Allocator }}(src {{ .Interface }}, dst []{{ .Builtin }}) int {
 	length := min(src.Len(), len(dst))
 	for i := 0; i < length; i++ {
 		dst[i] = {{if eq .Interface "Floating"}}{{ .Builtin }}(src.Sample(i)){{else}}{{ .Builtin }}({{ .MaxBitDepth }}.{{ .Interface }}Value(src.Sample(i))){{end}}
@@ -111,12 +111,12 @@ func Read{{ .Name }}(src {{ .Interface }}, dst []{{ .Builtin }}) int {
 	return ChannelLength(length, src.Channels())
 }
 
-// ReadStriped{{ .Name }} reads values from the buffer into provided slice. The
+// ReadStriped{{ .Allocator }} reads values from the buffer into provided slice. The
 // length of provided slice must be equal to the number of channels,
 // otherwise function will panic. Nested slices can be nil, no values for
 // that channel will be read. Returns a number of samples read for the
 // longest channel.
-func ReadStriped{{ .Name }}(src {{ .Interface }}, dst [][]{{ .Builtin }}) (read int) {
+func ReadStriped{{ .Allocator }}(src {{ .Interface }}, dst [][]{{ .Builtin }}) (read int) {
 	mustSameChannels(src.Channels(), len(dst))
 	for c := 0; c < src.Channels(); c++ {
 		length := min(len(dst[c]), src.Length())
@@ -130,9 +130,9 @@ func ReadStriped{{ .Name }}(src {{ .Interface }}, dst [][]{{ .Builtin }}) (read 
 	return
 }
 
-// Write{{ .Name }} writes values from provided slice into the buffer.
+// Write{{ .Allocator }} writes values from provided slice into the buffer.
 // Returns a number of samples written per channel.
-func Write{{ .Name }}(src []{{ .Builtin }}, dst {{ .Interface }}) int {
+func Write{{ .Allocator }}(src []{{ .Builtin }}, dst {{ .Interface }}) int {
 	length := min(dst.Len(), len(src))
 	for i := 0; i < length; i++ {
 		dst.SetSample(i, {{ .SampleType }}(src[i]))
@@ -140,12 +140,12 @@ func Write{{ .Name }}(src []{{ .Builtin }}, dst {{ .Interface }}) int {
 	return ChannelLength(length, dst.Channels())
 }
 
-// WriteStriped{{ .Name }} writes values from provided slice into the buffer.
+// WriteStriped{{ .Allocator }} writes values from provided slice into the buffer.
 // The length of provided slice must be equal to the number of channels,
 // otherwise function will panic. Nested slices can be nil, zero values for
 // that channel will be written. Returns a number of samples written for
 // the longest channel.
-func WriteStriped{{ .Name }}(src [][]{{ .Builtin }}, dst {{ .Interface }}) (written int) {
+func WriteStriped{{ .Allocator }}(src [][]{{ .Builtin }}, dst {{ .Interface }}) (written int) {
 	mustSameChannels(dst.Channels(), len(src))
 	// determine the length of longest nested slice
 	for i := range src {
@@ -179,14 +179,14 @@ import (
 	"pipelined.dev/signal"
 )
 
-func Test{{ .Name }}(t *testing.T) {
+func Test{{ .Allocator }}(t *testing.T) {
 	t.Run("{{ .Builtin }}", func() func(t *testing.T) {
 		input := signal.Allocator{
 			Channels: 3,
 			Capacity: 3,
 			Length:   3,
-		}.{{ .Name }}({{if ne .Interface "Floating"}}signal.{{ .MaxBitDepth }}{{end}})
-		signal.WriteStriped{{ .Name }}(
+		}.{{ .Allocator }}({{if ne .Interface "Floating"}}signal.{{ .MaxBitDepth }}{{end}})
+		signal.WriteStriped{{ .Allocator }}(
 			[][]{{ .Builtin }}{
 				{},
 				{1, 2, 3},
@@ -197,7 +197,7 @@ func Test{{ .Name }}(t *testing.T) {
 		result := signal.Allocator{
 				Channels: 3,
 				Capacity: 2,
-			}.{{ .Name }}({{if ne .Interface "Floating"}}signal.{{ .MaxBitDepth }}{{end}})
+			}.{{ .Allocator }}({{if ne .Interface "Floating"}}signal.{{ .MaxBitDepth }}{{end}})
 		result.Append(input.Slice(1, 3))
 		return testOk(
 			result,

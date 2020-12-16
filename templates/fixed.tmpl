@@ -7,8 +7,8 @@ type {{ .Name }} struct {
 	bitDepth
 }
 
-// {{ .Name }} allocates a new sequential {{ .Builtin }} signal buffer.
-func (a Allocator) {{ .Name }}(bd BitDepth) {{ .Interface }} {
+// {{ .Allocator }} allocates a new sequential {{ .Builtin }} signal buffer.
+func (a Allocator) {{ .Allocator }}(bd BitDepth) {{ .Interface }} {
 	return &{{ .Name }}{
 		buffer:   make([]{{ .Builtin }}, a.Channels*a.Length, a.Channels*a.Capacity),
 		channels: channels(a.Channels),
@@ -16,10 +16,10 @@ func (a Allocator) {{ .Name }}(bd BitDepth) {{ .Interface }} {
 	}
 }
 
-// Get{{ .Name }} selects a new sequential {{ .Builtin }} signal buffer.
+// Get{{ .Allocator }} selects a new sequential {{ .Builtin }} signal buffer.
 // from the pool.
-func (p *PoolAllocator) Get{{ .Name }}(bd BitDepth) {{ .Interface }} {
-	s := p.{{ .Pool }}.Get().(*{{ .Name }})
+func (p *PoolAllocator) Get{{ .Allocator }}(bd BitDepth) {{ .Interface }} {
+	s := p.{{ .Name }}.Get().(*{{ .Name }})
 	s.channels = channels(p.Channels)
 	s.buffer = s.buffer[:p.Length*p.Channels]
 	s.bitDepth = limitBitDepth(bd, {{ .MaxBitDepth }})
