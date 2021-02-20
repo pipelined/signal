@@ -1,6 +1,6 @@
 # Signal
 
-[![GoDoc](https://godoc.org/pipelined.dev/signal?status.svg)](https://godoc.org/pipelined.dev/signal)
+[![PkgGoDev](https://pkg.go.dev/badge/pipelined.dev/signal)](https://pkg.go.dev/pipelined.dev/signal)
 [![Go Report Card](https://goreportcard.com/badge/pipelined.dev/signal)](https://goreportcard.com/report/pipelined.dev/signal)
 [![Test](https://github.com/pipelined/signal/workflows/Test/badge.svg)](https://github.com/pipelined/signal/actions?query=workflow%3ATest)
 [![codecov](https://codecov.io/gh/pipelined/signal/branch/master/graph/badge.svg)](https://codecov.io/gh/pipelined/signal)
