@@ -61,13 +61,6 @@ type (
 		Sample(index int) float64
 		SetSample(index int, value float64)
 	}
-
-	// Allocator provides allocation of various signal buffers.
-	Allocator struct {
-		Channels int
-		Length   int
-		Capacity int
-	}
 )
 
 // types for buffer properties.
