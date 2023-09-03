@@ -8,8 +8,8 @@ import (
 )
 
 func TestFloat(t *testing.T) {
-	t.Run("float64", testGeneric[float64]())
-	t.Run("float32", testGeneric[float32]())
+	t.Run("float64", testGenericFloat[float64]())
+	t.Run("float32", testGenericFloat[float32]())
 }
 
 type expectedGeneric[T constraints.Float] struct {
@@ -18,13 +18,13 @@ type expectedGeneric[T constraints.Float] struct {
 	data     [][]T
 }
 
-func testGeneric[T constraints.Float]() func(t *testing.T) {
-	input := signal.Allocate[T](signal.Allocator{
+func testGenericFloat[T constraints.Float]() func(t *testing.T) {
+	input := signal.AllocFloat[T](signal.Allocator{
 		Channels: 3,
 		Capacity: 3,
 		Length:   3,
 	})
-	signal.WriteStripedFloat(
+	signal.WriteStriped(
 		[][]T{
 			{},
 			{1, 2, 3},
@@ -32,11 +32,11 @@ func testGeneric[T constraints.Float]() func(t *testing.T) {
 		},
 		input,
 	)
-	r := signal.Allocate[T](signal.Allocator{
+	r := signal.AllocFloat[T](signal.Allocator{
 		Channels: 3,
 		Capacity: 2,
 	})
-	signal.Append(input.Slice(1, 3), r)
+	r.Append(input.Slice(1, 3))
 	ex := expectedGeneric[T]{
 		length:   2,
 		capacity: 2,
@@ -58,11 +58,11 @@ func testGeneric[T constraints.Float]() func(t *testing.T) {
 	}
 }
 
-func resultGeneric[T constraints.Float](src *signal.F[T]) [][]T {
+func resultGeneric[T constraints.Float](src *signal.Float[T]) [][]T {
 	result := make([][]T, src.Channels())
 	for i := range result {
 		result[i] = make([]T, src.Length())
 	}
-	signal.ReadStripedFloat(src, result)
+	signal.ReadStriped(src, result)
 	return result
 }

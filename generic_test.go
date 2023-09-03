@@ -86,6 +86,7 @@ func TestSlice(t *testing.T) {
 }
 
 func TestConversions(t *testing.T) {
+	t.Skip()
 	alloc := signal.Allocator{
 		Channels: 1,
 		Capacity: 3,

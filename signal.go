@@ -6,9 +6,30 @@ import (
 	"math"
 	"reflect"
 	"time"
+
+	"golang.org/x/exp/constraints"
 )
 
 type (
+	SignalTypes interface {
+		constraints.Float | constraints.Integer
+	}
+
+	GenSig[T SignalTypes] interface {
+		Capacity() int
+		Channels() int
+		Length() int
+		Len() int
+		Cap() int
+		BufferIndex(channel int, index int) int
+		Slice(start int, end int) GenSig[T]
+		Channel(channel int) C[T]
+		AppendSample(value T)
+		Append(GenSig[T])
+		Sample(index int) T
+		SetSample(index int, value T)
+	}
+
 	// Signal is a buffer that contains a digital representation of a
 	// physical signal that is a sampled and quantized.
 	// Signal types have semantics of go slices. They can be sliced
@@ -141,14 +162,6 @@ func Scale(high, low BitDepth) int64 {
 	return int64(1 << (high - low))
 }
 
-// defaultBitDepth limits bit depth value to max and returns max if it is 0.
-func limitBitDepth(b, max BitDepth) bitDepth {
-	if b == 0 || b > max {
-		return bitDepth(max)
-	}
-	return bitDepth(b)
-}
-
 // Frequency in Hertz is the number of occurrences of a repeating event per
 // second. It might represent sample rate or pitch.
 type Frequency float64
@@ -164,11 +177,11 @@ func (f Frequency) Events(d time.Duration) int {
 	return int(math.Round(float64(f) / float64(time.Second) * float64(d)))
 }
 
-// FloatingAsFloating appends floating-point samples to the floating-point
+// FloatAsFloat writes floating-point samples to the floating-point
 // destination buffer. Both buffers must have the same number of channels,
 // otherwise function will panic. Returns a number of samples written per
 // channel.
-func FloatingAsFloating(src, dst Floating) int {
+func FloatAsFloat[S, D constraints.Float](src *Float[S], dst *Float[D]) int {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
@@ -177,18 +190,18 @@ func FloatingAsFloating(src, dst Floating) int {
 	}
 	// determine the multiplier for bit depth conversion
 	for i := 0; i < length; i++ {
-		dst.SetSample(i, src.Sample(i))
+		dst.SetSample(i, D(src.Sample(i)))
 	}
 	return min(src.Length(), dst.Length())
 }
 
-// FloatingAsSigned converts floating-point samples into signed fixed-point
+// FloatAsSigned converts floating-point samples into signed fixed-point
 // and appends them to the destination buffer. The floating sample range
 // [-1,1] is mapped to signed [-2^(bitDepth-1), 2^(bitDepth-1)-1]. Floating
 // values beyond the range will be clipped. Buffers must have the same
 // number of channels, otherwise function will panic. Returns a number of
 // samples written per channel.
-func FloatingAsSigned(src Floating, dst Signed) int {
+func FloatAsSigned[S constraints.Float, D constraints.Signed](src *Float[S], dst *Integer[D]) int {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
@@ -196,31 +209,31 @@ func FloatingAsSigned(src Floating, dst Signed) int {
 		return 0
 	}
 	// determine the multiplier for bit depth conversion
-	msv := dst.BitDepth().MaxSignedValue()
+	msv := D(dst.BitDepth().MaxSignedValue())
 	for i := 0; i < length; i++ {
-		var sample int64
-		if f := src.Sample(i); f > 0 {
+		var sample D
+		if f := float64(src.Sample(i)); f > 0 {
 			// detect overflow
-			if int64(f) == 0 {
-				sample = int64(f * float64(msv))
+			if D(f) == 0 {
+				sample = D(f * float64(msv))
 			} else {
 				sample = msv
 			}
 		} else {
 			// no overflow here
-			sample = int64(f * (float64(msv) + 1))
+			sample = D(f * (float64(msv) + 1))
 		}
 		dst.SetSample(i, sample)
 	}
 	return min(src.Length(), dst.Length())
 }
 
-// FloatingAsUnsigned converts floating-point samples into unsigned
+// FloatAsUnsigned converts floating-point samples into unsigned
 // fixed-point and appends them to the destination buffer. The floating
 // sample range [-1,1] is mapped to unsigned [0, 2^bitDepth-1]. Floating
 // values beyond the range will be clipped. Buffers must have the same
 // number of channels, otherwise function will panic.
-func FloatingAsUnsigned(src Floating, dst Unsigned) int {
+func FloatAsUnsigned[S constraints.Float, D constraints.Unsigned](src *Float[S], dst *Integer[D]) int {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
@@ -228,32 +241,32 @@ func FloatingAsUnsigned(src Floating, dst Unsigned) int {
 		return 0
 	}
 	// determine the multiplier for bit depth conversion
-	msv := uint64(dst.BitDepth().MaxSignedValue())
+	msv := D(dst.BitDepth().MaxSignedValue())
 	offset := msv + 1
 	for i := 0; i < length; i++ {
-		var sample uint64
-		if f := src.Sample(i); f > 0 {
+		var sample D
+		if f := float64(src.Sample(i)); f > 0 {
 			// detect overflow
 			if int64(f) == 0 {
-				sample = uint64(f*float64(msv)) + offset
+				sample = D(f*float64(msv)) + offset
 			} else {
 				sample = msv + offset
 			}
 		} else {
 			// no overflow here
-			sample = uint64(f*(float64(msv)+1)) + offset
+			sample = D(f*(float64(msv)+1)) + offset
 		}
 		dst.SetSample(i, sample)
 	}
 	return min(src.Length(), dst.Length())
 }
 
-// SignedAsFloating converts signed fixed-point samples into floating-point
+// SignedAsFloat converts signed fixed-point samples into floating-point
 // and appends them to the destination buffer. The signed sample range
 // [-2^(bitDepth-1), 2^(bitDepth-1)-1] is mapped to floating [-1,1].
 // Buffers must have the same number of channels, otherwise function will
 // panic.
-func SignedAsFloating(src Signed, dst Floating) int {
+func SignedAsFloat[S constraints.Signed, D constraints.Float](src *Integer[S], dst *Float[D]) int {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
@@ -261,12 +274,12 @@ func SignedAsFloating(src Signed, dst Floating) int {
 		return 0
 	}
 	// determine the divider for bit depth conversion.
-	msv := float64(src.BitDepth().MaxSignedValue())
+	msv := D(src.BitDepth().MaxSignedValue())
 	for i := 0; i < length; i++ {
 		if sample := src.Sample(i); sample > 0 {
-			dst.SetSample(i, float64(sample)/msv)
+			dst.SetSample(i, D(sample)/msv)
 		} else {
-			dst.SetSample(i, float64(sample)/(msv+1))
+			dst.SetSample(i, D(sample)/(msv+1))
 		}
 	}
 	return min(src.Length(), dst.Length())
@@ -276,7 +289,7 @@ func SignedAsFloating(src Signed, dst Floating) int {
 // fixed-point destination buffer. The samples are quantized to the
 // destination bit depth. Buffers must have the same number of channels,
 // otherwise function will panic.
-func SignedAsSigned(src, dst Signed) int {
+func SignedAsSigned[S, D constraints.Signed](src *Integer[S], dst *Integer[D]) int {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
@@ -286,20 +299,20 @@ func SignedAsSigned(src, dst Signed) int {
 
 	// downscale
 	if src.BitDepth() >= dst.BitDepth() {
-		scale := Scale(src.BitDepth(), dst.BitDepth())
+		scale := S(Scale(src.BitDepth(), dst.BitDepth()))
 		for i := 0; i < length; i++ {
-			dst.SetSample(i, src.Sample(i)/scale)
+			dst.SetSample(i, D(src.Sample(i)/scale))
 		}
 		return min(src.Length(), dst.Length())
 	}
 
 	// upscale
-	scale := Scale(dst.BitDepth(), src.BitDepth())
+	scale := D(Scale(dst.BitDepth(), src.BitDepth()))
 	for i := 0; i < length; i++ {
 		if sample := src.Sample(i); sample > 0 {
-			dst.SetSample(i, (src.Sample(i)+1)*scale-1)
+			dst.SetSample(i, ((D(src.Sample(i))+1)*scale)-1)
 		} else {
-			dst.SetSample(i, src.Sample(i)*scale)
+			dst.SetSample(i, D(src.Sample(i))*scale)
 		}
 	}
 	return min(src.Length(), dst.Length())
@@ -311,7 +324,7 @@ func SignedAsSigned(src, dst Signed) int {
 // [-2^(bitDepth-1), 2^(bitDepth-1)-1] is mapped to unsigned [0,
 // 2^bitDepth-1]. Buffers must have the same number of channels, otherwise
 // function will panic.
-func SignedAsUnsigned(src Signed, dst Unsigned) int {
+func SignedAsUnsigned[S constraints.Signed, D constraints.Unsigned](src *Integer[S], dst *Integer[D]) int {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
@@ -319,33 +332,33 @@ func SignedAsUnsigned(src Signed, dst Unsigned) int {
 		return 0
 	}
 
-	msv := uint64(dst.BitDepth().MaxSignedValue())
+	msv := D(dst.BitDepth().MaxSignedValue())
 	// downscale
 	if src.BitDepth() >= dst.BitDepth() {
-		scale := Scale(src.BitDepth(), dst.BitDepth())
+		scale := S(Scale(src.BitDepth(), dst.BitDepth()))
 		for i := 0; i < length; i++ {
-			dst.SetSample(i, uint64(src.Sample(i)/scale)+msv+1)
+			dst.SetSample(i, D(src.Sample(i)/scale)+msv+1)
 		}
 		return min(src.Length(), dst.Length())
 	}
 
 	// upscale
-	scale := Scale(dst.BitDepth(), src.BitDepth())
+	scale := S(Scale(dst.BitDepth(), src.BitDepth()))
 	for i := 0; i < length; i++ {
 		if sample := src.Sample(i); sample > 0 {
-			dst.SetSample(i, uint64((src.Sample(i)+1)*scale)+msv)
+			dst.SetSample(i, D((src.Sample(i)+1)*scale)+msv)
 		} else {
-			dst.SetSample(i, uint64(src.Sample(i)*scale)+msv+1)
+			dst.SetSample(i, D(src.Sample(i)*scale)+msv+1)
 		}
 	}
 	return min(src.Length(), dst.Length())
 }
 
-// UnsignedAsFloating converts unsigned fixed-point samples into
+// UnsignedAsFloat converts unsigned fixed-point samples into
 // floating-point and appends them to the destination buffer. The unsigned
 // sample range [0, 2^bitDepth-1] is mapped to floating [-1,1]. Buffers
 // must have the same number of channels, otherwise function will panic.
-func UnsignedAsFloating(src Unsigned, dst Floating) int {
+func UnsignedAsFloat[S constraints.Unsigned, D constraints.Float](src *Integer[S], dst *Float[D]) int {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
@@ -353,12 +366,12 @@ func UnsignedAsFloating(src Unsigned, dst Floating) int {
 		return 0
 	}
 	// determine the multiplier for bit depth conversion
-	msv := float64(src.BitDepth().MaxSignedValue())
+	msv := D(src.BitDepth().MaxSignedValue())
 	for i := 0; i < length; i++ {
 		if sample := src.Sample(i); sample > 0 {
-			dst.SetSample(i, (float64(sample)-(msv+1))/msv)
+			dst.SetSample(i, (D(sample)-(msv+1))/msv)
 		} else {
-			dst.SetSample(i, (float64(sample)-(msv+1))/(msv+1))
+			dst.SetSample(i, (D(sample)-(msv+1))/(msv+1))
 		}
 	}
 	return min(src.Length(), dst.Length())
@@ -370,19 +383,19 @@ func UnsignedAsFloating(src Unsigned, dst Floating) int {
 // 2^bitDepth-1] is mapped to signed [-2^(bitDepth-1), 2^(bitDepth-1)-1].
 // Buffers must have the same number of channels, otherwise function will
 // panic.
-func UnsignedAsSigned(src Unsigned, dst Signed) int {
+func UnsignedAsSigned[S constraints.Unsigned, D constraints.Signed](src *Integer[S], dst *Integer[D]) int {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
 	if length == 0 {
 		return 0
 	}
-	msv := uint64(src.BitDepth().MaxSignedValue())
+	msv := S(src.BitDepth().MaxSignedValue())
 	// downscale
 	if src.BitDepth() >= dst.BitDepth() {
-		scale := Scale(src.BitDepth(), dst.BitDepth())
+		scale := D(Scale(src.BitDepth(), dst.BitDepth()))
 		for i := 0; i < length; i++ {
-			dst.SetSample(i, int64(src.Sample(i)-(msv+1))/scale)
+			dst.SetSample(i, D(src.Sample(i)-(msv+1))/scale)
 		}
 		return min(src.Length(), dst.Length())
 	}
@@ -391,9 +404,9 @@ func UnsignedAsSigned(src Unsigned, dst Signed) int {
 	scale := Scale(dst.BitDepth(), src.BitDepth())
 	for i := 0; i < length; i++ {
 		if sample := int64(src.Sample(i) - (msv + 1)); sample > 0 {
-			dst.SetSample(i, (sample+1)*scale-1)
+			dst.SetSample(i, D((sample+1)*scale-1))
 		} else {
-			dst.SetSample(i, sample*scale)
+			dst.SetSample(i, D(sample*scale))
 		}
 	}
 	return min(src.Length(), dst.Length())
@@ -403,7 +416,7 @@ func UnsignedAsSigned(src Unsigned, dst Signed) int {
 // fixed-point destination buffer. The samples are quantized to the
 // destination bit depth. Buffers must have the same number of channels,
 // otherwise function will panic.
-func UnsignedAsUnsigned(src, dst Unsigned) int {
+func UnsignedAsUnsigned[S, D constraints.Unsigned](src *Integer[S], dst *Integer[D]) int {
 	mustSameChannels(src.Channels(), dst.Channels())
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
@@ -413,22 +426,22 @@ func UnsignedAsUnsigned(src, dst Unsigned) int {
 
 	// downscale
 	if src.BitDepth() >= dst.BitDepth() {
-		scale := uint64(Scale(src.BitDepth(), dst.BitDepth()))
+		scale := S(Scale(src.BitDepth(), dst.BitDepth()))
 		for i := 0; i < length; i++ {
-			dst.SetSample(i, src.Sample(i)/scale)
+			dst.SetSample(i, D(src.Sample(i)/scale))
 		}
 		return min(src.Length(), dst.Length())
 	}
 
 	// upscale
-	scale := uint64(Scale(dst.BitDepth(), src.BitDepth()))
-	msv := uint64(src.BitDepth().MaxSignedValue())
+	scale := D(Scale(dst.BitDepth(), src.BitDepth()))
+	msv := S(src.BitDepth().MaxSignedValue())
 	for i := 0; i < length; i++ {
-		var sample uint64
+		var sample S
 		if sample = src.Sample(i); sample > msv+1 {
-			dst.SetSample(i, (sample+1)*scale-1)
+			dst.SetSample(i, D(sample+1)*scale-1)
 		} else {
-			dst.SetSample(i, sample*scale)
+			dst.SetSample(i, D(sample)*scale)
 		}
 	}
 	return min(src.Length(), dst.Length())
@@ -442,16 +455,6 @@ func (bd bitDepth) BitDepth() BitDepth {
 // Channels returns number of channels in the buffer.
 func (c channels) Channels() int {
 	return int(c)
-}
-
-func capFloat(v float64) float64 {
-	if v > 1 {
-		return 1
-	}
-	if v < -1 {
-		return -1
-	}
-	return v
 }
 
 func min(v1, v2 int) int {
