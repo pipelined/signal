@@ -2,51 +2,61 @@ package signal
 
 import (
 	"fmt"
-	"unsafe"
+	"strconv"
 
 	"golang.org/x/exp/constraints"
 )
 
-// Allocator provides allocation of various signal buffers.
-type Allocator struct {
-	Channels int
-	Length   int
-	Capacity int
-}
+type (
+	Allocator struct {
+		Channels int
+		Length   int
+		Capacity int
+	}
+)
 
 // AllocFloat allocates a new float signal buffer.
 func AllocFloat[T constraints.Float](a Allocator) *Float[T] {
+	buffer := allocate[T](a)
+	buffer.wrapFn = wrapFloatSample[T]
 	return &Float[T]{
-		buffer: buffer[T]{data: make([]T, a.Channels*a.Length, a.Channels*a.Capacity),
-			channels: channels(a.Channels),
-		},
+		buffer: buffer,
 	}
 }
 
-// AllocInt allocates a new integer signal buffer. If bd exceeds maximum
+// AllocInteger allocates a new integer signal buffer. If bd exceeds maximum
 // bit debth for a given type, function will panic.
-func AllocInt[T constraints.Integer](a Allocator, bd BitDepth) *Integer[T] {
+func AllocInteger[T constraints.Integer](a Allocator, bd BitDepth) *Integer[T] {
+	buffer := allocate[T](a)
+	buffer.wrapFn = wrapIntegerSample[T](bd)
 	return &Integer[T]{
-		buffer: buffer[T]{
-			data:     make([]T, a.Channels*a.Length, a.Channels*a.Capacity),
-			channels: channels(a.Channels),
-		},
-		bitDepth: limitBitDepth(bd, maxBitDebth[T]()),
+		buffer:   buffer,
+		bitDepth: limitBitDepth[T](bd),
 	}
 }
 
 // defaultBitDepth limits bit depth value to max and returns max if it is 0.
-func limitBitDepth(b, max BitDepth) bitDepth {
-	if b == 0 {
+func limitBitDepth[T constraints.Integer](bd BitDepth) bitDepth {
+	max := maxBitDebth[T]()
+	if bd == 0 {
 		return bitDepth(max)
 	}
-	if b > max {
-		panic(fmt.Sprintf("maximum bit debth: %v got: %v", max, b))
+	if bd > max {
+		panic(fmt.Sprintf("maximum bit debth: %v got: %v", max, bd))
 	}
-	return bitDepth(b)
+	return bitDepth(bd)
 }
 
 // maxBitDebth returns a maximum bit debth for a given type, ie. 64 bits for int64 and uint64.
 func maxBitDebth[T constraints.Integer]() BitDepth {
-	return BitDepth(unsafe.Sizeof(new(T)) * 8)
+	switch any(new(T)).(type) {
+	case *int8:
+		return BitDepth8
+	case *int16:
+		return BitDepth16
+	case *int32:
+		return BitDepth32
+	default:
+		return strconv.IntSize
+	}
 }

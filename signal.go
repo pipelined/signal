@@ -3,6 +3,7 @@ package signal
 //go:generate go run gen.go
 
 import (
+	"fmt"
 	"math"
 	"reflect"
 	"time"
@@ -41,7 +42,6 @@ type (
 		Len() int
 		Cap() int
 		BufferIndex(channel int, index int) int
-		Free(*PoolAllocator)
 	}
 
 	// Fixed is a digital signal represented with fixed-point values.
@@ -132,6 +132,21 @@ func (b BitDepth) MinSignedValue() int64 {
 		return 0
 	}
 	return -1 << (b - 1)
+}
+
+func wrapIntegerSample[T constraints.Integer](bd BitDepth) wrapSampleFunc[T] {
+	newT := new(T)
+	switch any(newT).(type) {
+	case *int, *int8, *int16, *int32, *int64:
+		return func(v T) T {
+			return T(bd.SignedValue(int64(v)))
+		}
+	case *uint, *uint8, *uint16, *uint32, *uint64, *uintptr:
+		return func(v T) T {
+			return T(bd.UnsignedValue(uint64(v)))
+		}
+	}
+	panic(fmt.Sprintf("unsupported type: %T", newT))
 }
 
 // UnsignedValue clips the unsigned signal value to the given bit depth
@@ -467,12 +482,6 @@ func min(v1, v2 int) int {
 func mustSameChannels(c1, c2 int) {
 	if c1 != c2 {
 		panic("different number of channels")
-	}
-}
-
-func mustSameBitDepth(bd1, bd2 BitDepth) {
-	if bd1 != bd2 {
-		panic("different bit depth")
 	}
 }
 

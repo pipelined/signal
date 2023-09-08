@@ -2,11 +2,28 @@ package signal
 
 import (
 	"math"
+
+	"golang.org/x/exp/constraints"
 )
 
 type buffer[T SignalTypes] struct {
 	channels
-	data []T
+	data   []T
+	wrapFn wrapSampleFunc[T]
+}
+
+// wrapSampleFunc is needed to wrap the provided sample value.
+type wrapSampleFunc[T SignalTypes] func(T) T
+
+func wrapFloatSample[T constraints.Float](v T) T {
+	return v
+}
+
+func allocate[T SignalTypes](a Allocator) buffer[T] {
+	return buffer[T]{
+		data:     make([]T, a.Channels*a.Length, a.Channels*a.Capacity),
+		channels: channels(a.Channels),
+	}
 }
 
 // AppendSample appends sample at the end of the buffer.
@@ -15,12 +32,12 @@ func (b *buffer[T]) AppendSample(v T) {
 	if len(b.data) == cap(b.data) {
 		return
 	}
-	b.data = append(b.data, v)
+	b.data = append(b.data, b.wrapFn(v))
 }
 
 // SetSample sets sample value for provided index.
 func (b *buffer[T]) SetSample(i int, v T) {
-	b.data[i] = v
+	b.data[i] = b.wrapFn(v)
 }
 
 // Capacity returns capacity of a single channel.
@@ -66,7 +83,7 @@ func (dst *buffer[D]) Append(src GenSig[D]) {
 		dst.data = dst.data[:dst.Len()+src.Len()]
 	}
 	for i := 0; i < src.Len(); i++ {
-		dst.SetSample(i+offset, D(src.Sample(i)))
+		dst.SetSample(i+offset, D(dst.wrapFn(src.Sample(i))))
 	}
 	alignCapacity(&dst.data, dst.Channels(), dst.Cap())
 }
@@ -77,5 +94,11 @@ func (b *buffer[T]) Channel(c int) C[T] {
 	return C[T]{
 		buffer:  *b,
 		channel: c,
+	}
+}
+
+func (b *buffer[T]) clear() {
+	for i := range b.data {
+		b.data[i] = 0
 	}
 }

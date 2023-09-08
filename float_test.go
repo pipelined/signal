@@ -54,7 +54,7 @@ func testGenericFloat[T constraints.Float]() func(t *testing.T) {
 		if ex.length != 0 {
 			assertEqual(t, "length", r.Length(), ex.length)
 		}
-		assertEqual(t, "slices", resultGeneric(r), ex.data)
+		assertEqual(t, "slices", resultGeneric[T](r), ex.data)
 	}
 }
 

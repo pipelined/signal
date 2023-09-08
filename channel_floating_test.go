@@ -12,11 +12,11 @@ import (
 
 func TestFloatingChannel(t *testing.T) {
 	testFloating := func() func(*testing.T) {
-		result := signal.Allocator{
+		result := signal.AllocFloat[float64](signal.Allocator{
 			Channels: 3,
 			Length:   3,
 			Capacity: 3,
-		}.Float64()
+		})
 		channel := 1
 		c := result.Channel(channel).Slice(0, 2)
 		for i := 0; i < c.Len(); i++ {
@@ -31,29 +31,5 @@ func TestFloatingChannel(t *testing.T) {
 			}
 		}
 	}
-	testPanic := func() func(*testing.T) {
-		result := signal.Allocator{
-			Channels: 3,
-			Length:   3,
-			Capacity: 3,
-		}.Float64()
-		c := result.Channel(1)
-		return func(t *testing.T) {
-			assertPanic(t, func() {
-				c.Append(nil)
-			})
-			assertPanic(t, func() {
-				c.AppendSample(0)
-			})
-			assertPanic(t, func() {
-				c.Channel(0)
-			})
-			assertPanic(t, func() {
-				c.Free(nil)
-			})
-		}
-	}
-
 	t.Run("Floating channel", testFloating())
-	t.Run("panic Floating channel", testPanic())
 }

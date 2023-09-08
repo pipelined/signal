@@ -17,6 +17,7 @@ func (b *Float[T]) Slice(start, end int) GenSig[T] {
 		buffer: buffer[T]{
 			channels: b.channels,
 			data:     b.data[start:end],
+			wrapFn:   b.buffer.wrapFn,
 		},
 	}
 }

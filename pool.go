@@ -1,83 +1,105 @@
 package signal
 
-import "sync"
+import (
+	"sync"
 
-var cache = struct {
-	sync.Mutex
-	pools map[int]*pool
-}{
-	pools: map[int]*pool{},
-}
+	"golang.org/x/exp/constraints"
+)
 
-// PoolAllocator allows to decrease a number of allocations at runtime.
-// Internally it relies on sync.PoolAllocator to manage objects in memory.
-// It contains a pool per signal buffer type.
-type PoolAllocator struct {
-	Channels int
-	Capacity int
-	Length   int
-	*pool
-}
+type (
+	GetFloatFunc[T constraints.Float]     func() *Float[T]
+	ReleaseFloatFunc[T constraints.Float] func(*Float[T])
 
-type pool struct {
-	i8  sync.Pool
-	i16 sync.Pool
-	i32 sync.Pool
-	i64 sync.Pool
-	u8  sync.Pool
-	u16 sync.Pool
-	u32 sync.Pool
-	u64 sync.Pool
-	f32 sync.Pool
-	f64 sync.Pool
-}
-
-// GetPoolAllocator returns pool for provided buffer dimensions - number of
-// channels and capacity. The length is not taken into account, it's only
-// used to provide desired size when once new buffer is requested. Pools
-// are cached internally, so multiple calls with same dimentions will
-// return the same pool instance.
-func GetPoolAllocator(channels, length, capacity int) *PoolAllocator {
-	size := channels * capacity
-	cache.Lock()
-	defer cache.Unlock()
-
-	if p, ok := cache.pools[size]; ok {
-		return &PoolAllocator{
-			Channels: channels,
-			Length:   length,
-			Capacity: capacity,
-			pool:     p,
-		}
+	PFloatAllocator[T constraints.Float] struct {
+		Get     GetFloatFunc[T]
+		Release ReleaseFloatFunc[T]
 	}
 
-	p := pool{
-		i8:  int8pool(size),
-		i16: int16pool(size),
-		i32: int32pool(size),
-		i64: int64pool(size),
-		u8:  uint8pool(size),
-		u16: uint16pool(size),
-		u32: uint32pool(size),
-		u64: uint64pool(size),
-		f32: float32pool(size),
-		f64: float64pool(size),
+	floatPool[T constraints.Float] struct {
+		p *sync.Pool
+	}
+)
+
+type (
+	GetIntegerFunc[T constraints.Integer]     func(BitDepth) *Integer[T]
+	ReleaseIntegerFunc[T constraints.Integer] func(*Integer[T])
+
+	PIntegerAllocator[T constraints.Integer] struct {
+		Get     GetIntegerFunc[T]
+		Release ReleaseIntegerFunc[T]
 	}
 
-	cache.pools[size] = &p
-	return &PoolAllocator{
-		Channels: channels,
-		Length:   length,
-		Capacity: capacity,
-		pool:     &p,
+	integerPool[T constraints.Integer] struct {
+		p *sync.Pool
+	}
+)
+
+func (p *floatPool[T]) Get() *Float[T] {
+	return p.p.Get().(*Float[T])
+}
+
+func (p *floatPool[T]) Put(t *Float[T]) {
+	p.p.Put(t)
+}
+
+func (p *integerPool[T]) Get() *Integer[T] {
+	return p.p.Get().(*Integer[T])
+}
+
+func (p *integerPool[T]) Put(t *Integer[T]) {
+	p.p.Put(t)
+}
+
+func GetFloatPool[T constraints.Float](a Allocator) PFloatAllocator[T] {
+	pool := &floatPool[T]{
+		p: &sync.Pool{
+			New: func() any {
+				return &Float[T]{
+					buffer: buffer[T]{
+						data:     make([]T, a.Channels*a.Length, a.Channels*a.Capacity),
+						channels: channels(a.Channels),
+						wrapFn:   wrapFloatSample[T],
+					},
+				}
+			},
+		},
+	}
+	return PFloatAllocator[T]{
+		Get: func() *Float[T] {
+			return pool.Get()
+		},
+		Release: func(f *Float[T]) {
+			mustSameCapacity(a.Capacity*a.Channels, f.Cap())
+			f.buffer.clear()
+			pool.Put(f)
+		},
 	}
 }
 
-// ClearPoolAllocatorCache resets internal cache of pools and makes
-// existing pools available for GC. One good use case might be when the
-// application changes global buffer size.
-func ClearPoolAllocatorCache() {
-	cache.Lock()
-	defer cache.Unlock()
-	cache.pools = map[int]*pool{}
+func GetIntegerPool[T constraints.Integer](a Allocator) PIntegerAllocator[T] {
+	pool := &integerPool[T]{
+		p: &sync.Pool{
+			New: func() any {
+				return &Integer[T]{
+					buffer: buffer[T]{
+						data:     make([]T, a.Channels*a.Length, a.Channels*a.Capacity),
+						channels: channels(a.Channels),
+					},
+				}
+			},
+		},
+	}
+	return PIntegerAllocator[T]{
+		Get: func(bd BitDepth) *Integer[T] {
+			b := pool.Get()
+			b.bitDepth = limitBitDepth[T](bd)
+			b.buffer.wrapFn = wrapIntegerSample[T](bd)
+			return b
+		},
+		Release: func(f *Integer[T]) {
+			mustSameCapacity(a.Capacity*a.Channels, f.Cap())
+			f.buffer.clear()
+			pool.Put(f)
+		},
+	}
 }
