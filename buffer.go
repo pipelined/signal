@@ -2,21 +2,18 @@ package signal
 
 import (
 	"math"
-
-	"golang.org/x/exp/constraints"
 )
+
+// Buffer is a buffer that contains digital signal of given type.
+// Each type is associated with certain bit depth, ie: int8 is 8 bits, float32 is 32 bits.
+type Buffer[T SignalTypes] struct {
+	buffer[T]
+	bitDepth
+}
 
 type buffer[T SignalTypes] struct {
 	channels
-	data   []T
-	wrapFn wrapSampleFunc[T]
-}
-
-// wrapSampleFunc is needed to wrap the provided sample value.
-type wrapSampleFunc[T SignalTypes] func(T) T
-
-func wrapFloatSample[T constraints.Float](v T) T {
-	return v
+	data []T
 }
 
 func allocate[T SignalTypes](a Allocator) buffer[T] {
@@ -26,18 +23,30 @@ func allocate[T SignalTypes](a Allocator) buffer[T] {
 	}
 }
 
+// Slice the buffer with respect to channels.
+func (b *Buffer[T]) Slice(start, end int) *Buffer[T] {
+	start = b.BufferIndex(0, start)
+	end = b.BufferIndex(0, end)
+	return &Buffer[T]{
+		buffer: buffer[T]{
+			channels: b.channels,
+			data:     b.data[start:end],
+		},
+	}
+}
+
 // AppendSample appends sample at the end of the buffer.
 // Sample is not appended if buffer capacity is reached.
 func (b *buffer[T]) AppendSample(v T) {
 	if len(b.data) == cap(b.data) {
 		return
 	}
-	b.data = append(b.data, b.wrapFn(v))
+	b.data = append(b.data, v)
 }
 
 // SetSample sets sample value for provided index.
 func (b *buffer[T]) SetSample(i int, v T) {
-	b.data[i] = b.wrapFn(v)
+	b.data[i] = v
 }
 
 // Capacity returns capacity of a single channel.
@@ -74,7 +83,7 @@ func (b *buffer[T]) Sample(i int) T {
 // Append appends [0:Length] samples from src to current buffer.
 // Both buffers must have same number of channels and
 // bit depth, otherwise function will panic.
-func (dst *buffer[D]) Append(src GenSig[D]) {
+func (dst *buffer[D]) Append(src *Buffer[D]) {
 	mustSameChannels(dst.Channels(), src.Channels())
 	offset := dst.Len()
 	if dst.Cap() < dst.Len()+src.Len() {
@@ -83,7 +92,7 @@ func (dst *buffer[D]) Append(src GenSig[D]) {
 		dst.data = dst.data[:dst.Len()+src.Len()]
 	}
 	for i := 0; i < src.Len(); i++ {
-		dst.SetSample(i+offset, D(dst.wrapFn(src.Sample(i))))
+		dst.SetSample(i+offset, src.Sample(i))
 	}
 	alignCapacity(&dst.data, dst.Channels(), dst.Cap())
 }

@@ -6,7 +6,7 @@ import (
 	"pipelined.dev/signal"
 )
 
-func testChannel[T signal.SignalTypes](result signal.GenSig[T]) func(*testing.T) {
+func testChannel[T signal.SignalTypes](result *signal.Buffer[T]) func(*testing.T) {
 	channel := 1
 	c := result.Channel(channel).Slice(0, 2)
 	for i := 0; i < c.Len(); i++ {
@@ -23,15 +23,15 @@ func testChannel[T signal.SignalTypes](result signal.GenSig[T]) func(*testing.T)
 }
 
 func TestChannel(t *testing.T) {
-	t.Run("Floating channel", testChannel(signal.AllocFloat[float64](signal.Allocator{
+	t.Run("Floating channel", testChannel(signal.Alloc[float64](signal.Allocator{
 		Channels: 3,
 		Length:   3,
 		Capacity: 3,
 	})))
 
-	t.Run("Integer channel", testChannel(signal.AllocInteger[int64](signal.Allocator{
+	t.Run("Integer channel", testChannel(signal.Alloc[int64](signal.Allocator{
 		Channels: 3,
 		Length:   3,
 		Capacity: 3,
-	}, signal.BitDepth32)))
+	})))
 }

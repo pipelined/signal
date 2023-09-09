@@ -11,11 +11,11 @@ func Example_readWrite() {
 	var output []int
 
 	// allocate int64 buffer with 2 channels and capacity of 8 samples per channel
-	buf := signal.AllocInteger[int64](signal.Allocator{
+	buf := signal.Alloc[int64](signal.Allocator{
 		Channels: 2,
 		Capacity: 8,
 		Length:   8,
-	}, signal.BitDepth64)
+	})
 
 	// write striped data
 	signal.WriteStriped([][]int8{{1, 1, 1, 1}, {2, 2, 2, 2}}, buf.Slice(0, 4))

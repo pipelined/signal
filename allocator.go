@@ -1,10 +1,7 @@
 package signal
 
 import (
-	"fmt"
 	"strconv"
-
-	"golang.org/x/exp/constraints"
 )
 
 type (
@@ -15,46 +12,21 @@ type (
 	}
 )
 
-// AllocFloat allocates a new float signal buffer.
-func AllocFloat[T constraints.Float](a Allocator) *Float[T] {
-	buffer := allocate[T](a)
-	buffer.wrapFn = wrapFloatSample[T]
-	return &Float[T]{
-		buffer: buffer,
+func Alloc[T SignalTypes](a Allocator) *Buffer[T] {
+	return &Buffer[T]{
+		buffer:   allocate[T](a),
+		bitDepth: bitDepth(getBitDepth[T]()),
 	}
-}
-
-// AllocInteger allocates a new integer signal buffer. If bd exceeds maximum
-// bit debth for a given type, function will panic.
-func AllocInteger[T constraints.Integer](a Allocator, bd BitDepth) *Integer[T] {
-	buffer := allocate[T](a)
-	buffer.wrapFn = wrapIntegerSample[T](bd)
-	return &Integer[T]{
-		buffer:   buffer,
-		bitDepth: limitBitDepth[T](bd),
-	}
-}
-
-// defaultBitDepth limits bit depth value to max and returns max if it is 0.
-func limitBitDepth[T constraints.Integer](bd BitDepth) bitDepth {
-	max := maxBitDebth[T]()
-	if bd == 0 {
-		return bitDepth(max)
-	}
-	if bd > max {
-		panic(fmt.Sprintf("maximum bit debth: %v got: %v", max, bd))
-	}
-	return bitDepth(bd)
 }
 
 // maxBitDebth returns a maximum bit debth for a given type, ie. 64 bits for int64 and uint64.
-func maxBitDebth[T constraints.Integer]() BitDepth {
+func getBitDepth[T SignalTypes]() BitDepth {
 	switch any(new(T)).(type) {
-	case *int8:
+	case *int8, *uint8:
 		return BitDepth8
-	case *int16:
+	case *int16, *uint16:
 		return BitDepth16
-	case *int32:
+	case *int32, *uint32, *float32:
 		return BitDepth32
 	default:
 		return strconv.IntSize

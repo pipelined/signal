@@ -21,12 +21,12 @@ func TestPool(t *testing.T) {
 			alloc := signal.Allocator{channels, length, capacity}
 			for i := 0; i < allocs; i++ {
 				// floating
-				fp := signal.GetFloatPool[float64](alloc)
+				fp := signal.GetPool[float64](alloc)
 				fp.Release(testFloat(t, channels, length, capacity, fp.Get()))
 				// signed
-				ip := signal.GetIntegerPool[int32](alloc)
+				ip := signal.GetPool[int32](alloc)
 				// ip.Release(testInteger(t, channels, length, capacity, ip.Get(signal.BitDepth8), signal.BitDepth8))
-				ip.Release(testInteger(t, channels, length, capacity, ip.Get(signal.BitDepth32), signal.BitDepth32))
+				ip.Release(testInteger(t, channels, length, capacity, ip.Get(), signal.BitDepth32))
 			}
 		}
 	}
@@ -45,7 +45,7 @@ func TestPool(t *testing.T) {
 	// )
 }
 
-func testFloat[T constraints.Float](t *testing.T, channels, length, capacity int, s *signal.Float[T]) *signal.Float[T] {
+func testFloat[T constraints.Float](t *testing.T, channels, length, capacity int, s *signal.Buffer[T]) *signal.Buffer[T] {
 	t.Helper()
 	assertAllocation(
 		t,
@@ -59,7 +59,7 @@ func testFloat[T constraints.Float](t *testing.T, channels, length, capacity int
 	return s
 }
 
-func testInteger[T constraints.Signed](t *testing.T, channels, length, capacity int, s *signal.Integer[T], mbd signal.BitDepth) *signal.Integer[T] {
+func testInteger[T constraints.Signed](t *testing.T, channels, length, capacity int, s *signal.Buffer[T], mbd signal.BitDepth) *signal.Buffer[T] {
 	t.Helper()
 	assertAllocation(
 		t,
@@ -77,7 +77,7 @@ func testInteger[T constraints.Signed](t *testing.T, channels, length, capacity 
 	return s
 }
 
-func assertAllocation[T signal.SignalTypes](t *testing.T, s signal.GenSig[T], e expectedAllocation) {
+func assertAllocation[T signal.SignalTypes](t *testing.T, s *signal.Buffer[T], e expectedAllocation) {
 	t.Helper()
 	if e.channels != s.Channels() {
 		t.Fatalf("Invalid number of channels: %v expected: %v", s.Channels(), e.channels)

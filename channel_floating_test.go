@@ -12,7 +12,7 @@ import (
 
 func TestFloatingChannel(t *testing.T) {
 	testFloating := func() func(*testing.T) {
-		result := signal.AllocFloat[float64](signal.Allocator{
+		result := signal.Alloc[float64](signal.Allocator{
 			Channels: 3,
 			Length:   3,
 			Capacity: 3,

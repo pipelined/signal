@@ -19,7 +19,7 @@ type expectedGeneric[T constraints.Float] struct {
 }
 
 func testGenericFloat[T constraints.Float]() func(t *testing.T) {
-	input := signal.AllocFloat[T](signal.Allocator{
+	input := signal.Alloc[T](signal.Allocator{
 		Channels: 3,
 		Capacity: 3,
 		Length:   3,
@@ -32,7 +32,7 @@ func testGenericFloat[T constraints.Float]() func(t *testing.T) {
 		},
 		input,
 	)
-	r := signal.AllocFloat[T](signal.Allocator{
+	r := signal.Alloc[T](signal.Allocator{
 		Channels: 3,
 		Capacity: 2,
 	})
@@ -58,7 +58,7 @@ func testGenericFloat[T constraints.Float]() func(t *testing.T) {
 	}
 }
 
-func resultGeneric[T constraints.Float](src *signal.Float[T]) [][]T {
+func resultGeneric[T constraints.Float](src *signal.Buffer[T]) [][]T {
 	result := make([][]T, src.Channels())
 	for i := range result {
 		result[i] = make([]T, src.Length())
