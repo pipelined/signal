@@ -30,13 +30,7 @@ func GetPool[T SignalTypes](a Allocator) PAllocator[T] {
 	pool := &pool[T]{
 		p: &sync.Pool{
 			New: func() any {
-				return &Buffer[T]{
-					buffer: buffer[T]{
-						data:     make([]T, a.Channels*a.Length, a.Channels*a.Capacity),
-						channels: channels(a.Channels),
-					},
-					bitDepth: bitDepth(getBitDepth[T]()),
-				}
+				return Alloc[T](a)
 			},
 		},
 	}
@@ -46,7 +40,7 @@ func GetPool[T SignalTypes](a Allocator) PAllocator[T] {
 		},
 		Release: func(f *Buffer[T]) {
 			mustSameCapacity(a.Capacity*a.Channels, f.Cap())
-			f.buffer.clear()
+			f.clear()
 			pool.Put(f)
 		},
 	}

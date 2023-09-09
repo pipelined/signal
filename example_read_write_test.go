@@ -6,11 +6,11 @@ import (
 	"pipelined.dev/signal"
 )
 
-// This example demonstrates how read and write data to the buffer.
+// This example demonstrates how read and write data to the Buffer.
 func Example_readWrite() {
 	var output []int
 
-	// allocate int64 buffer with 2 channels and capacity of 8 samples per channel
+	// allocate int64 Buffer with 2 channels and capacity of 8 samples per channel
 	buf := signal.Alloc[int64](signal.Allocator{
 		Channels: 2,
 		Capacity: 8,
@@ -27,7 +27,7 @@ func Example_readWrite() {
 	fmt.Println(output)
 
 	output = make([]int, 16)             // reset output
-	signal.Read(buf.Slice(0, 0), output) // reset buffer length to 0 and read data into output
+	signal.Read(buf.Slice(0, 0), output) // reset Buffer length to 0 and read data into output
 	fmt.Println(output)
 
 	// Output:

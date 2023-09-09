@@ -6,9 +6,9 @@ import (
 	"pipelined.dev/signal"
 )
 
-// This example demonstrates how to iterate over the buffer.
+// This example demonstrates how to iterate over the Buffer.
 func Example_iterate() {
-	// allocate int64 buffer with 2 channels and capacity of 8 samples per channel
+	// allocate int64 Buffer with 2 channels and capacity of 8 samples per channel
 	buf := signal.Alloc[int64](signal.Allocator{
 		Channels: 2,
 		Capacity: 8,
@@ -18,7 +18,7 @@ func Example_iterate() {
 	// write striped data
 	signal.WriteStriped([][]int8{{1, 1, 1, 1}, {2, 2, 2, 2}}, buf)
 
-	// iterate over buffer interleaved data
+	// iterate over Buffer interleaved data
 	for i := 0; i < buf.Len(); i++ {
 		fmt.Printf("%d", buf.Sample(i))
 	}

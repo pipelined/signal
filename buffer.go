@@ -7,37 +7,25 @@ import (
 // Buffer is a buffer that contains digital signal of given type.
 // Each type is associated with certain bit depth, ie: int8 is 8 bits, float32 is 32 bits.
 type Buffer[T SignalTypes] struct {
-	buffer[T]
+	channels
+	data []T
 	bitDepth
 }
 
-type buffer[T SignalTypes] struct {
-	channels
-	data []T
-}
-
-func allocate[T SignalTypes](a Allocator) buffer[T] {
-	return buffer[T]{
-		data:     make([]T, a.Channels*a.Length, a.Channels*a.Capacity),
-		channels: channels(a.Channels),
-	}
-}
-
-// Slice the buffer with respect to channels.
+// Slice the Buffer with respect to channels.
 func (b *Buffer[T]) Slice(start, end int) *Buffer[T] {
 	start = b.BufferIndex(0, start)
 	end = b.BufferIndex(0, end)
 	return &Buffer[T]{
-		buffer: buffer[T]{
-			channels: b.channels,
-			data:     b.data[start:end],
-		},
+		channels: b.channels,
+		data:     b.data[start:end],
+		bitDepth: b.bitDepth,
 	}
 }
 
-// AppendSample appends sample at the end of the buffer.
-// Sample is not appended if buffer capacity is reached.
-func (b *buffer[T]) AppendSample(v T) {
+// AppendSample appends sample at the end of the Buffer.
+// Sample is not appended if Buffer capacity is reached.
+func (b *Buffer[T]) AppendSample(v T) {
 	if len(b.data) == cap(b.data) {
 		return
 	}
@@ -45,12 +33,12 @@ func (b *buffer[T]) AppendSample(v T) {
 }
 
 // SetSample sets sample value for provided index.
-func (b *buffer[T]) SetSample(i int, v T) {
+func (b *Buffer[T]) SetSample(i int, v T) {
 	b.data[i] = v
 }
 
 // Capacity returns capacity of a single channel.
-func (b *buffer[T]) Capacity() int {
+func (b *Buffer[T]) Capacity() int {
 	if b.channels == 0 {
 		return 0
 	}
@@ -58,32 +46,32 @@ func (b *buffer[T]) Capacity() int {
 }
 
 // Length returns length of a single channel.
-func (b *buffer[T]) Length() int {
+func (b *Buffer[T]) Length() int {
 	if b.channels == 0 {
 		return 0
 	}
 	return int(math.Ceil(float64(len(b.data)) / float64(b.channels)))
 }
 
-// Cap returns capacity of whole buffer.
-func (b *buffer[T]) Cap() int {
+// Cap returns capacity of whole Buffer.
+func (b *Buffer[T]) Cap() int {
 	return cap(b.data)
 }
 
-// Len returns length of whole buffer.
-func (b *buffer[T]) Len() int {
+// Len returns length of whole Buffer.
+func (b *Buffer[T]) Len() int {
 	return len(b.data)
 }
 
 // Sample returns signal value for provided sample index.
-func (b *buffer[T]) Sample(i int) T {
+func (b *Buffer[T]) Sample(i int) T {
 	return b.data[i]
 }
 
-// Append appends [0:Length] samples from src to current buffer.
+// Append appends [0:Length] samples from src to current Buffer.
 // Both buffers must have same number of channels and
 // bit depth, otherwise function will panic.
-func (dst *buffer[D]) Append(src *Buffer[D]) {
+func (dst *Buffer[D]) Append(src *Buffer[D]) {
 	mustSameChannels(dst.Channels(), src.Channels())
 	offset := dst.Len()
 	if dst.Cap() < dst.Len()+src.Len() {
@@ -97,16 +85,16 @@ func (dst *buffer[D]) Append(src *Buffer[D]) {
 	alignCapacity(&dst.data, dst.Channels(), dst.Cap())
 }
 
-// Channel returns a single channel of signal buffer. It behaves exactly as
-// Floating buffer, but Append and AppendSample cause panic.
-func (b *buffer[T]) Channel(c int) C[T] {
+// Channel returns a single channel of signal Buffer. It behaves exactly as
+// Floating Buffer, but Append and AppendSample cause panic.
+func (b *Buffer[T]) Channel(c int) C[T] {
 	return C[T]{
-		buffer:  *b,
+		Buffer:  *b,
 		channel: c,
 	}
 }
 
-func (b *buffer[T]) clear() {
+func (b *Buffer[T]) clear() {
 	for i := range b.data {
 		b.data[i] = 0
 	}

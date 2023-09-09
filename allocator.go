@@ -14,7 +14,8 @@ type (
 
 func Alloc[T SignalTypes](a Allocator) *Buffer[T] {
 	return &Buffer[T]{
-		buffer:   allocate[T](a),
+		data:     make([]T, a.Channels*a.Length, a.Channels*a.Capacity),
+		channels: channels(a.Channels),
 		bitDepth: bitDepth(getBitDepth[T]()),
 	}
 }

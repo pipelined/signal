@@ -15,7 +15,7 @@ type (
 		constraints.Float | constraints.Integer
 	}
 
-	// Signal is a buffer that contains a digital representation of a
+	// Signal is a Buffer that contains a digital representation of a
 	// physical signal that is a sampled and quantized.
 	// Signal types have semantics of go slices. They can be sliced
 	// and appended to each other.
@@ -35,7 +35,7 @@ type (
 	// }
 )
 
-// types for buffer properties.
+// types for Buffer properties.
 type (
 	bitDepth BitDepth
 	channels int
@@ -129,7 +129,7 @@ func (f Frequency) Events(d time.Duration) int {
 }
 
 // FloatAsFloat writes floating-point samples to the floating-point
-// destination buffer. Both buffers must have the same number of channels,
+// destination Buffer. Both buffers must have the same number of channels,
 // otherwise function will panic. Returns a number of samples written per
 // channel.
 func FloatAsFloat[S, D constraints.Float](src *Buffer[S], dst *Buffer[D]) int {
@@ -147,7 +147,7 @@ func FloatAsFloat[S, D constraints.Float](src *Buffer[S], dst *Buffer[D]) int {
 }
 
 // FloatAsSigned converts floating-point samples into signed fixed-point
-// and appends them to the destination buffer. The floating sample range
+// and appends them to the destination Buffer. The floating sample range
 // [-1,1] is mapped to signed [-2^(bitDepth-1), 2^(bitDepth-1)-1]. Floating
 // values beyond the range will be clipped. Buffers must have the same
 // number of channels, otherwise function will panic. Returns a number of
@@ -180,7 +180,7 @@ func FloatAsSigned[S constraints.Float, D constraints.Signed](src *Buffer[S], ds
 }
 
 // FloatAsUnsigned converts floating-point samples into unsigned
-// fixed-point and appends them to the destination buffer. The floating
+// fixed-point and appends them to the destination Buffer. The floating
 // sample range [-1,1] is mapped to unsigned [0, 2^bitDepth-1]. Floating
 // values beyond the range will be clipped. Buffers must have the same
 // number of channels, otherwise function will panic.
@@ -213,7 +213,7 @@ func FloatAsUnsigned[S constraints.Float, D constraints.Unsigned](src *Buffer[S]
 }
 
 // SignedAsFloat converts signed fixed-point samples into floating-point
-// and appends them to the destination buffer. The signed sample range
+// and appends them to the destination Buffer. The signed sample range
 // [-2^(bitDepth-1), 2^(bitDepth-1)-1] is mapped to floating [-1,1].
 // Buffers must have the same number of channels, otherwise function will
 // panic.
@@ -237,7 +237,7 @@ func SignedAsFloat[S constraints.Signed, D constraints.Float](src *Buffer[S], ds
 }
 
 // SignedAsSigned appends signed fixed-point samples to the signed
-// fixed-point destination buffer. The samples are quantized to the
+// fixed-point destination Buffer. The samples are quantized to the
 // destination bit depth. Buffers must have the same number of channels,
 // otherwise function will panic.
 func SignedAsSigned[S, D constraints.Signed](src *Buffer[S], dst *Buffer[D]) int {
@@ -270,7 +270,7 @@ func SignedAsSigned[S, D constraints.Signed](src *Buffer[S], dst *Buffer[D]) int
 }
 
 // SignedAsUnsigned converts signed fixed-point samples into unsigned
-// fixed-point and appends them to the destination buffer. The samples are
+// fixed-point and appends them to the destination Buffer. The samples are
 // quantized to the destination bit depth. The signed sample range
 // [-2^(bitDepth-1), 2^(bitDepth-1)-1] is mapped to unsigned [0,
 // 2^bitDepth-1]. Buffers must have the same number of channels, otherwise
@@ -306,7 +306,7 @@ func SignedAsUnsigned[S constraints.Signed, D constraints.Unsigned](src *Buffer[
 }
 
 // UnsignedAsFloat converts unsigned fixed-point samples into
-// floating-point and appends them to the destination buffer. The unsigned
+// floating-point and appends them to the destination Buffer. The unsigned
 // sample range [0, 2^bitDepth-1] is mapped to floating [-1,1]. Buffers
 // must have the same number of channels, otherwise function will panic.
 func UnsignedAsFloat[S constraints.Unsigned, D constraints.Float](src *Buffer[S], dst *Buffer[D]) int {
@@ -329,7 +329,7 @@ func UnsignedAsFloat[S constraints.Unsigned, D constraints.Float](src *Buffer[S]
 }
 
 // UnsignedAsSigned converts unsigned fixed-point samples into signed
-// fixed-point and appends them to the destination buffer. The samples are
+// fixed-point and appends them to the destination Buffer. The samples are
 // quantized to the destination bit depth. The unsigned sample range [0,
 // 2^bitDepth-1] is mapped to signed [-2^(bitDepth-1), 2^(bitDepth-1)-1].
 // Buffers must have the same number of channels, otherwise function will
@@ -364,7 +364,7 @@ func UnsignedAsSigned[S constraints.Unsigned, D constraints.Signed](src *Buffer[
 }
 
 // UnsignedAsUnsigned appends unsigned fixed-point samples to the unsigned
-// fixed-point destination buffer. The samples are quantized to the
+// fixed-point destination Buffer. The samples are quantized to the
 // destination bit depth. Buffers must have the same number of channels,
 // otherwise function will panic.
 func UnsignedAsUnsigned[S, D constraints.Unsigned](src *Buffer[S], dst *Buffer[D]) int {
@@ -398,12 +398,12 @@ func UnsignedAsUnsigned[S, D constraints.Unsigned](src *Buffer[S], dst *Buffer[D
 	return min(src.Length(), dst.Length())
 }
 
-// BitDepth returns bit depth of the buffer.
+// BitDepth returns bit depth of the Buffer.
 func (bd bitDepth) BitDepth() BitDepth {
 	return BitDepth(bd)
 }
 
-// Channels returns number of channels in the buffer.
+// Channels returns number of channels in the Buffer.
 func (c channels) Channels() int {
 	return int(c)
 }
@@ -423,24 +423,24 @@ func mustSameChannels(c1, c2 int) {
 
 func mustSameCapacity(c1, c2 int) {
 	if c1 != c2 {
-		panic("different buffer capacity")
+		panic("different Buffer capacity")
 	}
 }
 
-// ChannelLength calculates a channel length for provided buffer length and
+// ChannelLength calculates a channel length for provided Buffer length and
 // number of channels.
 func ChannelLength(sliceLen, channels int) int {
 	return int(math.Ceil(float64(sliceLen) / float64(channels)))
 }
 
-// BufferIndex calculates sample index in the buffer based on number of
-// channels in the buffer, channel of the sample and sample index in the
+// BufferIndex calculates sample index in the Buffer based on number of
+// channels in the Buffer, channel of the sample and sample index in the
 // channel.
 func (c channels) BufferIndex(channel, idx int) int {
 	return int(c)*idx + channel
 }
 
-// ReadFloat reads values from the buffer into provided slice.
+// ReadFloat reads values from the Buffer into provided slice.
 // Returns number of samples read per channel.
 func Read[S, D SignalTypes](src *Buffer[S], dst []D) int {
 	length := min(src.Len(), len(dst))
@@ -450,7 +450,7 @@ func Read[S, D SignalTypes](src *Buffer[S], dst []D) int {
 	return ChannelLength(length, src.Channels())
 }
 
-// ReadStripedFloat reads values from the buffer into provided slice. The
+// ReadStripedFloat reads values from the Buffer into provided slice. The
 // length of provided slice must be equal to the number of channels,
 // otherwise function will panic. Nested slices can be nil, no values for
 // that channel will be read. Returns a number of samples read for the
@@ -469,7 +469,7 @@ func ReadStriped[S, D SignalTypes](src *Buffer[S], dst [][]D) (read int) {
 	return
 }
 
-// WriteFloat writes values from provided slice into the buffer.
+// WriteFloat writes values from provided slice into the Buffer.
 // Returns a number of samples written per channel.
 func Write[S, D SignalTypes](src []S, dst *Buffer[D]) int {
 	length := min(dst.Len(), len(src))
@@ -479,7 +479,7 @@ func Write[S, D SignalTypes](src []S, dst *Buffer[D]) int {
 	return ChannelLength(length, dst.Channels())
 }
 
-// WriteStripedFloat64 writes values from provided slice into the buffer.
+// WriteStripedFloat64 writes values from provided slice into the Buffer.
 // The length of provided slice must be equal to the number of channels,
 // otherwise function will panic. Nested slices can be nil, zero values for
 // that channel will be written. Returns a number of samples written for
@@ -492,7 +492,7 @@ func WriteStriped[S, D SignalTypes](src [][]S, dst *Buffer[D]) (written int) {
 			written = len(src[i])
 		}
 	}
-	// limit a number of writes to the length of the buffer
+	// limit a number of writes to the length of the Buffer
 	written = min(written, dst.Length())
 	for c := 0; c < dst.Channels(); c++ {
 		for i := 0; i < written; i++ {
@@ -506,7 +506,7 @@ func WriteStriped[S, D SignalTypes](src [][]S, dst *Buffer[D]) (written int) {
 	return
 }
 
-// alignCapacity ensures that buffer capacity is aligned with number of
+// alignCapacity ensures that Buffer capacity is aligned with number of
 // channels.
 func alignCapacity(s interface{}, channels, c int) {
 	reflect.ValueOf(s).Elem().SetCap(c - c%channels)

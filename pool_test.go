@@ -72,7 +72,7 @@ func testInteger[T constraints.Signed](t *testing.T, channels, length, capacity 
 		})
 	s.AppendSample(1)
 	if mbd != s.BitDepth() {
-		t.Fatalf("Invalid buffer bit depth: %v expected: %v", s.BitDepth(), mbd)
+		t.Fatalf("Invalid Buffer bit depth: %v expected: %v", s.BitDepth(), mbd)
 	}
 	return s
 }
@@ -83,9 +83,9 @@ func assertAllocation[T signal.SignalTypes](t *testing.T, s *signal.Buffer[T], e
 		t.Fatalf("Invalid number of channels: %v expected: %v", s.Channels(), e.channels)
 	}
 	if e.length != s.Length() {
-		t.Fatalf("Invalid buffer length: %v expected: %v", s.Length(), e.length)
+		t.Fatalf("Invalid Buffer length: %v expected: %v", s.Length(), e.length)
 	}
 	if e.capacity != s.Capacity() {
-		t.Fatalf("Invalid buffer capacity: %v expected: %v", s.Capacity(), e.capacity)
+		t.Fatalf("Invalid Buffer capacity: %v expected: %v", s.Capacity(), e.capacity)
 	}
 }
