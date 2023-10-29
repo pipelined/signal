@@ -21,10 +21,10 @@ func TestPool(t *testing.T) {
 			alloc := signal.Allocator{channels, length, capacity}
 			for i := 0; i < allocs; i++ {
 				// floating
-				fp := signal.GetPool[float64](alloc)
+				fp := signal.PoolAlloc[float64](alloc)
 				fp.Put(testFloat(t, channels, length, capacity, fp.Get()))
 				// signed
-				ip := signal.GetPool[int32](alloc)
+				ip := signal.PoolAlloc[int32](alloc)
 				// ip.Release(testInteger(t, channels, length, capacity, ip.Get(signal.BitDepth8), signal.BitDepth8))
 				ip.Put(testInteger(t, channels, length, capacity, ip.Get(), signal.BitDepth32))
 			}

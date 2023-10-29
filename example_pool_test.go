@@ -8,7 +8,7 @@ import (
 
 // This example demonstrates how to use pool to allocate buffers.
 func Example_pool() {
-	pool := signal.GetPool[float64](signal.Allocator{2, 0, 512})
+	pool := signal.PoolAlloc[float64](signal.Allocator{2, 0, 512})
 
 	// producer allocates new buffers
 	produceFunc := func(allocs int, p *signal.PoolAllocator[float64], c chan<- *signal.Buffer[float64]) {
