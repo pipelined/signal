@@ -22,11 +22,11 @@ func TestPool(t *testing.T) {
 			for i := 0; i < allocs; i++ {
 				// floating
 				fp := signal.GetPool[float64](alloc)
-				fp.Release(testFloat(t, channels, length, capacity, fp.Get()))
+				fp.Put(testFloat(t, channels, length, capacity, fp.Get()))
 				// signed
 				ip := signal.GetPool[int32](alloc)
 				// ip.Release(testInteger(t, channels, length, capacity, ip.Get(signal.BitDepth8), signal.BitDepth8))
-				ip.Release(testInteger(t, channels, length, capacity, ip.Get(), signal.BitDepth32))
+				ip.Put(testInteger(t, channels, length, capacity, ip.Get(), signal.BitDepth32))
 			}
 		}
 	}
@@ -34,15 +34,15 @@ func TestPool(t *testing.T) {
 	t.Run("empty allocs",
 		testOk(t, 10, 0, 0, 0),
 	)
-	// t.Run("10 allocs",
-	// 	testOk(t, 10, 1, 0, 512),
-	// )
-	// t.Run("10 allocs length",
-	// 	testOk(t, 10, 2, 256, 512),
-	// )
-	// t.Run("100 allocs",
-	// 	testOk(t, 100, 100, 0, 512),
-	// )
+	t.Run("10 allocs",
+		testOk(t, 10, 1, 0, 512),
+	)
+	t.Run("10 allocs length",
+		testOk(t, 10, 2, 256, 512),
+	)
+	t.Run("100 allocs",
+		testOk(t, 100, 100, 0, 512),
+	)
 }
 
 func testFloat[T constraints.Float](t *testing.T, channels, length, capacity int, s *signal.Buffer[T]) *signal.Buffer[T] {

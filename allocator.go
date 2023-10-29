@@ -5,6 +5,7 @@ import (
 )
 
 type (
+	// Allocator defines allocation parameters for signal buffers.
 	Allocator struct {
 		Channels int
 		Length   int
@@ -12,6 +13,8 @@ type (
 	}
 )
 
+// Alloc acllocates signal buffers based on provided type parameter. Type parameter also determines
+// bit depth of the buffer, ie int8 will be 8 bit depth and int64 is a 64 bit depth.
 func Alloc[T SignalTypes](a Allocator) *Buffer[T] {
 	return &Buffer[T]{
 		data:     make([]T, a.Channels*a.Length, a.Channels*a.Capacity),

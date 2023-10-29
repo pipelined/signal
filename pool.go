@@ -5,13 +5,16 @@ import (
 )
 
 type (
-	GetFunc[T SignalTypes] func() *Buffer[T]
-	Release[T SignalTypes] func(*Buffer[T])
 
-	PAllocator[T SignalTypes] struct {
-		Get     GetFunc[T]
-		Release Release[T]
+	// PoolAllocator allows to decrease a number of allocations at runtime.
+	// Internally it relies on sync.Pool to manage objects in memory.
+	PoolAllocator[T SignalTypes] struct {
+		Get getFunc[T]
+		Put putFunc[T]
 	}
+
+	getFunc[T SignalTypes] func() *Buffer[T]
+	putFunc[T SignalTypes] func(*Buffer[T])
 
 	pool[T SignalTypes] struct {
 		p *sync.Pool
@@ -26,7 +29,7 @@ func (p *pool[T]) Put(t *Buffer[T]) {
 	p.p.Put(t)
 }
 
-func GetPool[T SignalTypes](a Allocator) PAllocator[T] {
+func GetPool[T SignalTypes](a Allocator) PoolAllocator[T] {
 	pool := &pool[T]{
 		p: &sync.Pool{
 			New: func() any {
@@ -34,11 +37,11 @@ func GetPool[T SignalTypes](a Allocator) PAllocator[T] {
 			},
 		},
 	}
-	return PAllocator[T]{
+	return PoolAllocator[T]{
 		Get: func() *Buffer[T] {
 			return pool.Get()
 		},
-		Release: func(f *Buffer[T]) {
+		Put: func(f *Buffer[T]) {
 			mustSame(a.Capacity*a.Channels, f.Cap(), diffCapacity)
 			f.clear()
 			pool.Put(f)
