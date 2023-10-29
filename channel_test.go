@@ -8,15 +8,15 @@ import (
 
 func testChannel[T signal.SignalTypes](result *signal.Buffer[T]) func(*testing.T) {
 	channel := 1
-	c := result.Channel(channel).Slice(0, 2)
-	for i := 0; i < c.Len(); i++ {
+	c := result.Channel(channel)
+	for i := 0; i < c.Length(); i++ {
 		c.SetSample(i, T(i+1))
 	}
 	return func(t *testing.T) {
 		assertEqual(t, "channels", c.Channels(), 1)
-		assertEqual(t, "length", c.Len(), c.Length())
-		assertEqual(t, "capacity", c.Cap(), c.Capacity())
-		for i := 0; i < c.Cap(); i++ {
+		assertEqual(t, "length", result.Length(), c.Length())
+		assertEqual(t, "capacity", result.Capacity(), c.Capacity())
+		for i := 0; i < c.Capacity(); i++ {
 			assertEqual(t, "index", c.Sample(i), result.Sample(c.BufferIndex(channel, i)))
 		}
 	}

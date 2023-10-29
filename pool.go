@@ -39,7 +39,7 @@ func GetPool[T SignalTypes](a Allocator) PAllocator[T] {
 			return pool.Get()
 		},
 		Release: func(f *Buffer[T]) {
-			mustSameCapacity(a.Capacity*a.Channels, f.Cap())
+			mustSame(a.Capacity*a.Channels, f.Cap(), diffCapacity)
 			f.clear()
 			pool.Put(f)
 		},

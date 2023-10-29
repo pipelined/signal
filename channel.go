@@ -1,7 +1,7 @@
 package signal
 
 type C[T SignalTypes] struct {
-	Buffer  Buffer[T]
+	Buffer  *Buffer[T]
 	channel int
 }
 
@@ -15,19 +15,9 @@ func (c C[T]) Channels() int {
 	return 1
 }
 
-// Cap returns capacity of the channel.
-func (c C[T]) Cap() int {
-	return c.Buffer.Capacity()
-}
-
 // Capacity returns capacity of the channel.
 func (c C[T]) Capacity() int {
 	return c.Buffer.Capacity()
-}
-
-// Len returns length of the channel.
-func (c C[T]) Len() int {
-	return c.Buffer.Length()
 }
 
 // Length returns length of the channel.
@@ -43,14 +33,4 @@ func (c C[T]) Sample(index int) T {
 // SetSample sets sample value for provided index.
 func (c C[T]) SetSample(index int, s T) {
 	c.Buffer.SetSample(c.Buffer.BufferIndex(c.channel, index), s)
-}
-
-// Slice slices Buffer with respect to channels.
-func (c C[T]) Slice(start, end int) C[T] {
-	return C[T]{
-		Buffer: Buffer[T]{
-			data: c.Buffer.data[start:end],
-		},
-		channel: c.channel,
-	}
 }

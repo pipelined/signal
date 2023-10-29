@@ -72,7 +72,7 @@ func (b *Buffer[T]) Sample(i int) T {
 // Both buffers must have same number of channels and
 // bit depth, otherwise function will panic.
 func (dst *Buffer[D]) Append(src *Buffer[D]) {
-	mustSameChannels(dst.Channels(), src.Channels())
+	mustSame(dst.Channels(), src.Channels(), diffChannels)
 	offset := dst.Len()
 	if dst.Cap() < dst.Len()+src.Len() {
 		dst.data = append(dst.data, make([]D, src.Len())...)
@@ -89,7 +89,7 @@ func (dst *Buffer[D]) Append(src *Buffer[D]) {
 // Floating Buffer, but Append and AppendSample cause panic.
 func (b *Buffer[T]) Channel(c int) C[T] {
 	return C[T]{
-		Buffer:  *b,
+		Buffer:  b,
 		channel: c,
 	}
 }

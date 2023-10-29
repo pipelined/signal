@@ -10,29 +10,15 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
+const (
+	diffChannels string = "different number of channels"
+	diffCapacity string = "different buffer capacity"
+)
+
 type (
 	SignalTypes interface {
 		constraints.Float | constraints.Integer
 	}
-
-	// Signal is a Buffer that contains a digital representation of a
-	// physical signal that is a sampled and quantized.
-	// Signal types have semantics of go slices. They can be sliced
-	// and appended to each other.
-	// Signal[T SignalTypes] interface {
-	// 	Capacity() int
-	// 	Channels() int
-	// 	Length() int
-	// 	Len() int
-	// 	Cap() int
-	// 	BufferIndex(channel int, index int) int
-	// 	Slice(start int, end int) Signal[T]
-	// 	Channel(channel int) C[T]
-	// 	AppendSample(value T)
-	// 	Append(Signal[T])
-	// 	Sample(index int) T
-	// 	SetSample(index int, value T)
-	// }
 )
 
 // types for Buffer properties.
@@ -133,7 +119,7 @@ func (f Frequency) Events(d time.Duration) int {
 // otherwise function will panic. Returns a number of samples written per
 // channel.
 func FloatAsFloat[S, D constraints.Float](src *Buffer[S], dst *Buffer[D]) int {
-	mustSameChannels(src.Channels(), dst.Channels())
+	mustSame(src.Channels(), dst.Channels(), diffChannels)
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
 	if length == 0 {
@@ -153,7 +139,7 @@ func FloatAsFloat[S, D constraints.Float](src *Buffer[S], dst *Buffer[D]) int {
 // number of channels, otherwise function will panic. Returns a number of
 // samples written per channel.
 func FloatAsSigned[S constraints.Float, D constraints.Signed](src *Buffer[S], dst *Buffer[D]) int {
-	mustSameChannels(src.Channels(), dst.Channels())
+	mustSame(src.Channels(), dst.Channels(), diffChannels)
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
 	if length == 0 {
@@ -185,7 +171,7 @@ func FloatAsSigned[S constraints.Float, D constraints.Signed](src *Buffer[S], ds
 // values beyond the range will be clipped. Buffers must have the same
 // number of channels, otherwise function will panic.
 func FloatAsUnsigned[S constraints.Float, D constraints.Unsigned](src *Buffer[S], dst *Buffer[D]) int {
-	mustSameChannels(src.Channels(), dst.Channels())
+	mustSame(src.Channels(), dst.Channels(), diffChannels)
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
 	if length == 0 {
@@ -218,7 +204,7 @@ func FloatAsUnsigned[S constraints.Float, D constraints.Unsigned](src *Buffer[S]
 // Buffers must have the same number of channels, otherwise function will
 // panic.
 func SignedAsFloat[S constraints.Signed, D constraints.Float](src *Buffer[S], dst *Buffer[D]) int {
-	mustSameChannels(src.Channels(), dst.Channels())
+	mustSame(src.Channels(), dst.Channels(), diffChannels)
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
 	if length == 0 {
@@ -241,7 +227,7 @@ func SignedAsFloat[S constraints.Signed, D constraints.Float](src *Buffer[S], ds
 // destination bit depth. Buffers must have the same number of channels,
 // otherwise function will panic.
 func SignedAsSigned[S, D constraints.Signed](src *Buffer[S], dst *Buffer[D]) int {
-	mustSameChannels(src.Channels(), dst.Channels())
+	mustSame(src.Channels(), dst.Channels(), diffChannels)
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
 	if length == 0 {
@@ -276,7 +262,7 @@ func SignedAsSigned[S, D constraints.Signed](src *Buffer[S], dst *Buffer[D]) int
 // 2^bitDepth-1]. Buffers must have the same number of channels, otherwise
 // function will panic.
 func SignedAsUnsigned[S constraints.Signed, D constraints.Unsigned](src *Buffer[S], dst *Buffer[D]) int {
-	mustSameChannels(src.Channels(), dst.Channels())
+	mustSame(src.Channels(), dst.Channels(), diffChannels)
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
 	if length == 0 {
@@ -310,7 +296,7 @@ func SignedAsUnsigned[S constraints.Signed, D constraints.Unsigned](src *Buffer[
 // sample range [0, 2^bitDepth-1] is mapped to floating [-1,1]. Buffers
 // must have the same number of channels, otherwise function will panic.
 func UnsignedAsFloat[S constraints.Unsigned, D constraints.Float](src *Buffer[S], dst *Buffer[D]) int {
-	mustSameChannels(src.Channels(), dst.Channels())
+	mustSame(src.Channels(), dst.Channels(), diffChannels)
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
 	if length == 0 {
@@ -335,7 +321,7 @@ func UnsignedAsFloat[S constraints.Unsigned, D constraints.Float](src *Buffer[S]
 // Buffers must have the same number of channels, otherwise function will
 // panic.
 func UnsignedAsSigned[S constraints.Unsigned, D constraints.Signed](src *Buffer[S], dst *Buffer[D]) int {
-	mustSameChannels(src.Channels(), dst.Channels())
+	mustSame(src.Channels(), dst.Channels(), diffChannels)
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
 	if length == 0 {
@@ -368,7 +354,7 @@ func UnsignedAsSigned[S constraints.Unsigned, D constraints.Signed](src *Buffer[
 // destination bit depth. Buffers must have the same number of channels,
 // otherwise function will panic.
 func UnsignedAsUnsigned[S, D constraints.Unsigned](src *Buffer[S], dst *Buffer[D]) int {
-	mustSameChannels(src.Channels(), dst.Channels())
+	mustSame(src.Channels(), dst.Channels(), diffChannels)
 	// cap length to destination capacity.
 	length := min(src.Len(), dst.Len())
 	if length == 0 {
@@ -415,15 +401,9 @@ func min(v1, v2 int) int {
 	return v2
 }
 
-func mustSameChannels(c1, c2 int) {
-	if c1 != c2 {
-		panic("different number of channels")
-	}
-}
-
-func mustSameCapacity(c1, c2 int) {
-	if c1 != c2 {
-		panic("different Buffer capacity")
+func mustSame[T comparable](a, b T, panicStr string) {
+	if a != b {
+		panic(panicStr)
 	}
 }
 
@@ -456,7 +436,7 @@ func Read[S, D SignalTypes](src *Buffer[S], dst []D) int {
 // that channel will be read. Returns a number of samples read for the
 // longest channel.
 func ReadStriped[S, D SignalTypes](src *Buffer[S], dst [][]D) (read int) {
-	mustSameChannels(src.Channels(), len(dst))
+	mustSame(src.Channels(), len(dst), diffChannels)
 	for c := 0; c < src.Channels(); c++ {
 		length := min(len(dst[c]), src.Length())
 		if length > read {
@@ -485,7 +465,7 @@ func Write[S, D SignalTypes](src []S, dst *Buffer[D]) int {
 // that channel will be written. Returns a number of samples written for
 // the longest channel.
 func WriteStriped[S, D SignalTypes](src [][]S, dst *Buffer[D]) (written int) {
-	mustSameChannels(dst.Channels(), len(src))
+	mustSame(dst.Channels(), len(src), diffChannels)
 	// determine the length of longest nested slice
 	for i := range src {
 		if len(src[i]) > written {

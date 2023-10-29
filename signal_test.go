@@ -543,22 +543,88 @@ func TestWrite(t *testing.T) {
 }
 
 func TestAppendPanic(t *testing.T) {
-	// testPanic := func(appender signal.Signed, data signal.Signed) func(*testing.T) {
-	// 	return func(t *testing.T) {
-	// 		t.Helper()
-	// 		assertPanic(t, func() {
-	// 			appender.Append(data)
-	// 		})
-	// 	}
-	// }
-	// t.Run("different channels", testPanic(
-	// 	signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
-	// 	signal.Allocator{Channels: 1, Capacity: 2}.Int64(signal.MaxBitDepth),
-	// ))
-	// t.Run("different bit depth", testPanic(
-	// 	signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.BitDepth8),
-	// 	signal.Allocator{Channels: 2, Capacity: 2}.Int64(signal.MaxBitDepth),
-	// ))
+	testPanic := func(appender *signal.Buffer[int64], data *signal.Buffer[int64]) func(*testing.T) {
+		return func(t *testing.T) {
+			t.Helper()
+			assertPanic(t, func() {
+				appender.Append(data)
+			})
+		}
+	}
+	t.Run("different channels", testPanic(
+		signal.Alloc[int64](signal.Allocator{
+			Capacity: 1,
+			Channels: 2,
+		}),
+		signal.Alloc[int64](signal.Allocator{
+			Capacity: 1,
+			Channels: 1,
+		}),
+	))
+}
+
+func TestConversions(t *testing.T) {
+	t.Skip()
+	alloc := signal.Allocator{
+		Channels: 1,
+		Capacity: 3,
+		Length:   3,
+	}
+
+	// floating buf
+	floating := signal.Alloc[float64](alloc)
+	floats := [][]float64{
+		{-1, 0, 1},
+	}
+	signal.WriteStriped(floats, floating)
+
+	// signed buf
+	signed := signal.Alloc[int64](alloc)
+	ints := [][]int64{
+		{math.MinInt64, 0, math.MaxInt64},
+	}
+	signal.WriteStriped(ints, signed)
+
+	// unsigned buf
+	unsigned := signal.Alloc[uint64](alloc)
+	uints := [][]uint64{
+		{0, math.MaxInt64 + 1, math.MaxUint64},
+	}
+	signal.WriteStriped(uints, unsigned)
+
+	t.Run("floating", func() func(*testing.T) {
+		output := signal.Alloc[float64](alloc)
+		return func(t *testing.T) {
+			signal.FloatAsFloat(floating, output)
+			assertEqual(t, "floating ", result(output), floats)
+			signal.SignedAsFloat(signed, output)
+			assertEqual(t, "signed", result(output), floats)
+			signal.UnsignedAsFloat(unsigned, output)
+			assertEqual(t, "unsigned", result(output), floats)
+		}
+	}())
+	t.Run("signed", func() func(*testing.T) {
+		output := signal.Alloc[int64](alloc)
+		return func(t *testing.T) {
+			signal.FloatAsSigned(floating, output)
+			assertEqual(t, "floating ", result(output), ints)
+			signal.SignedAsSigned(signed, output)
+			assertEqual(t, "signed", result(output), ints)
+			signal.UnsignedAsSigned(unsigned, output)
+			assertEqual(t, "unsigned", result(output), ints)
+		}
+	}())
+	t.Run("unsigned", func() func(*testing.T) {
+		output := signal.Alloc[uint64](alloc)
+		return func(t *testing.T) {
+			signal.FloatAsUnsigned(floating, output)
+			assertEqual(t, "floating ", result(output), uints)
+			signal.SignedAsUnsigned(signed, output)
+			assertEqual(t, "signed", result(output), uints)
+			signal.UnsignedAsUnsigned(unsigned, output)
+			assertEqual(t, "unsigned", result(output), uints)
+		}
+	}())
 }
 
 func assertEqual(t *testing.T, name string, result, expected interface{}) {

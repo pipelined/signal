@@ -66,3 +66,58 @@ func resultGeneric[T constraints.Float](src *signal.Buffer[T]) [][]T {
 	signal.ReadStriped(src, result)
 	return result
 }
+
+func TestSlice(t *testing.T) {
+	alloc := signal.Allocator{
+		Channels: 3,
+		Capacity: 3,
+		Length:   3,
+	}
+	t.Run("floating", func() func(t *testing.T) {
+		input := signal.Alloc[float64](alloc)
+		signal.WriteStriped[float64, float64](
+			[][]float64{
+				{},
+				{1, 2, 3},
+				{11, 12, 13, 14},
+			},
+			input,
+		)
+		return testOk[float64](
+			input.Slice(1, 3),
+			expected{
+				length:   2,
+				capacity: 2,
+				data: [][]float64{
+					{0, 0},
+					{2, 3},
+					{12, 13},
+				},
+			},
+		)
+	}())
+
+	t.Run("slice same size", func() func(t *testing.T) {
+		input := signal.Alloc[float64](alloc)
+		signal.WriteStriped[float64, float64](
+			[][]float64{
+				{},
+				{1, 2},
+				{11, 12, 13},
+			},
+			input,
+		)
+		return testOk[float64](
+			input.Slice(0, 3),
+			expected{
+				length:   3,
+				capacity: 3,
+				data: [][]float64{
+					{0, 0, 0},
+					{1, 2, 0},
+					{11, 12, 13},
+				},
+			},
+		)
+	}())
+}
